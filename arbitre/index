@@ -117,24 +117,25 @@
       startGameBtn.disabled = selectedPlayers.length < 2 || selectedPlayers.length > 10;
     }
 
-    startGameBtn.addEventListener("click", () => {
-      if (!terrainInput.value || selectedPlayers.length < 2) return;
-      terrainNum = parseInt(terrainInput.value);
-      document.getElementById("game-area").style.display = "block";
-      document.getElementById("start-game").style.display = "none";
-      document.getElementById("player-cards").style.display = "none";
-      terrainInput.disabled = true;
+startGameBtn.addEventListener("click", () => {
+  if (!terrainInput.value || selectedPlayers.length < 2) return;
+  terrainNum = parseInt(terrainInput.value);
+  document.getElementById("game-area").style.display = "block";
+  document.getElementById("start-game").style.display = "none";
+  document.getElementById("player-cards").style.display = "none";
+  terrainInput.disabled = true;
 
-      // Affichage des joueurs
-      playerList.innerHTML = "";
-      selectedPlayers.forEach((id, i) => {
-        const li = document.createElement("li");
-        li.innerText = `Joueur ${i + 1} – ID: ${id}`;
-        li.dataset.id = id;
-        li.addEventListener("click", () => eliminate(id, li));
-        playerList.appendChild(li);
-      });
-    });
+  // Affichage des joueurs avec leur vrai nom
+  playerList.innerHTML = "";
+  selectedPlayers.forEach(async (id) => {
+    const { data: player } = await supabase.from("players").select("name").eq("id", id).single();
+    const li = document.createElement("li");
+    li.innerText = `${player?.name || "Joueur inconnu"} – ID: ${id}`;
+    li.dataset.id = id;
+    li.addEventListener("click", () => eliminate(id, li));
+    playerList.appendChild(li);
+  });
+});
 
     document.getElementById("next-round").addEventListener("click", () => {
       alert("Manche passée sans élimination.");
