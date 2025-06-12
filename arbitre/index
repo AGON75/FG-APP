@@ -25,7 +25,7 @@
 
   <script>
     const SUPABASE_URL = "https://ckolzmqarfizoxjgolft.supabase.co";
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrb2x6bXFhcmZpem94amdvbGZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk2Nzg3NTYsImV4cCI6MjA2NTI1NDc1Nn0.ZlpERz1uznM0fn--GR9YgM2vjwe_kw-qiPF8KHJvMpI";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...";
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     const playerCardsContainer = document.getElementById("player-cards");
@@ -39,7 +39,7 @@
 
     async function loadPlayers() {
       const { data, error } = await supabase.from("players").select("*");
-      if (error) {
+      if (error || !data) {
         alert("Erreur chargement joueurs");
         return;
       }
@@ -83,14 +83,8 @@
       playerList.innerHTML = "";
 
       for (const player of selectedPlayers) {
-        const { data } = await supabase
-          .from("players")
-          .select("name")
-          .eq("id", player.id)
-          .single();
-
         const li = document.createElement("li");
-        li.innerText = `${data?.name || "Joueur inconnu"} – ID: ${player.id}`;
+        li.innerText = `${player.name} – ID: ${player.id}`;
         li.dataset.id = player.id;
         li.addEventListener("click", () => eliminate(player.id, li));
         playerList.appendChild(li);
