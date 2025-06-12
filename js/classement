@@ -1,0 +1,13 @@
+const supabase = supabase.createClient("https://ckolzmqarfizoxjgolft.supabase.co", 
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrb2x6bXFhcmZpem94amdvbGZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk2Nzg3NTYsImV4cCI6MjA2NTI1NDc1Nn0.ZlpERz1uznM0fn--GR9YgM2vjwe_kw-qiPF8KHJvMpI");
+
+(async () => {
+  const { data, error } = await supabase.from('players').select('*').order('total_points', { ascending: true });
+  if (error) return console.error(error);
+
+  const container = document.createElement("div");
+  data.forEach((p, i) => {
+    container.innerHTML += `<p>#${i + 1} - ${p.name} (${p.total_points} pts / ${p.matches} matchs)</p>`;
+  });
+  document.body.appendChild(container);
+})();
