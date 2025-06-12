@@ -1,0 +1,28 @@
+const supabase = supabase.createClient("https://ckolzmqarfizoxjgolft.supabase.co", 
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrb2x6bXFhcmZpem94amdvbGZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk2Nzg3NTYsImV4cCI6MjA2NTI1NDc1Nn0.ZlpERz1uznM0fn--GR9YgM2vjwe_kw-qiPF8KHJvMpI");
+
+document.body.innerHTML += `
+  <form id="setup-form">
+    <input type="number" id="terrain" placeholder="Numéro terrain" required>
+    <input type="text" id="players" placeholder="IDs des joueurs (séparés par ,)" required>
+    <button type="submit">Lancer le match</button>
+  </form>
+  <div id="status"></div>
+`;
+
+document.getElementById('setup-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const terrain = parseInt(document.getElementById('terrain').value);
+  const ids = document.getElementById('players').value.split(",").map(id => id.trim());
+
+  for (let i = 0; i < ids.length; i++) {
+    const { error } = await supabase.from('eliminations').insert([{ player_id: ids[i], terrain, rank: i + 1 }]);
+    if (error) return alert("Erreur: " + error.message);
+    await supabase.from('players').update({
+      total_points: supabase.raw(f"total_points + {i + 1}"),
+      matches: supabase.raw("matches + 1")
+    }).eq('id', ids[i]);
+  }
+
+  document.getElementById('status').innerText = "✅ Match enregistré pour le terrain " + terrain;
+});
