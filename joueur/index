@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Finger Game – Joueur</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+  <h2>Inscription Joueur</h2>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <script src="../js/joueur.js"></script>
+</body>
+</html>
