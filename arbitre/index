@@ -93,6 +93,7 @@
         const card = document.createElement("div");
         card.className = "card";
         card.dataset.id = player.id;
+        card.dataset.name = player.name;
         card.innerText = player.name;
         card.addEventListener("click", () => toggleSelection(card));
         playerCardsContainer.appendChild(card);
@@ -103,11 +104,11 @@
       const id = card.dataset.id;
       if (card.classList.contains("selected")) {
         card.classList.remove("selected");
-        selectedPlayers = selectedPlayers.filter(pid => pid !== id);
+        selectedPlayers = selectedPlayers.filter(p => p.id !== id);
       } else {
         if (selectedPlayers.length >= 10) return;
         card.classList.add("selected");
-        selectedPlayers.push(id);
+        selectedPlayers.push({ id, name: card.dataset.name });
       }
       updateButtonState();
     }
@@ -117,7 +118,7 @@
       startGameBtn.disabled = selectedPlayers.length < 2 || selectedPlayers.length > 10;
     }
 
-    startGameBtn.addEventListener("click", async () => {
+    startGameBtn.addEventListener("click", () => {
       if (!terrainInput.value || selectedPlayers.length < 2) return;
       terrainNum = parseInt(terrainInput.value);
       document.getElementById("game-area").style.display = "block";
@@ -126,20 +127,13 @@
       terrainInput.disabled = true;
 
       playerList.innerHTML = "";
-
-      for (const id of selectedPlayers) {
-        const { data: player, error } = await supabase
-          .from("players")
-          .select("name")
-          .eq("id", id)
-          .single();
-
+      selectedPlayers.forEach((player) => {
         const li = document.createElement("li");
-        li.innerText = `${player?.name || "Joueur inconnu"} – ID: ${id}`;
-        li.dataset.id = id;
-        li.addEventListener("click", () => eliminate(id, li));
+        li.innerText = `${player.name} – ID: ${player.id}`;
+        li.dataset.id = player.id;
+        li.addEventListener("click", () => eliminate(player.id, li));
         playerList.appendChild(li);
-      }
+      });
     });
 
     document.getElementById("next-round").addEventListener("click", () => {
@@ -151,7 +145,7 @@
     });
 
     async function eliminate(id, element) {
-      if (!confirm(`Éliminer ce joueur ?\nID : ${id}`)) return;
+      if (!confirm(`Éliminer ce joueur ?`)) return;
       await supabase.from("eliminations").insert([{ player_id: id, terrain: terrainNum, rank }]);
 
       const { data: playerData } = await supabase.from("players").select("*").eq("id", id).single();
@@ -178,3 +172,4 @@
   </script>
 </body>
 </html>
+
