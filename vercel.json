@@ -1,0 +1,8 @@
+{
+  "cleanUrls": true,
+  "rewrites": [
+    { "source": "/joueur", "destination": "/joueur/index.html" },
+    { "source": "/arbitre", "destination": "/arbitre/index.html" },
+    { "source": "/classement", "destination": "/classement/index.html" }
+  ]
+}
