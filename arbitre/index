@@ -58,7 +58,6 @@
     });
 
     document.getElementById("next-round").addEventListener("click", () => {
-      // manche sans élimination
       alert("Manche passée sans élimination.");
     });
 
@@ -73,13 +72,38 @@
     async function eliminate(id, element) {
       if (!confirm(`Éliminer ce joueur ?\nID : ${id}`)) return;
 
+      // Insérer l’élimination dans Supabase
       await supabase.from("eliminations").insert([{ player_id: id, terrain: terrainNum, rank }]);
-      await supabase.rpc("update_player_stats", { playerid: id, score: rank }); // RPC custom à créer (ou faire en JS si pas dispo)
-      rank++;
 
+      // Lire les stats actuelles du joueur
+      const { data: playerData, error } = await supabase
+        .from("players")
+        .select("*")
+        .eq("id", id)
+        .single();
+
+      if (error || !playerData) {
+        alert("❌ Erreur lors de la récupération du joueur");
+        return;
+      }
+
+      const newPoints = (playerData.total_points || 0) + rank;
+      const newMatches = (playerData.matches || 0) + 1;
+
+      // Mettre à jour les stats
+      await supabase
+        .from("players")
+        .update({
+          total_points: newPoints,
+          matches: newMatches
+        })
+        .eq("id", id);
+
+      // Marquer visuellement le joueur éliminé
       element.style.textDecoration = "line-through";
       element.style.opacity = 0.5;
       element.removeEventListener("click", () => eliminate(id, element));
+      rank++;
 
       if (rank > currentPlayers.length) {
         alert("🎉 Partie terminée !");
