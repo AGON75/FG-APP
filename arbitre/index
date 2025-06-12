@@ -3,12 +3,58 @@
 <head>
   <meta charset="UTF-8" />
   <title>Finger Game – Arbitre</title>
-  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="arbitre/index.html/css/style.css" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <style>
+    body {
+      background-color: #121212;
+      color: white;
+      font-family: sans-serif;
+      padding: 20px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .card {
+      padding: 16px;
+      background: #1e1e1e;
+      border: 2px solid #444;
+      border-radius: 12px;
+      cursor: pointer;
+      text-align: center;
+      transition: 0.2s;
+    }
+    .card.selected {
+      background: #2e7d32;
+      border-color: #4caf50;
+    }
+    .card:hover {
+      background: #2a2a2a;
+    }
+    button {
+      background: #4caf50;
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      font-size: 16px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    button:disabled {
+      background: #555;
+      cursor: not-allowed;
+    }
+    #player-list li {
+      cursor: pointer;
+      margin: 8px 0;
+    }
+  </style>
 </head>
 <body>
   <h2>Arbitre – Sélection des joueurs</h2>
-
   <label for="terrain">Numéro du terrain :</label>
   <input type="number" id="terrain" min="1" required />
   <br /><br />
@@ -25,7 +71,7 @@
 
   <script>
     const SUPABASE_URL = "https://ckolzmqarfizoxjgolft.supabase.co";
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrb2x6bXFhcmZpem94amdvbGZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk2Nzg3NTYsImV4cCI6MjA2NTI1NDc1Nn0.ZlpERz1uznM0fn--GR9YgM2vjwe_kw-qiPF8KHJvMpI";
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     const playerCardsContainer = document.getElementById("player-cards");
@@ -39,7 +85,7 @@
 
     async function loadPlayers() {
       const { data, error } = await supabase.from("players").select("*");
-      if (error || !data) {
+      if (error) {
         alert("Erreur chargement joueurs");
         return;
       }
@@ -72,24 +118,30 @@
       startGameBtn.disabled = selectedPlayers.length < 2 || selectedPlayers.length > 10;
     }
 
-    startGameBtn.addEventListener("click", async () => {
-      if (!terrainInput.value || selectedPlayers.length < 2) return;
-      terrainNum = parseInt(terrainInput.value);
-      document.getElementById("game-area").style.display = "block";
-      document.getElementById("start-game").style.display = "none";
-      document.getElementById("player-cards").style.display = "none";
-      terrainInput.disabled = true;
+   startGameBtn.addEventListener("click", async () => {
+  if (!terrainInput.value || selectedPlayers.length < 2) return;
+  terrainNum = parseInt(terrainInput.value);
+  document.getElementById("game-area").style.display = "block";
+  document.getElementById("start-game").style.display = "none";
+  document.getElementById("player-cards").style.display = "none";
+  terrainInput.disabled = true;
 
-      playerList.innerHTML = "";
+  playerList.innerHTML = "";
 
-      for (const player of selectedPlayers) {
-        const li = document.createElement("li");
-        li.innerText = `${player.name} – ID: ${player.id}`;
-        li.dataset.id = player.id;
-        li.addEventListener("click", () => eliminate(player.id, li));
-        playerList.appendChild(li);
-      }
-    });
+  for (const player of selectedPlayers) {
+    const { data } = await supabase
+      .from("players")
+      .select("name")
+      .eq("id", player.id)
+      .single();
+
+    const li = document.createElement("li");
+    li.innerText = `${data?.name || "Joueur inconnu"} – ID: ${player.id}`;
+    li.dataset.id = player.id;
+    li.addEventListener("click", () => eliminate(player.id, li));
+    playerList.appendChild(li);
+  }
+});
 
     document.getElementById("next-round").addEventListener("click", () => {
       alert("Manche passée sans élimination.");
@@ -100,7 +152,7 @@
     });
 
     async function eliminate(id, element) {
-      if (!confirm("Éliminer ce joueur ?")) return;
+      if (!confirm(`Éliminer ce joueur ?`)) return;
       await supabase.from("eliminations").insert([{ player_id: id, terrain: terrainNum, rank }]);
 
       const { data: playerData } = await supabase.from("players").select("*").eq("id", id).single();
@@ -128,3 +180,4 @@
 </body>
 </html>
 
+<!-- Test sync Vercel -->
