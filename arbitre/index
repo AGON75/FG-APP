@@ -4,10 +4,88 @@
   <meta charset="UTF-8">
   <title>Finger Game – Arbitre</title>
   <link rel="stylesheet" href="../css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 </head>
 <body>
-  <h2>Gestion des Terrains</h2>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
-  <script src="../js/arbitre.js"></script>
+  <h2>Arbitre – Gestion d’un terrain</h2>
+
+  <form id="match-form">
+    <label>Numéro du terrain :</label><br>
+    <input type="number" id="terrain" min="1" required><br><br>
+
+    <label>ID des joueurs (séparés par virgule) :</label><br>
+    <textarea id="players" rows="4" placeholder="uuid1, uuid2, uuid3..." required></textarea><br>
+
+    <button type="submit">Démarrer la partie</button>
+  </form>
+
+  <div id="game-area" style="display:none;">
+    <h3>Manche en cours</h3>
+    <ul id="player-list"></ul>
+
+    <button id="next-round">Passer une manche sans élimination</button>
+    <button id="reset-game">Réinitialiser la partie</button>
+  </div>
+
+  <script>
+    const SUPABASE_URL = "https://ckolzmqarfizoxjgolft.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrb2x6bXFhcmZpem94amdvbGZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk2Nzg3NTYsImV4cCI6MjA2NTI1NDc1Nn0.ZlpERz1uznM0fn--GR9YgM2vjwe_kw-qiPF8KHJvMpI";
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    let terrainNum = null;
+    let currentPlayers = [];
+    let rank = 1;
+
+    const playerList = document.getElementById("player-list");
+
+    document.getElementById("match-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      terrainNum = parseInt(document.getElementById("terrain").value);
+      const ids = document.getElementById("players").value.split(",").map(p => p.trim());
+      currentPlayers = ids;
+
+      playerList.innerHTML = "";
+      currentPlayers.forEach((id, index) => {
+        const li = document.createElement("li");
+        li.innerText = `Joueur ${index + 1} – ID: ${id}`;
+        li.dataset.id = id;
+        li.style.cursor = "pointer";
+        li.addEventListener("click", () => eliminate(id, li));
+        playerList.appendChild(li);
+      });
+
+      document.getElementById("game-area").style.display = "block";
+    });
+
+    document.getElementById("next-round").addEventListener("click", () => {
+      // manche sans élimination
+      alert("Manche passée sans élimination.");
+    });
+
+    document.getElementById("reset-game").addEventListener("click", () => {
+      terrainNum = null;
+      currentPlayers = [];
+      rank = 1;
+      playerList.innerHTML = "";
+      document.getElementById("game-area").style.display = "none";
+    });
+
+    async function eliminate(id, element) {
+      if (!confirm(`Éliminer ce joueur ?\nID : ${id}`)) return;
+
+      await supabase.from("eliminations").insert([{ player_id: id, terrain: terrainNum, rank }]);
+      await supabase.rpc("update_player_stats", { playerid: id, score: rank }); // RPC custom à créer (ou faire en JS si pas dispo)
+      rank++;
+
+      element.style.textDecoration = "line-through";
+      element.style.opacity = 0.5;
+      element.removeEventListener("click", () => eliminate(id, element));
+
+      if (rank > currentPlayers.length) {
+        alert("🎉 Partie terminée !");
+        document.getElementById("reset-game").click();
+      }
+    }
+  </script>
 </body>
 </html>
