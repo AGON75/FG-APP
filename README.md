@@ -1,2 +1,3 @@
-# Finger Game App
-Dépôt de départ pour l'application Finger Game.
+# Finger Game
+
+App statique pour inscription, scoring, classement.
