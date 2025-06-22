@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin – Finger Game</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { background: #111; color: white; font-family: sans-serif; padding: 20px; }
+    input, select, button { font-size: 14px; margin: 5px; padding: 6px; }
+    label { display: block; margin-top: 20px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 30px; }
+    th, td { padding: 10px; border-bottom: 1px solid #444; text-align: center; }
+    th { background-color: #222; }
+    tr:nth-child(even) { background-color: #1a1a1a; }
+  </style>
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+    const supabase = createClient(
+      'https://ckolzmqarfizoxjgolft.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrb2x6bXFhcmZpem94amdvbGZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk2Nzg3NTYsImV4cCI6MjA2NTI1NDc1Nn0.ZlpERz1uznM0fn--GR9YgM2vjwe_kw-qiPF8KHJvMpI'
+    );
+
+    async function ajouterJoueur() {
+      const nom = document.getElementById("nom").value.trim();
+      const partie = parseInt(document.getElementById("partie").value);
+      if (!nom || !partie) return alert("Nom ou partie manquante");
+
+      const terrains = [1,2,3,4,5];
+      let stats = {};
+      for (let t of terrains) {
+        const { count, error } = await supabase
+          .from("players")
+          .select("*", { count: "exact", head: true })
+          .eq("terrain", t);
+        stats[t] = error ? 999 : count || 0;
+      }
+      const terrainOptimal = terrains.reduce((a, b) => stats[a] < stats[b] ? a : b);
+
+      const { error } = await supabase.from("players").insert({
+        name: nom,
+        terrain: terrainOptimal,
+        total_points: 0,
+        matches: 0
+      });
+
+      if (error) {
+        alert("Erreur ajout joueur");
+      } else {
+        alert(`Joueur ajouté sur la piste ${terrainOptimal}`);
+        document.getElementById("nom").value = "";
+        chargerJoueurs();
+      }
+    }
+
+    async function chargerJoueurs() {
+      const { data, error } = await supabase.from("players").select("*").order("terrain");
+      if (error) return alert("Erreur chargement joueurs");
+      const tbody = document.getElementById("tbody");
+      tbody.innerHTML = "";
+      data.forEach(j => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${j.name}</td>
+          <td>${j.terrain}</td>
+          <td><input type="number" value="${j.total_points}" onchange="modifierValeur('${j.id}', 'total_points', this.value)" /></td>
+          <td><input type="number" value="${j.matches}" onchange="modifierValeur('${j.id}', 'matches', this.value)" /></td>
+          <td><button onclick="supprimerJoueur('${j.id}')">❌</button></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    async function modifierValeur(id, champ, valeur) {
+      const { error } = await supabase.from("players").update({ [champ]: parseInt(valeur) }).eq("id", id);
+      if (error) alert("Erreur modification");
+    }
+
+    async function supprimerJoueur(id) {
+      if (!confirm("Supprimer ce joueur ?")) return;
+      const { error } = await supabase.from("players").delete().eq("id", id);
+      if (error) alert("Erreur suppression");
+      else chargerJoueurs();
+    }
+
+    window.onload = () => {
+      chargerJoueurs();
+    };
+    window.ajouterJoueur = ajouterJoueur;
+    window.modifierValeur = modifierValeur;
+    window.supprimerJoueur = supprimerJoueur;
+  </script>
+</head>
+<body>
+  <h1>Admin – Gestion des joueurs</h1>
+
+  <label for="nom">➕ Ajouter un joueur :</label>
+  <input type="text" id="nom" placeholder="Nom du joueur" />
+
+  <label for="partie">Partie actuelle :</label>
+  <select id="partie">
+    <option value="1">Partie 1 – Jeu classique</option>
+    <option value="2">Partie 2 – No celebração</option>
+    <option value="3">Partie 3 – Défi surprise</option>
+    <option value="4">Partie 4 – Mort subite</option>
+    <option value="5">Partie 5 – Finale à 2 doigts</option>
+  </select>
+  <button onclick="ajouterJoueur()">Ajouter</button>
+
+  <h2>👥 Joueurs inscrits</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Nom</th>
+        <th>Terrain</th>
+        <th>Points</th>
+        <th>Matchs</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+</body>
+</html>
