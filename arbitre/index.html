@@ -2,13 +2,11 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <title>Arbitre – Finger Game</title>
+  <title>Arbitre – Réaffectation aléatoire</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     body { background: #111; color: white; font-family: sans-serif; padding: 20px; }
     button, select { font-size: 16px; margin: 5px; padding: 10px; }
-    .eliminated { background-color: #444; text-decoration: line-through; color: grey; }
-    .player-button { display: inline-block; margin: 5px; }
   </style>
   <script type="module">
     import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
@@ -17,140 +15,52 @@
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrb2x6bXFhcmZpem94amdvbGZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk2Nzg3NTYsImV4cCI6MjA2NTI1NDc1Nn0.ZlpERz1uznM0fn--GR9YgM2vjwe_kw-qiPF8KHJvMpI'
     );
 
-    let currentTerrain = null;
-    let players = [];
-    let eliminatedOrder = [];
-    let maxPlayers = 8;
+    async function reaffecterEtCharger() {
+      const terrainSelectionne = parseInt(document.getElementById("terrain").value);
+      const { data: joueurs, error } = await supabase.from("players").select("*");
+      if (error) return alert("Erreur chargement joueurs");
 
-    const baremes = {
-      4: [20, 10, 0, -5],
-      5: [25, 20, 10, 0, -5],
-      6: [30, 25, 15, 5, 0, -5],
-      7: [30, 25, 20, 15, 10, 0, -5],
-      8: [30, 25, 20, 15, 10, 5, 0, -5],
-      9: [35, 30, 25, 20, 15, 10, 5, 0, -5],
-      10: [40, 35, 30, 25, 20, 15, 10, 5, 0, -5]
-    };
+      for (let joueur of joueurs) {
+        let nouveau;
+        do {
+          nouveau = Math.floor(Math.random() * 5) + 1;
+        } while (nouveau === joueur.terrain);
 
-    async function loadPlayers() {
-      currentTerrain = parseInt(document.getElementById("terrain").value);
-      maxPlayers = parseInt(document.getElementById("nbJoueurs").value);
-      const { data, error } = await supabase
+        await supabase
+          .from("players")
+          .update({ terrain: nouveau })
+          .eq("id", joueur.id);
+      }
+
+      // Charger les joueurs du terrain sélectionné
+      const { data: filtres } = await supabase
         .from("players")
         .select("*")
-        .eq("terrain", currentTerrain)
-        .order("name");
-      if (error) return alert("Erreur chargement joueurs");
-      players = data.slice(0, maxPlayers);
-      eliminatedOrder = [];
-      renderPlayers();
-    }
+        .eq("terrain", terrainSelectionne);
 
-    function renderPlayers() {
-      const container = document.getElementById("players");
-      container.innerHTML = "";
-      players.forEach(p => {
-        const btn = document.createElement("button");
-        btn.textContent = `${p.name}`;
-        btn.className = "player-button";
-        if (eliminatedOrder.includes(p.id)) {
-          btn.disabled = true;
-          btn.classList.add("eliminated");
-          const rank = eliminatedOrder.indexOf(p.id) + 1;
-          btn.textContent += ` (#${rank})`;
-        } else {
-          btn.onclick = () => eliminatePlayer(p.id);
-        }
-        container.appendChild(btn);
-      });
-
-      document.getElementById("ordre").textContent =
-        eliminatedOrder.length + "/" + players.length + " éliminés";
-    }
-
-    function eliminatePlayer(id) {
-      if (!eliminatedOrder.includes(id)) {
-        eliminatedOrder.push(id);
-        renderPlayers();
-      }
-    }
-
-    async function validerManche() {
-      if (eliminatedOrder.length !== players.length - 1) {
-        alert("Il doit rester un seul joueur non éliminé.");
-        return;
-      }
-
-      const winner = players.find(p => !eliminatedOrder.includes(p.id));
-      if (winner) eliminatedOrder.push(winner.id);
-
-      const barème = baremes[players.length] || baremes[8];
-
-      for (let i = 0; i < eliminatedOrder.length; i++) {
-        const playerId = eliminatedOrder[i];
-        const points = barème[i] !== undefined ? barème[i] : 0;
-
-        await supabase.from("eliminations").insert({
-          player_id: playerId,
-          terrain: currentTerrain,
-          rank: i + 1
-        });
-
-        const { data } = await supabase.from("players").select("*").eq("id", playerId).single();
-        if (data) {
-          await supabase
-            .from("players")
-            .update({
-              total_points: data.total_points + points,
-              matches: data.matches + 1
-            })
-            .eq("id", playerId);
-        }
-      }
-
-      alert("✅ Manche enregistrée !");
-      players = [];
-      eliminatedOrder = [];
-      document.getElementById("players").innerHTML = "";
-      document.getElementById("ordre").textContent = "";
+      const zone = document.getElementById("joueurs");
+      zone.innerHTML = `<h3>Joueurs sur la piste ${terrainSelectionne}</h3><ul>` +
+        filtres.map(j => `<li>${j.name}</li>`).join("") + "</ul>";
     }
 
     window.onload = () => {
-      const select = document.getElementById("terrain");
+      const sel = document.getElementById("terrain");
       for (let i = 1; i <= 5; i++) {
         const opt = document.createElement("option");
         opt.value = i;
         opt.textContent = "Piste " + i;
-        select.appendChild(opt);
-      }
-
-      const nbSelect = document.getElementById("nbJoueurs");
-      for (let j = 4; j <= 10; j++) {
-        const opt = document.createElement("option");
-        opt.value = j;
-        opt.textContent = j + " joueurs";
-        nbSelect.appendChild(opt);
+        sel.appendChild(opt);
       }
     };
 
-    window.loadPlayers = loadPlayers;
-    window.validerManche = validerManche;
+    window.reaffecterEtCharger = reaffecterEtCharger;
   </script>
 </head>
 <body>
-  <h1>Arbitre – Validation d'une manche</h1>
-
-  <label for="terrain">🎯 Sélection du terrain :</label>
+  <h1>Réaffectation aléatoire des joueurs</h1>
+  <label>Choisir terrain arbitré :</label>
   <select id="terrain"></select>
-
-  <label for="nbJoueurs">👥 Nombre de joueurs pour cette manche :</label>
-  <select id="nbJoueurs"></select>
-
-  <button onclick="loadPlayers()">Charger les joueurs</button>
-
-  <div id="players" style="margin-top: 20px;"></div>
-  <p id="ordre"></p>
-
-  <button onclick="validerManche()">✅ Valider la manche</button>
+  <button onclick="reaffecterEtCharger()">🔀 Réaffecter + Charger</button>
+  <div id="joueurs" style="margin-top: 20px;"></div>
 </body>
 </html>
