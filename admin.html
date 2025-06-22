@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Finger Game – Admin</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <style>
+    body {
+      background-color: #121212;
+      color: white;
+      font-family: sans-serif;
+      padding: 20px;
+    }
+    input, button {
+      margin: 6px 4px;
+      padding: 8px;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    th, td {
+      border: 1px solid #444;
+      padding: 8px;
+      text-align: center;
+    }
+    button {
+      background: #4caf50;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    .danger {
+      background: #e53935;
+    }
+  </style>
+</head>
+<body>
+  <h2>Panel Admin – Finger Game</h2>
+
+  <div id="login">
+    <input type="password" id="admin-pass" placeholder="Mot de passe admin" />
+    <button onclick="checkLogin()">Connexion</button>
+  </div>
+
+  <div id="admin-panel" style="display: none;">
+    <h3>Ajouter un joueur</h3>
+    <input type="text" id="new-name" placeholder="Nom du joueur" />
+    <button onclick="addPlayer()">Ajouter</button>
+
+    <h3>Liste des joueurs</h3>
+    <table id="players-table">
+      <thead>
+        <tr>
+          <th>Nom</th>
+          <th>Points</th>
+          <th>Matchs</th>
+          <th>Modifier</th>
+          <th>Supprimer</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <script>
+    const SUPABASE_URL = "https://ckolzmqarfizoxjgolft.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrb2x6bXFhcmZpem94amdvbGZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk2Nzg3NTYsImV4cCI6MjA2NTI1NDc1Nn0.ZlpERz1uznM0fn--GR9YgM2vjwe_kw-qiPF8KHJvMpI";
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const adminPassword = "admin123";
+
+    async function checkLogin() {
+      const inputPass = document.getElementById("admin-pass").value;
+      if (inputPass === adminPassword) {
+        document.getElementById("login").style.display = "none";
+        document.getElementById("admin-panel").style.display = "block";
+        loadPlayers();
+      } else {
+        alert("Mot de passe incorrect");
+      }
+    }
+
+    async function loadPlayers() {
+      const { data, error } = await supabase.from("players").select("*").order("name");
+      const tbody = document.querySelector("#players-table tbody");
+      tbody.innerHTML = "";
+
+      data.forEach(player => {
+        const tr = document.createElement("tr");
+
+        tr.innerHTML = `
+          <td>${player.name}</td>
+          <td><input type="number" value="${player.total_points}" id="pts-${player.id}" /></td>
+          <td><input type="number" value="${player.matches}" id="match-${player.id}" /></td>
+          <td><button onclick="save('${player.id}')">💾</button></td>
+          <td><button onclick="remove('${player.id}')" class="danger">🗑</button></td>
+        `;
+
+        tbody.appendChild(tr);
+      });
+    }
+
+    async function addPlayer() {
+      const name = document.getElementById("new-name").value.trim();
+      if (!name) return alert("Nom requis");
+
+      await supabase.from("players").insert([{ name }]);
+      document.getElementById("new-name").value = "";
+      loadPlayers();
+    }
+
+    async function save(id) {
+      const pts = parseInt(document.getElementById(`pts-${id}`).value);
+      const match = parseInt(document.getElementById(`match-${id}`).value);
+
+      await supabase.from("players").update({
+        total_points: pts,
+        matches: match
+      }).eq("id", id);
+
+      alert("Modifié !");
+    }
+
+    async function remove(id) {
+      if (!confirm("Supprimer ce joueur ?")) return;
+
+      await supabase.from("players").delete().eq("id", id);
+      loadPlayers();
+    }
+  
+    async function deletePlayer(id) {
+      window.deletePlayer = deletePlayer;
+      const confirmation = confirm("Supprimer ce joueur ?");
+      if (!confirmation) return;
+
+      const { error } = await supabase.from("players").delete().eq("id", id);
+      if (error) {
+        alert("Erreur lors de la suppression.");
+        console.error(error);
+      } else {
+        alert("Joueur supprimé.");
+        loadPlayers();
+      }
+    }
+</script>
+</body>
+</html>
