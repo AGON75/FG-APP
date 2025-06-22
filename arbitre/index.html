@@ -17,6 +17,117 @@
       font-size: 16px;
     }
   </style>
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.5/+esm';
+
+    const supabaseUrl = 'https://ckolzmqarfizoxjgolft.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrb2x6bXFhcmZpem94amdvbGZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk2Nzg3NTYsImV4cCI6MjA2NTI1NDc1Nn0.ZlpERz1uznM0fn--GR9YgM2vjwe_kw-qiPF8KHJvMpI';
+    const supabase = createClient(supabaseUrl, supabaseKey);
+    let players = [];
+
+    async function loadPlayers() {
+      const { data, error } = await supabase.from('players').select('*').order('name');
+      if (error) {
+        console.error('Erreur chargement joueurs :', error);
+        return;
+      }
+      players = data;
+      updateTrackSelect();
+      updateManualSelect();
+    }
+
+    function updateTrackSelect() {
+      const select = document.getElementById('trackSelect');
+      select.innerHTML = '';
+      const terrains = [...new Set(players.map(p => p.terrain))].sort((a,b) => a - b);
+      for (const t of terrains) {
+        const opt = document.createElement('option');
+        opt.value = t;
+        opt.textContent = `Piste ${t}`;
+        select.appendChild(opt);
+      }
+    }
+
+    function handleGenerateMatch() {
+      const trackId = parseInt(document.getElementById('trackSelect').value);
+      const match = generateMatch(trackId);
+      const matchDiv = document.getElementById('matchDisplay');
+      matchDiv.innerHTML = '<h4>Match généré :</h4>' + match.map(p => `${p.name} (#${p.number || ''})`).join('<br>');
+    }
+
+    let matchHistory = new Map();
+
+    function generateMatch(trackId) {
+      const eligible = players.filter(p => p.terrain === trackId);
+      let group;
+      for (let i = 0; i < 50; i++) {
+        const shuffled = shuffleArray([...eligible]);
+        group = shuffled.slice(0, Math.min(5, shuffled.length));
+        if (isNewGroup(group)) break;
+      }
+      saveMatchHistory(group);
+      return group;
+    }
+
+    function isNewGroup(group) {
+      for (let i = 0; i < group.length; i++) {
+        for (let j = i + 1; j < group.length; j++) {
+          const key = pairKey(group[i].id, group[j].id);
+          if (matchHistory.has(key)) return false;
+        }
+      }
+      return true;
+    }
+
+    function saveMatchHistory(group) {
+      for (let i = 0; i < group.length; i++) {
+        for (let j = i + 1; j < group.length; j++) {
+          const key = pairKey(group[i].id, group[j].id);
+          matchHistory.set(key, (matchHistory.get(key) || 0) + 1);
+        }
+      }
+    }
+
+    function pairKey(a, b) {
+      return a < b ? `${a}-${b}` : `${b}-${a}`;
+    }
+
+    function shuffleArray(arr) {
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+
+    function updateManualSelect() {
+      const div = document.getElementById('manualPlayerSelect');
+      div.innerHTML = '';
+      players.forEach(p => {
+        const box = document.createElement('input');
+        box.type = 'checkbox';
+        box.value = p.id;
+        box.id = `manual-${p.id}`;
+        const label = document.createElement('label');
+        label.htmlFor = box.id;
+        label.innerText = `${p.name} (Piste ${p.terrain})`;
+        div.appendChild(box);
+        div.appendChild(label);
+        div.appendChild(document.createElement('br'));
+      });
+    }
+
+    function selectManualFinal() {
+      const selected = Array.from(document.querySelectorAll('#manualPlayerSelect input:checked')).map(e => e.value);
+      const finalPlayers = players.filter(p => selected.includes(p.id));
+      const finalDiv = document.getElementById('finalDisplay');
+      finalDiv.innerHTML = '<h4>Match sélectionné :</h4>' + finalPlayers.map(p => `${p.name} (Piste ${p.terrain})`).join('<br>');
+    }
+
+    window.onload = loadPlayers;
+    window.handleGenerateMatch = handleGenerateMatch;
+    window.selectManualFinal = selectManualFinal;
+  </script>
 </head>
 <body>
   <h1>Gestion Arbitre</h1>
@@ -33,99 +144,5 @@
   <div id="manualPlayerSelect"></div>
   <button onclick="selectManualFinal()">Créer la manche manuelle</button>
   <div id="finalDisplay"></div>
-
-<script>
-  const totalTracks = 5;
-  let players = JSON.parse(localStorage.getItem('fg_players') || '[]');
-  let matchHistory = new Map();
-
-  function updateTrackSelect() {
-    const select = document.getElementById('trackSelect');
-    select.innerHTML = '';
-    for (let i = 1; i <= totalTracks; i++) {
-      const option = document.createElement('option');
-      option.value = i;
-      option.textContent = `Piste ${i}`;
-      select.appendChild(option);
-    }
-  }
-
-  function handleGenerateMatch() {
-    const trackId = parseInt(document.getElementById('trackSelect').value);
-    const match = generateMatch(trackId);
-    const matchDiv = document.getElementById('matchDisplay');
-    matchDiv.innerHTML = '<h4>Match généré :</h4>' + match.map(p => `${p.name} (#${p.number})`).join('<br>');
-  }
-
-  function generateMatch(trackId) {
-    const eligible = players.filter(p => p.track === trackId && !p.eliminated);
-    let group;
-    for (let i = 0; i < 50; i++) {
-      const shuffled = shuffleArray([...eligible]);
-      group = shuffled.slice(0, Math.min(5, shuffled.length));
-      if (isNewGroup(group)) break;
-    }
-    saveMatchHistory(group);
-    return group;
-  }
-
-  function isNewGroup(group) {
-    for (let i = 0; i < group.length; i++) {
-      for (let j = i + 1; j < group.length; j++) {
-        const key = pairKey(group[i].id, group[j].id);
-        if (matchHistory.has(key)) return false;
-      }
-    }
-    return true;
-  }
-
-  function saveMatchHistory(group) {
-    for (let i = 0; i < group.length; i++) {
-      for (let j = i + 1; j < group.length; j++) {
-        const key = pairKey(group[i].id, group[j].id);
-        matchHistory.set(key, (matchHistory.get(key) || 0) + 1);
-      }
-    }
-  }
-
-  function pairKey(a, b) {
-    return a < b ? `${a}-${b}` : `${b}-${a}`;
-  }
-
-  function shuffleArray(arr) {
-    for (let i = arr.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [arr[i], arr[j]] = [arr[j], arr[i]];
-    }
-    return arr;
-  }
-
-  function updateManualSelect() {
-    const div = document.getElementById('manualPlayerSelect');
-    div.innerHTML = '';
-    players.forEach(p => {
-      const box = document.createElement('input');
-      box.type = 'checkbox';
-      box.value = p.id;
-      box.id = `manual-${p.id}`;
-      const label = document.createElement('label');
-      label.htmlFor = box.id;
-      label.innerText = `${p.name} (#${p.number})`;
-      div.appendChild(box);
-      div.appendChild(label);
-      div.appendChild(document.createElement('br'));
-    });
-  }
-
-  function selectManualFinal() {
-    const selected = Array.from(document.querySelectorAll('#manualPlayerSelect input:checked')).map(e => parseInt(e.value));
-    const finalPlayers = players.filter(p => selected.includes(p.id));
-    const finalDiv = document.getElementById('finalDisplay');
-    finalDiv.innerHTML = '<h4>Match sélectionné :</h4>' + finalPlayers.map(p => `${p.name} (#${p.number})`).join('<br>');
-  }
-
-  updateTrackSelect();
-  updateManualSelect();
-</script>
 </body>
 </html>
