@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Arbitre – Finger Game</title>
+  <style>
+    body {
+      background-color: #111;
+      color: #fff;
+      font-family: sans-serif;
+      padding: 20px;
+    }
+    select, button {
+      font-size: 16px;
+      padding: 8px;
+      margin: 5px;
+    }
+    .hidden { display: none; }
+    .player-list { margin-top: 20px; }
+  </style>
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+    const supabase = createClient(
+      'https://ckolzmqarfizoxjgolft.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrb2x6bXFhcmZpem94amdvbGZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk2Nzg3NTYsImV4cCI6MjA2NTI1NDc1Nn0.ZlpERz1uznM0fn--GR9YgM2vjwe_kw-qiPF8KHJvMpI'
+    );
+
+    let allPlayers = [];
+    let matchHistory = new Map();
+    let currentTerrain = null;
+
+    async function loadPlayers() {
+      const { data, error } = await supabase.from('players').select('*').order('name');
+      if (error) {
+        alert("Erreur chargement joueurs");
+        return;
+      }
+      allPlayers = data;
+      showTerrainSelector();
+    }
+
+    function showTerrainSelector() {
+      const terrainDiv = document.getElementById('terrain-select');
+      terrainDiv.classList.remove('hidden');
+      const select = document.getElementById('terrainChoice');
+      select.innerHTML = '';
+      const terrains = [...new Set(allPlayers.map(p => p.terrain))].sort();
+      terrains.forEach(t => {
+        const opt = document.createElement('option');
+        opt.value = t;
+        opt.textContent = `Piste ${t}`;
+        select.appendChild(opt);
+      });
+    }
+
+    function confirmTerrain() {
+      currentTerrain = parseInt(document.getElementById('terrainChoice').value);
+      localStorage.setItem('arbitre_terrain', currentTerrain);
+      document.getElementById('terrain-select').classList.add('hidden');
+      document.getElementById('partie1').classList.remove('hidden');
+      showPlayersForTerrain(currentTerrain);
+    }
+
+    function showPlayersForTerrain(terrain) {
+      const zone = document.getElementById('playersList');
+      const list = allPlayers.filter(p => p.terrain === terrain);
+      zone.innerHTML = '<h3>Joueurs pour la Partie 1 :</h3>' + list.map(p => `• ${p.name}`).join('<br>');
+    }
+
+    function proceedToPartie2() {
+      document.getElementById('partie1').classList.add('hidden');
+      document.getElementById('partie2plus').classList.remove('hidden');
+    }
+
+    async function generateMatch() {
+      const partie = parseInt(document.getElementById('partieSelect').value);
+      const eligible = allPlayers
+        .filter(p => p.terrain === currentTerrain)
+        .sort((a, b) => a.matches - b.matches); // priorité au plus faible nombre de matchs
+
+      let group;
+      for (let i = 0; i < 50; i++) {
+        const shuffled = [...eligible].sort(() => Math.random() - 0.5);
+        const candidate = shuffled.slice(0, Math.min(5, shuffled.length));
+        if (isNewGroup(candidate)) {
+          group = candidate;
+          break;
+        }
+      }
+
+      if (!group) {
+        group = eligible.slice(0, Math.min(5, eligible.length));
+      }
+
+      saveMatchHistory(group);
+      const player_ids = group.map(p => p.id);
+      await supabase.from('matches').insert({ terrain: currentTerrain, player_ids, partie });
+      document.getElementById('generatedMatch').innerHTML = '<h4>Match généré :</h4>' + group.map(p => p.name).join('<br>');
+    }
+
+    function isNewGroup(group) {
+      for (let i = 0; i < group.length; i++) {
+        for (let j = i + 1; j < group.length; j++) {
+          const key = pairKey(group[i].id, group[j].id);
+          if (matchHistory.has(key)) return false;
+        }
+      }
+      return true;
+    }
+
+    function saveMatchHistory(group) {
+      for (let i = 0; i < group.length; i++) {
+        for (let j = i + 1; j < group.length; j++) {
+          const key = pairKey(group[i].id, group[j].id);
+          matchHistory.set(key, (matchHistory.get(key) || 0) + 1);
+        }
+      }
+    }
+
+    function pairKey(a, b) {
+      return a < b ? `${a}-${b}` : `${b}-${a}`;
+    }
+
+    window.onload = loadPlayers;
+    window.confirmTerrain = confirmTerrain;
+    window.proceedToPartie2 = proceedToPartie2;
+    window.generateMatch = generateMatch;
+  </script>
+</head>
+<body>
+  <h1>Arbitre – Finger Game</h1>
+
+  <div id="terrain-select" class="hidden">
+    <h3>Choisissez votre terrain :</h3>
+    <select id="terrainChoice"></select>
+    <button onclick="confirmTerrain()">Valider</button>
+  </div>
+
+  <div id="partie1" class="hidden">
+    <div id="playersList" class="player-list"></div>
+    <button onclick="proceedToPartie2()">➡ Passer à la Partie 2</button>
+  </div>
+
+  <div id="partie2plus" class="hidden">
+    <h3>PARTIES 2 à 5</h3>
+    <label for="partieSelect">Sélectionnez la partie :</label>
+    <select id="partieSelect">
+      <option value="2">PARTIE 2 – No celebração</option>
+      <option value="3">PARTIE 3 – Défi surprise</option>
+      <option value="4">PARTIE 4 – Mort subite</option>
+      <option value="5">PARTIE 5 – Finale à 2 doigts</option>
+    </select>
+    <br />
+    <button onclick="generateMatch()">🎮 Générer une manche</button>
+    <div id="generatedMatch" class="player-list"></div>
+  </div>
+  <script type="module" src="/js/arbitre"></script>
+</body>
+</html>
