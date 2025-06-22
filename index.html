@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Finger Game</title>
+  <style>
+    body {
+      background-color: #111;
+      color: #fff;
+      font-family: sans-serif;
+      padding: 20px;
+    }
+    input, button, select {
+      margin: 5px;
+      padding: 8px;
+      font-size: 16px;
+    }
+    .track {
+      margin-top: 20px;
+      padding: 10px;
+      border: 1px solid #555;
+    }
+  </style>
+</head>
+<body>
+  <h1>Finger Game – Inscription</h1>
+  <input type="text" id="playerName" placeholder="Nom du joueur" />
+  <button onclick="handleRegister()">Inscrire</button>
+
+  <div id="playersList"></div>
+
+  <hr />
+
+  <h2>Générer une manche (auto)</h2>
+  <select id="trackSelect"></select>
+  <button onclick="handleGenerateMatch()">Générer</button>
+  <div id="matchDisplay"></div>
+
+  <hr />
+
+  <h2>Admin : Phases finales</h2>
+  <p>Sélection manuelle des joueurs pour la demi-finale ou la finale :</p>
+  <div id="manualPlayerSelect"></div>
+  <button onclick="selectManualFinal()">Créer la manche manuelle</button>
+  <div id="finalDisplay"></div>
+
+<script>
+  const maxPlayersPerTrack = 10;
+  const totalTracks = 5;
+  const maxPlayerNumber = 100;
+
+  let players = [];
+  let assignedNumbers = new Set();
+  let matchHistory = new Map();
+
+  function handleRegister() {
+    const name = document.getElementById('playerName').value.trim();
+    if (!name) return;
+    const player = registerPlayer(name);
+    updatePlayerList();
+    updateTrackSelect();
+    updateManualSelect();
+    document.getElementById('playerName').value = '';
+  }
+
+  function registerPlayer(name) {
+    const number = generateUniqueNumber();
+    const track = assignToTrack();
+    const player = {
+      id: players.length + 1,
+      name,
+      number,
+      track,
+      eliminated: false,
+      matches: []
+    };
+    players.push(player);
+    return player;
+  }
+
+  function generateUniqueNumber() {
+    let num;
+    do {
+      num = Math.floor(Math.random() * maxPlayerNumber) + 1;
+    } while (assignedNumbers.has(num));
+    assignedNumbers.add(num);
+    return num;
+  }
+
+  function assignToTrack() {
+    const trackCounts = Array(totalTracks).fill(0);
+    for (const p of players) trackCounts[p.track - 1]++;
+    const minCount = Math.min(...trackCounts);
+    return trackCounts.findIndex(count => count === minCount) + 1;
+  }
+
+  function updatePlayerList() {
+    const list = document.getElementById('playersList');
+    list.innerHTML = '<h3>Joueurs inscrits :</h3>' + players.map(p => `${p.name} (#${p.number}) - Piste ${p.track}`).join('<br>');
+  }
+
+  function updateTrackSelect() {
+    const select = document.getElementById('trackSelect');
+    select.innerHTML = '';
+    for (let i = 1; i <= totalTracks; i++) {
+      const option = document.createElement('option');
+      option.value = i;
+      option.textContent = `Piste ${i}`;
+      select.appendChild(option);
+    }
+  }
+
+  function handleGenerateMatch() {
+    const trackId = parseInt(document.getElementById('trackSelect').value);
+    const match = generateMatch(trackId);
+    const matchDiv = document.getElementById('matchDisplay');
+    matchDiv.innerHTML = '<h4>Match généré :</h4>' + match.map(p => `${p.name} (#${p.number})`).join('<br>');
+  }
+
+  function generateMatch(trackId) {
+    const eligible = players.filter(p => p.track === trackId && !p.eliminated);
+    let group;
+    for (let i = 0; i < 50; i++) {
+      const shuffled = shuffleArray([...eligible]);
+      group = shuffled.slice(0, Math.min(5, shuffled.length));
+      if (isNewGroup(group)) break;
+    }
+    saveMatchHistory(group);
+    return group;
+  }
+
+  function isNewGroup(group) {
+    for (let i = 0; i < group.length; i++) {
+      for (let j = i + 1; j < group.length; j++) {
+        const key = pairKey(group[i].id, group[j].id);
+        if (matchHistory.has(key)) return false;
+      }
+    }
+    return true;
+  }
+
+  function saveMatchHistory(group) {
+    for (let i = 0; i < group.length; i++) {
+      for (let j = i + 1; j < group.length; j++) {
+        const key = pairKey(group[i].id, group[j].id);
+        matchHistory.set(key, (matchHistory.get(key) || 0) + 1);
+      }
+    }
+  }
+
+  function pairKey(a, b) {
+    return a < b ? `${a}-${b}` : `${b}-${a}`;
+  }
+
+  function shuffleArray(arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+
+  function updateManualSelect() {
+    const div = document.getElementById('manualPlayerSelect');
+    div.innerHTML = '';
+    players.forEach(p => {
+      const box = document.createElement('input');
+      box.type = 'checkbox';
+      box.value = p.id;
+      box.id = `manual-${p.id}`;
+      const label = document.createElement('label');
+      label.htmlFor = box.id;
+      label.innerText = `${p.name} (#${p.number})`;
+      div.appendChild(box);
+      div.appendChild(label);
+      div.appendChild(document.createElement('br'));
+    });
+  }
+
+  function selectManualFinal() {
+    const selected = Array.from(document.querySelectorAll('#manualPlayerSelect input:checked')).map(e => parseInt(e.value));
+    const finalPlayers = players.filter(p => selected.includes(p.id));
+    const finalDiv = document.getElementById('finalDisplay');
+    finalDiv.innerHTML = '<h4>Match sélectionné :</h4>' + finalPlayers.map(p => `${p.name} (#${p.number})`).join('<br>');
+  }
+</script>
+</body>
+</html>
