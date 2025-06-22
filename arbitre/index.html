@@ -20,10 +20,13 @@
   <script type="module">
     import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.5/+esm';
 
-    const supabaseUrl = 'https://ckolzmqarfizoxjgolft.supabase.co';
-    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrb2x6bXFhcmZpem94amdvbGZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk2Nzg3NTYsImV4cCI6MjA2NTI1NDc1Nn0.ZlpERz1uznM0fn--GR9YgM2vjwe_kw-qiPF8KHJvMpI';
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const supabase = createClient(
+      'https://ckolzmqarfizoxjgolft.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrb2x6bXFhcmZpem94amdvbGZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk2Nzg3NTYsImV4cCI6MjA2NTI1NDc1Nn0.ZlpERz1uznM0fn--GR9YgM2vjwe_kw-qiPF8KHJvMpI'
+    );
+
     let players = [];
+    let matchHistory = new Map();
 
     async function loadPlayers() {
       const { data, error } = await supabase.from('players').select('*').order('name');
@@ -48,25 +51,47 @@
       }
     }
 
-    function handleGenerateMatch() {
+    async function handleGenerateMatch() {
       const trackId = parseInt(document.getElementById('trackSelect').value);
-      const match = generateMatch(trackId);
-      const matchDiv = document.getElementById('matchDisplay');
-      matchDiv.innerHTML = '<h4>Match généré :</h4>' + match.map(p => `${p.name} (#${p.number || ''})`).join('<br>');
+      const partie = parseInt(document.getElementById('partieSelect').value);
+      const eligible = players.filter(p => p.terrain === trackId);
+
+      if (eligible.length === 0) {
+        alert("Aucun joueur sur cette piste.");
+        return;
+      }
+
+      let group;
+      for (let attempt = 0; attempt < 50; attempt++) {
+        const shuffled = shuffleArray([...eligible]);
+        const candidate = shuffled.slice(0, Math.min(5, shuffled.length));
+        if (isNewGroup(candidate)) {
+          group = candidate;
+          break;
+        }
+      }
+
+      if (!group) {
+        group = eligible.slice(0, Math.min(5, eligible.length));
+        console.warn("Aucun groupe totalement unique trouvé, groupe par défaut assigné.");
+      }
+
+      const player_ids = group.map(p => p.id);
+      saveMatchHistory(group);
+
+      const { error } = await supabase.from('matches').insert({ terrain: trackId, player_ids, partie });
+      if (error) {
+        console.error('Erreur insertion match :', error);
+        alert('Erreur création du match');
+      } else {
+        const matchDiv = document.getElementById('matchDisplay');
+        matchDiv.innerHTML = '<h4>Match généré :</h4>' + group.map(p => `${p.name}`).join('<br>');
+        alert(`✅ Manche PARTIE ${partie} créée`);
+      }
     }
 
-    let matchHistory = new Map();
-
-    function generateMatch(trackId) {
-      const eligible = players.filter(p => p.terrain === trackId);
-      let group;
-      for (let i = 0; i < 50; i++) {
-        const shuffled = shuffleArray([...eligible]);
-        group = shuffled.slice(0, Math.min(5, shuffled.length));
-        if (isNewGroup(group)) break;
-      }
-      saveMatchHistory(group);
-      return group;
+    function pairKey(a, b) {
+      return a < b ? `${a}-${b}` : `${b}-${a}`;
     }
 
     function isNewGroup(group) {
@@ -86,10 +111,6 @@
           matchHistory.set(key, (matchHistory.get(key) || 0) + 1);
         }
       }
-    }
-
-    function pairKey(a, b) {
-      return a < b ? `${a}-${b}` : `${b}-${a}`;
     }
 
     function shuffleArray(arr) {
@@ -117,11 +138,24 @@
       });
     }
 
-    function selectManualFinal() {
+    async function selectManualFinal() {
       const selected = Array.from(document.querySelectorAll('#manualPlayerSelect input:checked')).map(e => e.value);
       const finalPlayers = players.filter(p => selected.includes(p.id));
       const finalDiv = document.getElementById('finalDisplay');
-      finalDiv.innerHTML = '<h4>Match sélectionné :</h4>' + finalPlayers.map(p => `${p.name} (Piste ${p.terrain})`).join('<br>');
+      finalDiv.innerHTML = '<h4>Match sélectionné :</h4>' + finalPlayers.map(p => `${p.name}`).join('<br>');
+
+      if (finalPlayers.length > 0) {
+        const { error } = await supabase.from('matches').insert({
+          terrain: 99, // terrain spécial finale
+          player_ids: finalPlayers.map(p => p.id),
+          partie: 5
+        });
+        if (error) {
+          alert('Erreur création finale');
+        } else {
+          alert('✅ Finale créée avec succès');
+        }
+      }
     }
 
     window.onload = loadPlayers;
@@ -130,17 +164,25 @@
   </script>
 </head>
 <body>
-  <h1>Gestion Arbitre</h1>
+  <h1>Gestion Arbitre – Finger Game</h1>
 
-  <h2>Générer une manche (auto)</h2>
+  <h2>PARTIE en cours</h2>
+  <select id="partieSelect">
+    <option value="2">PARTIE 2 – No celebração</option>
+    <option value="3">PARTIE 3 – Défi surprise</option>
+    <option value="4">PARTIE 4 – Mort subite</option>
+    <option value="5">PARTIE 5 – Finale à 2 doigts</option>
+  </select>
+
+  <h2>Générer une manche</h2>
   <select id="trackSelect"></select>
   <button onclick="handleGenerateMatch()">Générer</button>
   <div id="matchDisplay"></div>
 
   <hr />
 
-  <h2>Admin : Phases finales</h2>
-  <p>Sélection manuelle des joueurs pour la demi-finale ou la finale :</p>
+  <h2>Admin : Sélection manuelle</h2>
+  <p>Pour la finale ou tout autre besoin :</p>
   <div id="manualPlayerSelect"></div>
   <button onclick="selectManualFinal()">Créer la manche manuelle</button>
   <div id="finalDisplay"></div>
