@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mon Terrain – Finger Game</title>
+  <style>
+    body {
+      background-color: #111;
+      color: white;
+      font-family: sans-serif;
+      padding: 20px;
+    }
+    #terrain {
+      font-size: 24px;
+      margin-top: 20px;
+    }
+  </style>
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.5/+esm';
+
+    const supabase = createClient(
+      'https://ckolzmqarfizoxjgolft.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrb2x6bXFhcmZpem94amdvbGZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk2Nzg3NTYsImV4cCI6MjA2NTI1NDc1Nn0.ZlpERz1uznM0fn--GR9YgM2vjwe_kw-qiPF8KHJvMpI'
+    );
+
+    let playerId = localStorage.getItem('player_id');
+
+    async function getPlayer() {
+      if (!playerId) {
+        const name = prompt("Quel est ton prénom ?");
+        if (!name) return;
+        const { data, error } = await supabase
+          .from('players')
+          .insert({ name })
+          .select()
+          .single();
+        if (error) {
+          alert('Erreur inscription : ' + error.message);
+          return;
+        }
+        playerId = data.id;
+        localStorage.setItem('player_id', playerId);
+        document.getElementById('terrain').innerText = "Tu joues sur la Piste " + data.terrain;
+      } else {
+        const { data, error } = await supabase
+          .from('players')
+          .select('*')
+          .eq('id', playerId)
+          .single();
+        if (data) {
+          document.getElementById('terrain').innerText = "Tu joues sur la Piste " + data.terrain;
+        }
+      }
+    }
+
+    function listenForMatches() {
+      supabase
+        .channel('match-updates')
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'matches' }, payload => {
+          const match = payload.new;
+          if (match.player_ids.includes(playerId)) {
+            alert("🎮 Nouvelle manche pour toi sur la Piste " + match.terrain);
+          }
+        })
+        .subscribe();
+    }
+
+    getPlayer();
+    listenForMatches();
+  </script>
+</head>
+<body>
+  <h1>Bienvenue au Finger Game</h1>
+  <div id="terrain">Chargement de ton terrain...</div>
+</body>
+</html>
