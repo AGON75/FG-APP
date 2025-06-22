@@ -1,107 +1,63 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
+  <title>Joueur – Finger Game</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Finger Game – Joueur</title>
   <style>
-    body {
-      background-color: #111;
-      color: white;
-      font-family: sans-serif;
-      padding: 20px;
-    }
-    #terrain {
-      font-size: 22px;
-      margin-top: 10px;
-    }
-    #rules {
-      margin-top: 30px;
-      padding: 15px;
-      background: #222;
-      border-left: 4px solid #0bf;
-    }
+    body { background: #000; color: #fff; font-family: sans-serif; text-align: center; padding: 20px; }
+    #terrain { font-size: 48px; margin-top: 30px; }
+    #message { font-size: 20px; margin-top: 20px; color: #0f0; }
   </style>
   <script type="module">
-    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.5/+esm';
-
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
     const supabase = createClient(
       'https://ckolzmqarfizoxjgolft.supabase.co',
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrb2x6bXFhcmZpem94amdvbGZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk2Nzg3NTYsImV4cCI6MjA2NTI1NDc1Nn0.ZlpERz1uznM0fn--GR9YgM2vjwe_kw-qiPF8KHJvMpI'
     );
 
-    let playerId = localStorage.getItem('player_id');
-    let playerName = localStorage.getItem('player_name');
+    let playerId = localStorage.getItem("player_id");
 
-    async function registerOrFetchPlayer() {
+    async function setup() {
       if (!playerId) {
-        const name = prompt("Quel est ton prénom ?");
-        if (!name) return;
-        const terrain = Math.floor(Math.random() * 5) + 1;
-        const { data, error } = await supabase
-          .from('players')
-          .insert({ name, terrain })
-          .select()
-          .single();
-        if (error) {
-          alert('Erreur inscription : ' + error.message);
+        const nom = prompt("Entrez votre nom (doit être déjà inscrit)");
+        if (!nom) return;
+        const { data } = await supabase.from("players").select("id").eq("name", nom).limit(1);
+        if (data.length > 0) {
+          playerId = data[0].id;
+          localStorage.setItem("player_id", playerId);
+        } else {
+          alert("Nom non trouvé.");
           return;
         }
-        playerId = data.id;
-        playerName = name;
-        localStorage.setItem('player_id', playerId);
-        localStorage.setItem('player_name', name);
-        document.getElementById('terrain').innerText = "Merci pour ton inscription. Tu joues sur la PISTE " + data.terrain;
-      } else {
-        const { data } = await supabase.from('players').select('*').eq('id', playerId).single();
-        if (data) {
-          document.getElementById('terrain').innerText = "Tu joues sur la PISTE " + data.terrain;
-        }
       }
-    }
 
-    function listenForMatches() {
+      const { data } = await supabase.from("players").select("terrain").eq("id", playerId).single();
+      if (data) {
+        document.getElementById("terrain").textContent = "🎯 Piste : " + data.terrain;
+      }
+
       supabase
-        .channel('match-updates')
-        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'matches' }, payload => {
-          const match = payload.new;
-          if (match.player_ids.includes(playerId)) {
-            const partTitle = getPartieName(match.partie);
-            alert(`👉 Nouvelle manche pour toi sur la PISTE ${match.terrain}\nPARTIE ${match.partie} : ${partTitle}`);
-          }
+        .channel("terrain-updates")
+        .on("postgres_changes", {
+          event: "UPDATE",
+          schema: "public",
+          table: "players",
+          filter: `id=eq.${playerId}`
+        }, payload => {
+          const nouveau = payload.new.terrain;
+          document.getElementById("terrain").textContent = "🎯 Piste : " + nouveau;
+          document.getElementById("message").textContent = "🚨 Ton terrain a changé !";
         })
         .subscribe();
     }
 
-    function getPartieName(n) {
-      switch (n) {
-        case 1: return 'Jeu classique';
-        case 2: return 'No celebração ! Si tu célèbres ta victoire, tu restes !';
-        case 3: return 'Défi surprise';
-        case 4: return 'Mort subite';
-        case 5: return 'Finale à 2 doigts';
-        default: return '';
-      }
-    }
-
-    registerOrFetchPlayer();
-    listenForMatches();
+    setup();
   </script>
 </head>
 <body>
-  <h1>Bienvenue au Finger Game</h1>
-  <div id="terrain">Chargement de ton terrain...</div>
-
-  <div id="rules">
-    <h2>RÈGLES DU TOURNOI :</h2>
-    <ul>
-      <li><strong>PARTIE 1</strong> : Jeu classique</li>
-      <li><strong>PARTIE 2</strong> : No celebração – Si tu célèbres ta victoire, tu restes !</li>
-      <li><strong>PARTIE 3</strong> : Défi surprise</li>
-      <li><strong>PARTIE 4</strong> : Mort subite</li>
-      <li><strong>PARTIE 5</strong> : Finale à 2 doigts – avec les 5 premiers du classement</li>
-    </ul>
-  </div>
-  <script type="module" src="/js/joueur"></script>
+  <h1>👆 Bienvenue dans le Finger Game</h1>
+  <div id="terrain">Chargement...</div>
+  <div id="message"></div>
 </body>
 </html>
