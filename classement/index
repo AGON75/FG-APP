@@ -1,1 +1,57 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Finger Game – Classement</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+</head>
+<body>
+  <h2>Classement Général</h2>
+  <table id="leaderboard" border="1" cellpadding="8" cellspacing="0">
+    <thead>
+      <tr>
+        <th>🏅 Rang</th>
+        <th>Nom</th>
+        <th>Points</th>
+        <th>Parties jouées</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
 
+  <script>
+    const SUPABASE_URL = "https://ckolzmqarfizoxjgolft.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrb2x6bXFhcmZpem94amdvbGZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk2Nzg3NTYsImV4cCI6MjA2NTI1NDc1Nn0.ZlpERz1uznM0fn--GR9YgM2vjwe_kw-qiPF8KHJvMpI";
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    async function loadRanking() {
+      const { data, error } = await supabase
+        .from('players')
+        .select('*')
+        .order('total_points', { ascending: true });
+
+      if (error) {
+        console.error(error);
+        document.body.innerHTML += "<p>❌ Erreur de chargement du classement.</p>";
+        return;
+      }
+
+      const tbody = document.querySelector("#leaderboard tbody");
+      tbody.innerHTML = "";
+      data.forEach((player, index) => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>#${index + 1}</td>
+          <td>${player.name}</td>
+          <td>${player.total_points ?? 0}</td>
+          <td>${player.matches ?? 0}</td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    loadRanking();
+  </script>
+</body>
+</html>
