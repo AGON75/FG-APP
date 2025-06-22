@@ -6,9 +6,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     body { background: #111; color: white; font-family: sans-serif; padding: 20px; }
-    button, select { font-size: 16px; margin: 10px; padding: 10px; }
-    .eliminated { text-decoration: line-through; color: grey; }
-    .ranked { color: gold; }
+    button, select { font-size: 16px; margin: 5px; padding: 10px; }
+    .eliminated { background-color: #444; text-decoration: line-through; color: grey; }
+    .player-button { display: inline-block; margin: 5px; }
+    .rank-badge { margin-left: 10px; color: gold; }
   </style>
   <script type="module">
     import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
@@ -19,67 +20,100 @@
 
     let currentTerrain = null;
     let players = [];
-    let eliminated = [];
+    let eliminatedOrder = [];
 
-    async function loadPlayersForTerrain() {
-      const select = document.getElementById("terrain");
-      currentTerrain = parseInt(select.value);
+    const barème = [30, 25, 20, 15, 10, 5, 0, -5];
+
+    async function loadPlayers() {
+      currentTerrain = parseInt(document.getElementById("terrain").value);
       const { data, error } = await supabase
         .from("players")
         .select("*")
         .eq("terrain", currentTerrain)
-        .order("name", { ascending: true });
+        .order("name");
       if (error) return alert("Erreur chargement joueurs");
       players = data;
-      eliminated = [];
-      renderPlayerList();
+      eliminatedOrder = [];
+      renderPlayers();
     }
 
-    function renderPlayerList() {
-      const list = document.getElementById("playerList");
-      list.innerHTML = "";
-      players.forEach((p) => {
+    function renderPlayers() {
+      const container = document.getElementById("players");
+      container.innerHTML = "";
+      players.forEach(p => {
         const btn = document.createElement("button");
         btn.textContent = `${p.name}`;
-        btn.disabled = eliminated.includes(p.id);
-        btn.className = eliminated.includes(p.id) ? "eliminated" : "";
-        btn.onclick = () => eliminate(p.id);
-        list.appendChild(btn);
+        btn.className = "player-button";
+        if (eliminatedOrder.includes(p.id)) {
+          btn.disabled = true;
+          btn.classList.add("eliminated");
+          const rank = eliminatedOrder.indexOf(p.id) + 1;
+          btn.textContent += ` (#${rank})`;
+        } else {
+          btn.onclick = () => eliminatePlayer(p.id);
+        }
+        container.appendChild(btn);
       });
 
-      document.getElementById("status").innerHTML = `Éliminés : ${eliminated.length} / ${players.length}`;
+      document.getElementById("ordre").textContent =
+        eliminatedOrder.length + "/" + players.length + " éliminés";
     }
 
-    function eliminate(playerId) {
-      if (!eliminated.includes(playerId)) {
-        eliminated.push(playerId);
-        renderPlayerList();
+    function eliminatePlayer(id) {
+      if (!eliminatedOrder.includes(id)) {
+        eliminatedOrder.push(id);
+        renderPlayers();
       }
     }
 
-    async function validateMatch() {
-      if (eliminated.length !== players.length - 1) {
-        alert("Il doit rester un seul survivant !");
+    async function validerManche() {
+      if (eliminatedOrder.length !== players.length - 1) {
+        alert("Il doit rester un seul joueur non éliminé.");
         return;
       }
 
-      const ranked = [...eliminated].reverse(); // le dernier éliminé est le 2e
-      const winner = players.find(p => !eliminated.includes(p.id));
-      ranked.push(winner.id); // on ajoute le gagnant en dernier pour rank 1
+      const winner = players.find(p => !eliminatedOrder.includes(p.id));
+      if (winner) eliminatedOrder.push(winner.id); // dernier non éliminé
 
-      for (let i = 0; i < ranked.length; i++) {
-        await supabase.from("eliminations").insert({
-          player_id: ranked[i],
-          terrain: currentTerrain,
-          rank: i + 1
-        });
+      for (let i = 0; i < eliminatedOrder.length; i++) {
+        const playerId = eliminatedOrder[i];
+        const points = barème[i] !== undefined ? barème[i] : 0;
+        const { error: elimError } = await supabase
+          .from("eliminations")
+          .insert({ player_id: playerId, terrain: currentTerrain, rank: i + 1 });
+
+        const { error: updateError } = await supabase
+          .from("players")
+          .update({
+            total_points: supabase.rpc
+              ? undefined
+              : undefined, // we will use fetchCurrent first
+            matches: supabase.rpc ? undefined : undefined
+          })
+          .eq("id", playerId);
+
+        // Fetch current values and increment manually
+        const { data } = await supabase.from("players").select("*").eq("id", playerId).single();
+        if (data) {
+          await supabase
+            .from("players")
+            .update({
+              total_points: data.total_points + points,
+              matches: data.matches + 1
+            })
+            .eq("id", playerId);
+        }
+
+        if (elimError || updateError) {
+          console.error("Erreur traitement joueur:", playerId);
+        }
       }
 
-      alert("Manche enregistrée !");
+      alert("✅ Manche enregistrée !");
       players = [];
-      eliminated = [];
-      document.getElementById("playerList").innerHTML = "";
-      document.getElementById("status").textContent = "";
+      eliminatedOrder = [];
+      document.getElementById("players").innerHTML = "";
+      document.getElementById("ordre").textContent = "";
     }
 
     window.onload = () => {
@@ -92,19 +126,19 @@
       }
     };
 
-    window.loadPlayersForTerrain = loadPlayersForTerrain;
-    window.validateMatch = validateMatch;
+    window.loadPlayers = loadPlayers;
+    window.validerManche = validerManche;
   </script>
 </head>
 <body>
-  <h1>Arbitre – Partie 1 : Arbitrage manuel</h1>
-  <label for="terrain">Choisissez votre terrain :</label>
+  <h1>Arbitre – Validation d'une manche</h1>
+  <label for="terrain">🎯 Sélectionnez votre terrain :</label>
   <select id="terrain"></select>
-  <button onclick="loadPlayersForTerrain()">Charger les joueurs</button>
+  <button onclick="loadPlayers()">Charger les joueurs</button>
 
-  <div id="playerList" style="margin-top: 20px;"></div>
-  <p id="status"></p>
+  <div id="players" style="margin-top: 20px;"></div>
+  <p id="ordre"></p>
 
-  <button onclick="validateMatch()">✅ Valider la manche</button>
+  <button onclick="validerManche()">✅ Valider la manche</button>
 </body>
 </html>
