@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin – Finger Game</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { background: #111; color: white; font-family: sans-serif; padding: 20px; }
+    input, select, button { font-size: 16px; margin: 10px; padding: 10px; }
+    label { display: block; margin-top: 20px; }
+  </style>
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+    const supabase = createClient(
+      'https://ckolzmqarfizoxjgolft.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrb2x6bXFhcmZpem94amdvbGZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk2Nzg3NTYsImV4cCI6MjA2NTI1NDc1Nn0.ZlpERz1uznM0fn--GR9YgM2vjwe_kw-qiPF8KHJvMpI'
+    );
+
+    async function ajouterJoueur() {
+      const nom = document.getElementById("nom").value.trim();
+      const partie = parseInt(document.getElementById("partie").value);
+      if (!nom || !partie) return alert("Nom ou partie manquante");
+
+      // Chercher combien de joueurs sont sur chaque terrain
+      const terrains = [1,2,3,4,5];
+      let stats = {};
+      for (let t of terrains) {
+        const { data, error } = await supabase
+          .from("players")
+          .select("*", { count: "exact", head: true })
+          .eq("terrain", t);
+        stats[t] = error ? 999 : data.length || 0;
+      }
+
+      // Chercher le terrain avec le moins de joueurs
+      const terrainOptimal = terrains.reduce((a, b) => stats[a] < stats[b] ? a : b);
+
+      // Créer le joueur
+      const { error } = await supabase.from("players").insert({
+        name: nom,
+        terrain: terrainOptimal,
+        total_points: 0,
+        matches: 0
+      });
+
+      if (error) {
+        alert("Erreur ajout joueur");
+      } else {
+        alert(`Joueur ajouté sur la piste ${terrainOptimal}`);
+        document.getElementById("nom").value = "";
+      }
+    }
+  </script>
+</head>
+<body>
+  <h1>Admin – Ajouter un joueur</h1>
+
+  <label for="nom">Nom du joueur :</label>
+  <input type="text" id="nom" placeholder="Ex: Louis" />
+
+  <label for="partie">Partie en cours :</label>
+  <select id="partie">
+    <option value="1">Partie 1 – Jeu classique</option>
+    <option value="2">Partie 2 – No celebração</option>
+    <option value="3">Partie 3 – Défi surprise</option>
+    <option value="4">Partie 4 – Mort subite</option>
+    <option value="5">Partie 5 – Finale à 2 doigts</option>
+  </select>
+
+  <button onclick="ajouterJoueur()">➕ Ajouter le joueur</button>
+</body>
+</html>
