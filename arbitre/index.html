@@ -9,7 +9,6 @@
     button, select { font-size: 16px; margin: 5px; padding: 10px; }
     .eliminated { background-color: #444; text-decoration: line-through; color: grey; }
     .player-button { display: inline-block; margin: 5px; }
-    .rank-badge { margin-left: 10px; color: gold; }
   </style>
   <script type="module">
     import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
@@ -21,18 +20,28 @@
     let currentTerrain = null;
     let players = [];
     let eliminatedOrder = [];
+    let maxPlayers = 8;
 
-    const barème = [30, 25, 20, 15, 10, 5, 0, -5];
+    const baremes = {
+      4: [20, 10, 0, -5],
+      5: [25, 20, 10, 0, -5],
+      6: [30, 25, 15, 5, 0, -5],
+      7: [30, 25, 20, 15, 10, 0, -5],
+      8: [30, 25, 20, 15, 10, 5, 0, -5],
+      9: [35, 30, 25, 20, 15, 10, 5, 0, -5],
+      10: [40, 35, 30, 25, 20, 15, 10, 5, 0, -5]
+    };
 
     async function loadPlayers() {
       currentTerrain = parseInt(document.getElementById("terrain").value);
+      maxPlayers = parseInt(document.getElementById("nbJoueurs").value);
       const { data, error } = await supabase
         .from("players")
         .select("*")
         .eq("terrain", currentTerrain)
         .order("name");
       if (error) return alert("Erreur chargement joueurs");
-      players = data;
+      players = data.slice(0, maxPlayers);
       eliminatedOrder = [];
       renderPlayers();
     }
@@ -73,26 +82,20 @@
       }
 
       const winner = players.find(p => !eliminatedOrder.includes(p.id));
-      if (winner) eliminatedOrder.push(winner.id); // dernier non éliminé
+      if (winner) eliminatedOrder.push(winner.id);
+
+      const barème = baremes[players.length] || baremes[8];
 
       for (let i = 0; i < eliminatedOrder.length; i++) {
         const playerId = eliminatedOrder[i];
         const points = barème[i] !== undefined ? barème[i] : 0;
-        const { error: elimError } = await supabase
-          .from("eliminations")
-          .insert({ player_id: playerId, terrain: currentTerrain, rank: i + 1 });
 
-        const { error: updateError } = await supabase
-          .from("players")
-          .update({
-            total_points: supabase.rpc
-              ? undefined
-              : undefined, // we will use fetchCurrent first
-            matches: supabase.rpc ? undefined : undefined
-          })
-          .eq("id", playerId);
+        await supabase.from("eliminations").insert({
+          player_id: playerId,
+          terrain: currentTerrain,
+          rank: i + 1
+        });
 
-        // Fetch current values and increment manually
         const { data } = await supabase.from("players").select("*").eq("id", playerId).single();
         if (data) {
           await supabase
@@ -102,10 +105,6 @@
               matches: data.matches + 1
             })
             .eq("id", playerId);
-        }
-
-        if (elimError || updateError) {
-          console.error("Erreur traitement joueur:", playerId);
         }
       }
 
@@ -124,6 +123,14 @@
         opt.textContent = "Piste " + i;
         select.appendChild(opt);
       }
+
+      const nbSelect = document.getElementById("nbJoueurs");
+      for (let j = 4; j <= 10; j++) {
+        const opt = document.createElement("option");
+        opt.value = j;
+        opt.textContent = j + " joueurs";
+        nbSelect.appendChild(opt);
+      }
     };
 
     window.loadPlayers = loadPlayers;
@@ -132,8 +139,13 @@
 </head>
 <body>
   <h1>Arbitre – Validation d'une manche</h1>
-  <label for="terrain">🎯 Sélectionnez votre terrain :</label>
+
+  <label for="terrain">🎯 Sélection du terrain :</label>
   <select id="terrain"></select>
+
+  <label for="nbJoueurs">👥 Nombre de joueurs pour cette manche :</label>
+  <select id="nbJoueurs"></select>
+
   <button onclick="loadPlayers()">Charger les joueurs</button>
 
   <div id="players" style="margin-top: 20px;"></div>
