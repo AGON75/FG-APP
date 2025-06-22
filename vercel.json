@@ -1,0 +1,18 @@
+{
+  "cleanUrls": true,
+  "redirects": [],
+  "rewrites": [
+    { "source": "/joueur", "destination": "/joueur/index.html" },
+    { "source": "/arbitre", "destination": "/arbitre/index.html" },
+    { "source": "/classement", "destination": "/classement/index.html" },
+    { "source": "/", "destination": "/index.html" }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "Content-Type", "value": "text/html; charset=utf-8" }
+      ]
+    }
+  ]
+}
