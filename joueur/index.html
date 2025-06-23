@@ -20,21 +20,34 @@
 
     async function setup() {
       if (!playerId) {
-        const nom = prompt("Entrez votre nom (doit être déjà inscrit)");
-        if (!nom) return;
-        const { data } = await supabase.from("players").select("id").eq("name", nom).limit(1);
+        const baseName = prompt("Entrez votre prénom ou pseudo");
+        if (!baseName) return;
+
+        let { data } = await supabase.from("players").select("id, name").ilike("name", `${baseName}%`);
         if (data.length > 0) {
           playerId = data[0].id;
+          document.getElementById("message").textContent = `🟢 Bienvenue ${data[0].name}`;
           localStorage.setItem("player_id", playerId);
         } else {
-          alert("Nom non trouvé.");
-          return;
+          const num = Math.floor(Math.random() * 120) + 1;
+          const fullName = `${baseName} #${num}`;
+          const terrain = Math.floor(Math.random() * 5) + 1;
+          const { data: inserted } = await supabase
+            .from("players")
+            .insert({ name: fullName, terrain, total_points: 0, matches: 0 })
+            .select()
+            .single();
+
+          playerId = inserted.id;
+          localStorage.setItem("player_id", playerId);
+          document.getElementById("message").textContent = `🆕 Créé : ${fullName}`;
         }
       }
 
-      const { data } = await supabase.from("players").select("terrain").eq("id", playerId).single();
+      const { data } = await supabase.from("players").select("name, terrain").eq("id", playerId).single();
       if (data) {
         document.getElementById("terrain").textContent = "🎯 Piste : " + data.terrain;
+        document.getElementById("message").textContent += ` | Joueur : ${data.name}`;
       }
 
       supabase
