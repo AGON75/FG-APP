@@ -67,7 +67,49 @@
       }
     }
 
+    
     async function inscrireOuConnecter() {
+      const baseName = prompt("Entrez votre nom et prénom");
+      if (!baseName) return;
+
+      const { data: existing } = await supabase
+        .from("players")
+        .select("id, name")
+        .ilike("name", `${baseName}%`);
+
+      if (existing.length > 0) {
+        playerId = existing[0].id;
+        localStorage.setItem("player_id", playerId);
+        afficher(existing[0]);
+      } else {
+        const { data: allPlayers } = await supabase.from("players").select("name");
+        const usedNumbers = new Set();
+        allPlayers.forEach(p => {
+          const match = p.name.match(/#(\d+)/);
+          if (match) usedNumbers.add(parseInt(match[1]));
+        });
+
+        let assigned = null;
+        for (let i = 1; i <= 120; i++) {
+          if (!usedNumbers.has(i)) {
+            assigned = i;
+            break;
+          }
+        }
+
+        const fullName = `${baseName} #${assigned || Math.floor(Math.random() * 1000)}`;
+        const { data: inserted } = await supabase
+          .from("players")
+          .insert({ name: fullName })
+          .select()
+          .single();
+
+        playerId = inserted.id;
+        localStorage.setItem("player_id", playerId);
+        afficher(inserted);
+      }
+    }
+
       const baseName = prompt("Entrez votre nom et prénom");
       if (!baseName) return;
 
