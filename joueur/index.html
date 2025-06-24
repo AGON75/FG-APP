@@ -1,10 +1,11 @@
 <!DOCTYPE html>
+
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <title>Joueur – Finger Game</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <style>
+<meta charset="utf-8"/>
+<title>Joueur – Finger Game</title>
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<style>
     body {
       background: linear-gradient(to right, #0d47a1, #b71c1c);
       color: white;
@@ -43,7 +44,7 @@
       margin-top: 15px;
     }
   </style>
-  <script type="module">
+<script type="module">
     import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
     const supabase = createClient(
       'https://ckolzmqarfizoxjgolft.supabase.co',
@@ -70,32 +71,6 @@
 
     
     async function inscrireOuConnecter() {
-      const baseName = prompt("Entrez votre nom et prénom");
-      if (!baseName) return;
-
-      const { data: existing } = await supabase
-        .from("players")
-        .select("id, name")
-        .ilike("name", `${baseName}%`);
-
-      if (existing.length > 0) {
-        playerId = existing[0].id;
-        localStorage.setItem("player_id", playerId);
-        afficher(existing[0]);
-      } else {
-        const { data: allPlayers } = await supabase.from("players").select("name");
-        const usedNumbers = new Set();
-        allPlayers.forEach(p => {
-          const match = p.name.match(/#(\d+)/);
-          if (match) usedNumbers.add(parseInt(match[1]));
-        });
-
-        let assigned = null;
-        for (let i = 1; i <= 120; i++) {
-          if (!usedNumbers.has(i)) {
-            assigned = i;
-            break;
-          }
         }
 
         const fullName = `${baseName} #${assigned || Math.floor(Math.random() * 1000)}`;
@@ -159,23 +134,19 @@
     function changerDeJoueur() {
       localStorage.removeItem("player_id");
       location.reload();
-    }
-</script>
-</head>
+    }</script>
+</meta></head>
 <body>
-  <header>
-    <img src="../assets/FingerGame_logo_blanc_tagline.png" alt="Finger Game">
-    <h1>Bienvenue dans le Finger Game</h1>
-  </header>
+<header>
+<img alt="Finger Game" src="/FingerGame_logo_blanc_tagline.png"/>
+<h1>Bienvenue dans le Finger Game</h1>
+</header>
+<div id="terrain">Chargement...</div>
+<div id="message"></div>
+<button id="recharger">🔁 Afficher la prochaine manche</button>
+<button onclick="changerDeJoueur()">🔄 Changer de joueur</button>
 
-  <div id="terrain">Chargement...</div>
-  <div id="message"></div>
 
-  <button id="recharger">🔁 Afficher la prochaine manche</button>
-  <button onclick="changerDeJoueur()">🔄 Changer de joueur</button>
-  <button onclick="changerDeJoueur()">🔄 Changer de joueur</button>
-  <button onclick="changerDeJoueur()">🔄 Changer de joueur</button>
-
-  <a href="/classement/">📊 Voir le classement</a>
+<a href="/classement/">📊 Voir le classement</a>
 </body>
 </html>
