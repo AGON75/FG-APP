@@ -155,7 +155,12 @@
     document.getElementById("recharger").addEventListener("click", afficherManche);
 
     setup();
-  </script>
+  
+    function changerDeJoueur() {
+      localStorage.removeItem("player_id");
+      location.reload();
+    }
+</script>
 </head>
 <body>
   <header>
@@ -167,6 +172,8 @@
   <div id="message"></div>
 
   <button id="recharger">🔁 Afficher la prochaine manche</button>
+  <button onclick="changerDeJoueur()">🔄 Changer de joueur</button>
+  <button onclick="changerDeJoueur()">🔄 Changer de joueur</button>
   <button onclick="changerDeJoueur()">🔄 Changer de joueur</button>
 
   <a href="/classement/">📊 Voir le classement</a>
