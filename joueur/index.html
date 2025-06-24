@@ -6,11 +6,20 @@
   <title>Joueur - Finger Game</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
-      background: linear-gradient(to right, #003087, #c8102e);
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(to right, #0d47a1, #b71c1c);
       color: white;
       text-align: center;
       padding: 30px;
+      margin: 0;
+    }
+    img {
+      width: 200px;
+      margin-top: 20px;
+      max-width: 90%;
+    }
+    h1 {
+      margin: 10px 0;
     }
     button {
       margin: 15px;
@@ -20,6 +29,12 @@
       border-radius: 6px;
       border: none;
       cursor: pointer;
+      background: #444;
+      color: white;
+      transition: background 0.2s;
+    }
+    button:hover {
+      background: #b71c1c;
     }
     a {
       display: inline-block;
@@ -36,8 +51,7 @@
   </style>
 </head>
 <body>
- <img src="../assets/FingerGame_logo_blanc_tagline.png" alt="Finger Game">
-
+  <img src="../assets/FingerGame_logo_blanc_tagline.png" alt="Finger Game">
 
   <div id="etat">Chargement...</div>
 
@@ -59,50 +73,69 @@
       const baseName = prompt("Entrez votre nom et prénom");
       if (!baseName) return;
 
-      const { data: existing } = await supabase
-        .from("players")
-        .select("id, name")
-        .ilike("name", `${baseName}%`);
-
-      if (existing.length > 0) {
-        playerId = existing[0].id;
-        localStorage.setItem("player_id", playerId);
-        afficher(await getPlayerById(playerId));
-      } else {
-        const numero = Math.floor(Math.random() * 120) + 1;
-        const fullName = `${baseName} #${numero}`;
-        const { data: inserted, error } = await supabase
+      try {
+        const { data: existing, error: errorExist } = await supabase
           .from("players")
-          .insert({ name: fullName })
-          .select()
-          .single();
-        if (inserted) {
-          playerId = inserted.id;
+          .select("id, name")
+          .ilike("name", `${baseName}%`);
+
+        if (errorExist) throw errorExist;
+
+        if (existing.length > 0) {
+          playerId = existing[0].id;
           localStorage.setItem("player_id", playerId);
-          afficher(inserted);
+          afficher(await getPlayerById(playerId));
         } else {
-          alert("Erreur lors de l'inscription.");
-          console.error(error);
+          const numero = Math.floor(Math.random() * 120) + 1;
+          const fullName = `${baseName} #${numero}`;
+          const { data: inserted, error } = await supabase
+            .from("players")
+            .insert({ name: fullName })
+            .select()
+            .single();
+          if (inserted) {
+            playerId = inserted.id;
+            localStorage.setItem("player_id", playerId);
+            afficher(inserted);
+          } else {
+            alert("Erreur lors de l'inscription.");
+            console.error(error);
+          }
         }
+      } catch (e) {
+        document.getElementById("etat").textContent = "Erreur de connexion. Veuillez vérifier votre réseau.";
       }
     }
 
     async function getPlayerById(id) {
-      const { data } = await supabase
-        .from("players")
-        .select("*")
-        .eq("id", id)
-        .single();
-      return data;
+      try {
+        const { data, error } = await supabase
+          .from("players")
+          .select("*")
+          .eq("id", id)
+          .single();
+        if (error) throw error;
+        return data;
+      } catch (e) {
+        document.getElementById("etat").textContent = "Erreur de connexion. Veuillez vérifier votre réseau.";
+        return null;
+      }
     }
 
     function afficher(joueur) {
       const etat = document.getElementById("etat");
       if (!joueur) {
-        etat.textContent = "Aucune donnée trouvée.";
+        localStorage.removeItem("player_id");
+        etat.textContent = "Aucune donnée trouvée. Veuillez vous réinscrire.";
+        setTimeout(inscrireOuConnecter, 1000);
         return;
       }
-      etat.textContent = `${joueur.name} — Piste ${joueur.terrain ?? "non attribuée"} — Phase ${joueur.phase ?? "-"}/${joueur.round ?? "-"}`;
+      if (joueur.phase == 99) {
+        etat.textContent = `${joueur.name} — 🏁 Finale — Piste ${joueur.terrain ?? "-"}`;
+      } else {
+        const partieNum = (joueur.matches ?? 0) + 1;
+        etat.textContent = `${joueur.name} — Piste ${joueur.terrain ?? "non attribuée"} — Partie ${partieNum}/${joueur.round ?? "-"}`;
+      }
     }
 
     window.changerDeJoueur = function () {
@@ -117,4 +150,3 @@
     }
   </script>
 </body>
-</html>
