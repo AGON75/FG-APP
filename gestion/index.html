@@ -84,7 +84,7 @@ async function ajouterJoueur() {
     async function resetTournoi() {
       if (!confirm("Réinitialiser tous les scores, phases et terrains ?")) return;
       await supabase.from("eliminations").delete().neq("id", "");
-      await supabase.from("players").update({ total_points: 0, matches: 0, phase: null, round: null, terrain: null }).neq("id", "");
+      await supabase.from('players').update({ total_points: 0, matches: 0 }).not('id', 'is', null)
       await supabase.from("eliminations").delete().neq("id", "");
       chargerJoueurs();
     }
@@ -92,8 +92,8 @@ async function ajouterJoueur() {
     async function supprimerTousJoueurs() {
       if (!confirm("Supprimer tous les joueurs ? Action irréversible.")) return;
       await supabase.from("eliminations").delete().neq("id", "");
-      await supabase.from("players").delete().neq("id", "");
-      chargerJoueurs();
+      await supabase.from('players').delete().not('id', 'is', null)
+
     }
 
     async function genererFinale() {
