@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <title>Arbitre – Finger Game</title>
+  <title>Arbitre – Phase/Round</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     body { background: #111; color: white; font-family: sans-serif; padding: 20px; }
@@ -17,10 +17,11 @@
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrb2x6bXFhcmZpem94amdvbGZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk2Nzg3NTYsImV4cCI6MjA2NTI1NDc1Nn0.ZlpERz1uznM0fn--GR9YgM2vjwe_kw-qiPF8KHJvMpI'
     );
 
-    let currentTerrain = 1;
-    let maxPlayers = 8;
     let players = [];
     let eliminatedOrder = [];
+    let currentTerrain = 1;
+    let currentPhase = 1;
+    let currentRound = "A";
 
     const baremes = {
       4: [20, 10, 0, -5],
@@ -32,28 +33,20 @@
       10:[40, 35, 30, 25, 20, 15, 10, 5, 0, -5]
     };
 
-    async function reaffecterEtCharger() {
+    async function chargerJoueurs() {
+      currentPhase = parseInt(document.getElementById("phase").value);
+      currentRound = document.getElementById("round").value;
       currentTerrain = parseInt(document.getElementById("terrain").value);
-      maxPlayers = parseInt(document.getElementById("nbJoueurs").value);
-
-      const { data: allPlayers, error } = await supabase.from("players").select("*");
-      if (error) return alert("Erreur chargement joueurs");
-
-      for (let joueur of allPlayers) {
-        let nouveau;
-        do {
-          nouveau = Math.floor(Math.random() * 5) + 1;
-        } while (nouveau === joueur.terrain);
-        await supabase.from("players").update({ terrain: nouveau }).eq("id", joueur.id);
-      }
 
       const { data } = await supabase
         .from("players")
         .select("*")
+        .eq("phase", currentPhase)
+        .eq("round", currentRound)
         .eq("terrain", currentTerrain)
         .order("name");
 
-      players = data.slice(0, maxPlayers);
+      players = data;
       eliminatedOrder = [];
       renderPlayers();
     }
@@ -124,35 +117,41 @@
 
     window.onload = () => {
       const t = document.getElementById("terrain");
-      const n = document.getElementById("nbJoueurs");
+      const p = document.getElementById("phase");
+      const r = document.getElementById("round");
       for (let i = 1; i <= 5; i++) {
-        const opt = document.createElement("option");
-        opt.value = i;
-        opt.textContent = "Piste " + i;
-        t.appendChild(opt);
-      }
-      for (let j = 4; j <= 10; j++) {
-        const opt = document.createElement("option");
-        opt.value = j;
-        opt.textContent = j + " joueurs";
-        n.appendChild(opt);
+        const optT = document.createElement("option");
+        optT.value = i;
+        optT.textContent = "Piste " + i;
+        t.appendChild(optT);
+
+        const optP = document.createElement("option");
+        optP.value = i;
+        optP.textContent = "Phase " + i;
+        p.appendChild(optP);
       }
     };
 
-    window.reaffecterEtCharger = reaffecterEtCharger;
+    window.chargerJoueurs = chargerJoueurs;
     window.validerManche = validerManche;
   </script>
 </head>
 <body>
-  <h1>🎯 Arbitrage Finger Game</h1>
+  <h1>🎯 Arbitrage Finger Game – par Phase / Round</h1>
 
-  <label>Choisir la piste :</label>
+  <label>Phase :</label>
+  <select id="phase"></select>
+
+  <label>Round :</label>
+  <select id="round">
+    <option value="A">A</option>
+    <option value="B">B</option>
+  </select>
+
+  <label>Piste :</label>
   <select id="terrain"></select>
 
-  <label>Nombre de joueurs :</label>
-  <select id="nbJoueurs"></select>
-
-  <button onclick="reaffecterEtCharger()">🔀 Réaffecter & Charger</button>
+  <button onclick="chargerJoueurs()">🚀 Charger les joueurs</button>
 
   <div id="joueurs" style="margin-top: 20px;"></div>
   <p id="ordre"></p>
