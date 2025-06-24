@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+
+<html lang="fr">
+<head>
+<meta charset="utf-8"/>
+<title>Planning – Finger Game</title>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<style>
+    body {
+      background: linear-gradient(to right, #0d47a1, #b71c1c);
+      color: white;
+      font-family: 'Segoe UI', sans-serif;
+      text-align: center;
+      margin: 0;
+      padding: 20px;
+    }
+    header img {
+      width: 200px;
+      margin-top: 20px;
+    }
+    h1 {
+      margin: 10px 0;
+    }
+    select, button {
+      padding: 10px;
+      font-size: 16px;
+      margin: 10px;
+    }
+    table {
+      margin: 20px auto;
+      border-collapse: collapse;
+      width: 90%;
+      max-width: 600px;
+      background: rgba(0,0,0,0.2);
+    }
+    th, td {
+      border: 1px solid rgba(255,255,255,0.2);
+      padding: 10px;
+    }
+    th {
+      background: rgba(255,255,255,0.1);
+    }
+  </style>
+<script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+    const supabase = createClient(
+      'https://ckolzmqarfizoxjgolft.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrb2x6bXFhcmZpem94amdvbGZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk2Nzg3NTYsImV4cCI6MjA2NTI1NDc1Nn0.ZlpERz1uznM0fn--GR9YgM2vjwe_kw-qiPF8KHJvMpI'
+    );
+
+    async function genererPhase() {
+      const phase = parseInt(document.getElementById("phase").value);
+      const round = document.getElementById("round").value;
+      const joueursParTerrain = parseInt(document.getElementById("nb_joueurs").value);
+      const maxJoueurs = joueursParTerrain * 5;
+
+      const { data: joueurs } = await supabase
+        .from("players")
+        .select("*")
+        .order("matches", { ascending: true });
+
+      const assignables = joueurs.slice(0, maxJoueurs);
+      const groupes = Array.from({ length: 5 }, () => []);
+      let terrainIndex = 0;
+
+      assignables.forEach((j) => {
+        // Trouver le premier terrain dispo
+        while (groupes[terrainIndex].length >= joueursParTerrain) {
+          terrainIndex = (terrainIndex + 1) % 5;
+        }
+        groupes[terrainIndex].push({ ...j, terrain: terrainIndex + 1 });
+      });
+
+      for (const groupe of groupes) {
+        for (const joueur of groupe) {
+          await supabase.from("players")
+            .update({ phase, round, terrain: joueur.terrain })
+            .eq("id", joueur.id);
+        }
+      }
+
+      afficherDispatch(phase, round);
+    }
+
+    async function afficherDispatch(phase, round) {
+      const { data } = await supabase
+        .from("players")
+        .select("name, terrain")
+        .eq("phase", phase)
+        .eq("round", round);
+
+      const repartition = {};
+      data.forEach(p => {
+        if (!repartition[p.terrain]) repartition[p.terrain] = [];
+        repartition[p.terrain].push(p.name);
+      });
+
+      const tbody = document.getElementById("dispatch");
+      tbody.innerHTML = "";
+      Object.keys(repartition).forEach(terrain => {
+        repartition[terrain].forEach(name => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `<td>Piste ${terrain}</td><td>${name}</td>`;
+          tbody.appendChild(tr);
+        });
+      });
+    }
+
+    
+    async function genererFinale() {
+      const { data } = await supabase
+        .from("players")
+        .select("*")
+        .order("total_points", { ascending: false })
+        .limit(5);
+
+      for (const joueur of data) {
+        await supabase.from("players").update({
+          phase: 5,
+          round: 'F',
+          terrain: 1
+        }).eq("id", joueur.id);
+      }
+
+      alert("🏁 Finale générée avec les 5 meilleurs joueurs !");
+      afficherDispatch(5, 'F');
+    }
+
+    window.genererPhase = genererPhase;
+    window.genererFinale = genererFinale;
+  
+
+
+
+async function genererPlanningComplet() {
+  const terrains = 5;
+  const joueursParTerrain = parseInt(document.getElementById("nb_joueurs").value);
+  const maxParRound = terrains * joueursParTerrain;
+
+  const { data: joueurs } = await supabase
+    .from("players")
+    .select("*")
+    .order("matches", { ascending: true });
+
+  if (!joueurs || joueurs.length === 0) {
+    alert("Aucun joueur trouvé.");
+    return;
+  }
+
+  // Initialiser tous les créneaux [phase][round][terrain] = []
+  const planning = {};
+  for (let phase = 1; phase <= 4; phase++) {
+    for (const round of ['A', 'B']) {
+      for (let terrain = 1; terrain <= 5; terrain++) {
+        planning[`${phase}_${round}_${terrain}`] = [];
+      }
+    }
+  }
+
+  // Prévoir 4 créneaux pour chaque joueur
+  const assignments = joueurs.map(joueur => ({
+    id: joueur.id,
+    name: joueur.name,
+    assignations: []
+  }));
+
+  // Remplir en distribuant les créneaux de façon équilibrée
+  for (let i = 0; i < 4; i++) {
+    // pour chaque manche à attribuer
+    for (const joueur of assignments) {
+      const tries = Object.keys(planning).filter(k => planning[k].length < joueursParTerrain);
+
+      let slotFound = false;
+      for (const slot of tries) {
+        const [p, r, t] = slot.split("_");
+        const alreadyInPhase = joueur.assignations.some(a => a.phase === p);
+        if (!alreadyInPhase) {
+          planning[slot].push(joueur.name);
+          joueur.assignations.push({ phase: p, round: r, terrain: t });
+          await supabase.from("players").update({
+            phase: parseInt(p),
+            round: r,
+            terrain: parseInt(t)
+          }).eq("id", joueur.id);
+          slotFound = true;
+          break;
+        }
+      }
+      if (!slotFound) {
+        console.warn(`⚠️ Pas de créneau trouvé pour ${joueur.name} à la manche ${i + 1}`);
+      }
+    }
+  }
+
+  alert("✅ Planning complet généré : chaque joueur participe à 4 manches.");
+}
+
+window.genererPlanningComplet = genererPlanningComplet;
+</script>
+</head>
+<body>
+<header>
+<img alt="Finger Game" src="../assets/FingerGame_logo_blanc_tagline.png"/>
+<h1>📅 Planning des Phases</h1>
+</header><button onclick="genererPlanningComplet()">🧩 Générer tout le planning des 4 premières phases</button>
+<label>Phase :</label>
+<select id="phase">
+<option value="1">1</option><option value="2">2</option>
+<option value="3">3</option><option value="4">4</option><option value="5">5</option>
+</select>
+<label>Round :</label>
+<select id="round">
+<option value="A">A</option>
+<option value="B">B</option>
+</select>
+<label>Joueurs par terrain :</label>
+<select id="nb_joueurs">
+<option value="4">4</option>
+<option value="5">5</option>
+<option value="6">6</option>
+<option value="7">7</option>
+<option selected="" value="8">8</option>
+<option value="9">9</option>
+<option value="10">10</option>
+</select>
+<button onclick="genererPhase()">🚀 Générer la phase</button>
+<button onclick="genererFinale()">🏁 Générer la finale</button>
+<table>
+<thead><tr><th>Piste</th><th>Joueur</th></tr></thead>
+<tbody id="dispatch"></tbody>
+</table>
+<button onclick="afficherPlanningComplet()">📊 Afficher le planning complet</button><div id="planningTable" style="margin-top: 30px;"></div><button onclick="exporterCSV()">⬇️ Exporter le planning en CSV</button></body>
+</html>
