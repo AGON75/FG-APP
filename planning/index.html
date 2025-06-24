@@ -1,104 +1,184 @@
-  async function genererPlanningComplet() {Add commentMore actions
-      if (planningGenerated) return; // Prevent regeneration
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Planning – Finger Game</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      background: linear-gradient(to right, #0d47a1, #b71c1c);
+      color: white;
+      font-family: 'Segoe UI', sans-serif;
+      text-align: center;
+      margin: 0;
+      padding: 20px;
+    }
+    header img {
+      width: 200px;
+      margin-top: 20px;
+    }
+    h1 {
+      margin: 10px 0;
+    }
+    button {
+      padding: 10px;
+      font-size: 16px;
+      margin: 10px;
+    }
+    table {
+      margin: 20px auto;
+      border-collapse: collapse;
+      width: 95%;
+      max-width: 1200px;
+      background: rgba(0,0,0,0.2);
+    }
+    th, td {
+      border: 1px solid rgba(255,255,255,0.2);
+      padding: 10px;
+      text-align: center;
+    }
+    th {
+      background: rgba(255,255,255,0.1);
+    }
+  </style>
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+    const supabase = createClient(
+      'https://ckolzmqarfizoxjgolft.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrb2x6bXFhcmZpem94amdvbGZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk2Nzg3NTYsImV4cCI6MjA2NTI1NDc1Nn0.ZlpERz1uznM0fn--GR9YgM2vjwe_kw-qiPF8KHJvMpI'
+    );
 
-      const totalJoueurs = 100; // Maximum de 100 joueurs
-
-      const { data: joueurs } = await supabase
-        .from("players")
-        .select("*")
-        .order("matches", { ascending: true });
-
-      if (joueurs.length < totalJoueurs) {
-        alert("Il faut inscrire tous les joueurs avant de générer le planning.");
-      if (joueurs.length < 10) {
-        alert("Il faut inscrire au moins 10 joueurs avant de générer le planning.");
+    // Générer une phase pour tous les joueurs inscrits
+    async function genererPhase(phase = 1) {
+      const { data: joueurs } = await supabase.from("players").select("*");
+      if (!joueurs || joueurs.length < 1) {
+        alert("Aucun joueur inscrit !");
         return;
       }
 
-      // Répartition des joueurs sur les phases et rounds
-      const joueursParTerrain = 10; // À ajuster selon le nombre de joueurs par terrain
-      const joueursParTerrain = joueurs.length <= 100 ? 10 : Math.ceil(joueurs.length / 5); // Répartition dynamique selon le nombre de joueurs
-      const groupes = Array.from({ length: 5 }, () => []);
+      // Réinitialiser les affectations de la phase en cours
+      await supabase.from("players")
+        .update({ phase: null, round: null, terrain: null })
+        .in("id", joueurs.map(j => j.id));
 
-      joueurs.forEach((j, i) => {
-@@ -89,47 +86,26 @@
+      const terrains = [1, 2, 3, 4, 5];
+      // Un seul round si ≤ 50 joueurs, sinon deux rounds
+      const rounds = joueurs.length <= 50 ? ["A"] : ["A", "B"];
+      const joueursParSlot = 10;
+
+      // Mélanger les joueurs pour l'équité
+      const shuffled = joueurs.slice().sort(() => Math.random() - 0.5);
+
+      // Créer les slots (round/terrain)
+      let slots = [];
+      for (const round of rounds) {
+        for (const terrain of terrains) {
+          slots.push({ round, terrain, joueurs: [] });
+        }
       }
 
-      planningGenerated = true;
-      localStorage.setItem('planningData', JSON.stringify(groupes)); // Store planning data in localStorage
-      afficherDispatch();
+      let idx = 0;
+      for (const joueur of shuffled) {
+        // Trouver le prochain slot non plein
+        while (idx < slots.length && slots[idx].joueurs.length >= joueursParSlot) {
+          idx++;
+        }
+        if (idx >= slots.length) break; // Plus de place
+
+        slots[idx].joueurs.push(joueur);
+
+        // Enregistrer l'affectation dans Supabase
+        await supabase.from("players")
+          .update({ phase, round: slots[idx].round, terrain: slots[idx].terrain })
+          .eq("id", joueur.id);
+      }
+
+      afficherPlanning();
     }
 
-    async function afficherDispatch() {
+    // Générer la finale avec les 5 meilleurs joueurs
+    async function genererFinale() {
+      // Réinitialiser tous les joueurs pour n'afficher que la finale
+      await supabase.from("players").update({ phase: null, round: null, terrain: null });
+
+      // Attendre un court instant pour s'assurer que la base est bien à jour
+      await new Promise(resolve => setTimeout(resolve, 300));
+
       const { data } = await supabase
-        .from("players")
-        .select("name, terrain, phase, round")
-        .order("phase, round");
-
-      const repartition = {};
-
-      // Organiser les joueurs par phase, round et terrain
-      data.forEach(p => {
-        if (!repartition[p.phase]) repartition[p.phase] = {};
-        if (!repartition[p.phase][p.round]) repartition[p.phase][p.round] = {};
-        if (!repartition[p.phase][p.round][p.terrain]) repartition[p.phase][p.round][p.terrain] = [];
-
-        repartition[p.phase][p.round][p.terrain].push(p.name);
-      });
-    function afficherDispatch() {
-      const storedPlanningData = localStorage.getItem('planningData');
-      if (!storedPlanningData) {
-        return; // No data to display
-      }
-
-      const groupes = JSON.parse(storedPlanningData);
-      const tbody = document.getElementById("dispatch");
-      tbody.innerHTML = "";
-
-      // Affichage des phases, rounds et terrains
-      Object.keys(repartition).forEach(phase => {
-        const phaseTitle = document.createElement("tr");
-        phaseTitle.innerHTML = `<td colspan="2" style="text-align:center; background: #444; color: white;">Phase ${phase}</td>`;
-        tbody.appendChild(phaseTitle);
-
-        Object.keys(repartition[phase]).forEach(round => {
-          Object.keys(repartition[phase][round]).forEach(terrain => {
-            const terrainHeader = document.createElement("tr");
-            terrainHeader.innerHTML = `<td colspan="2" style="background: #333; color: white;">Round ${round}, Piste ${terrain}</td>`;
-            tbody.appendChild(terrainHeader);
-
-            repartition[phase][round][terrain].forEach(name => {
-              const tr = document.createElement("tr");
-              tr.innerHTML = `<td>${name}</td><td></td>`; // Le second <td> pourrait être utilisé pour des informations supplémentaires
-              tbody.appendChild(tr);
-            });
-          });
-      groupes.forEach((group, i) => {
-        group.forEach(player => {
-          const tr = document.createElement("tr");
-          tr.innerHTML = `<td>Phase ${player.phase}, Round ${player.round}, Piste ${player.terrain}</td><td>${player.name}</td>`;
-          tbody.appendChild(tr);
-        });
-      });
-    }
-@@ -139,10 +115,11 @@
         .from("players")
         .select("*")
         .order("total_points", { ascending: false })
-        .limit(10); // 10 joueurs pour chaque match final
-        .limit(10); // Sélectionne les 10 meilleurs joueurs
+        .limit(5);
 
-      let terrain = 1; // Répartir les 10 joueurs sur un terrain spécifique pour la finale
-
-      // Update each player for the finale
-      for (let i = 0; i < data.length; i++) {
-        const joueur = data[i];
+      for (const joueur of data) {
         await supabase.from("players").update({
-@@ -159,6 +136,7 @@
+          phase: 99,
+          round: 'F',
+          terrain: 1
+        }).eq("id", joueur.id);
+      }
 
-    function resetPlanning() {
-      planningGenerated = false;
-      localStorage.removeItem('planningData'); // Clear planning from localStorage
-      const tbody = document.getElementById("dispatch");
-      tbody.innerHTML = ""; // Reset the table content
+      alert("🏁 Finale générée avec les 5 meilleurs joueurs !");
+      afficherPlanning();
     }
+
+    // Afficher le planning groupé
+    async function afficherPlanning() {
+      const { data } = await supabase.from("players").select("name, terrain, phase, round").order("phase, round, terrain");
+
+      const grouped = {};
+      for (const joueur of data) {
+        if (!joueur.phase) continue;
+        // Affichage spécial pour la finale
+        const key = joueur.phase == 99
+          ? "🏁 Finale"
+          : `Phase ${joueur.phase} – Round ${joueur.round} – Piste ${joueur.terrain}`;
+        if (!grouped[key]) grouped[key] = [];
+        grouped[key].push(joueur.name);
+      }
+
+      const tbody = document.getElementById("dispatch");
+      tbody.innerHTML = "";
+
+      for (const bloc in grouped) {
+        const header = document.createElement("tr");
+        header.innerHTML = `<th colspan="2">${bloc}</th>`;
+        tbody.appendChild(header);
+        for (const joueur of grouped[bloc]) {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `<td>${joueur}</td><td></td>`;
+          tbody.appendChild(tr);
+        }
+      }
+    }
+
+    // Réinitialiser le planning
+    async function resetPlanning() {
+      await supabase.from("players").update({ phase: null, round: null, terrain: null });
+      const tbody = document.getElementById("dispatch");
+      tbody.innerHTML = "";
+    }
+
+    // Exposer les fonctions globalement
+    window.genererPhase = genererPhase;
+    window.genererFinale = genererFinale;
+    window.resetPlanning = resetPlanning;
+    window.onload = afficherPlanning;
+  </script>
+</head>
+<body>
+  <header>
+    <img src="../assets/FingerGame_logo_blanc_tagline.png" alt="Finger Game">
+    <h1>📅 Planning des Phases</h1>
+  </header>
+
+  <button onclick="genererPhase()">🚀 Générer la phase</button>
+  <button onclick="genererFinale()">🏁 Générer la finale</button>
+  <button onclick="resetPlanning()">🗑️ Réinitialiser le planning</button>
+
+  <table>
+    <thead><tr><th>Joueur</th><th>Détails</th></tr></thead>
+    <tbody id="dispatch"></tbody>
+  </table>
+</body>
+</html>
