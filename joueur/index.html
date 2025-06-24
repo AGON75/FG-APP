@@ -1,185 +1,57 @@
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <title>Joueur – Finger Game</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <style>
-    body {
-      background: linear-gradient(to right, #0d47a1, #b71c1c);
-      color: white;
-      font-family: 'Segoe UI', sans-serif;
-      text-align: center;
-      padding: 20px;
-      margin: 0;
-    }
-    header img {
-      width: 200px;
-      max-width: 90%;
-      margin-top: 20px;
-    }
-    h1 {
-      margin: 20px 0 10px;
-      font-size: 26px;
-    }
-    #terrain, #message {
-      font-size: 22px;
-      font-weight: bold;
-      margin: 10px 0;
-    }
-    button {
-      padding: 12px 20px;
-      font-size: 16px;
-      background: white;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      margin-top: 20px;
-    }
-    a {
-      color: #fff;
-      text-decoration: underline;
-      display: block;
-      margin-top: 15px;
-    }
-  </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Joueur - Finger Game</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div class="container">
+    <img src="/logo.png" alt="Logo Finger Game" style="max-height: 80px;" />
+    <h1>Bienvenue dans le Finger Game</h1>
+    <h2 id="welcome">Chargement...</h2>
+
+    <button onclick="afficherProchaineManche()">📘 Afficher la prochaine manche</button>
+    <button onclick="changerDeJoueur()">🔁 Changer de joueur</button>
+
+    <br><br>
+    <a href="/classement.html">📊 Voir le classement</a>
+  </div>
+
   <script type="module">
-    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
-    const supabase = createClient(
-      'https://ckolzmqarfizoxjgolft.supabase.co',
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrb2x6bXFhcmZpem94amdvbGZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk2Nzg3NTYsImV4cCI6MjA2NTI1NDc1Nn0.ZlpERz1uznM0fn--GR9YgM2vjwe_kw-qiPF8KHJvMpI'
-    );
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+
+    const supabaseUrl = 'https://ckolzmqarfizoxjgolft.supabase.co'
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrb2x6bXFhcmZpem94amdvbGZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk2Nzg3NTYsImV4cCI6MjA2NTI1NDc1Nn0.ZlpERz1uznM0fn--GR9YgM2vjwe_kw-qiPF8KHJvMpI'
+    const supabase = createClient(supabaseUrl, supabaseKey)
 
     let playerId = localStorage.getItem("player_id");
 
-    
-    async function setup() {
-      if (!playerId) {
-        await inscrireOuConnecter();
-      } else {
-        const { data } = await supabase.from("players").select("name, terrain").eq("id", playerId).single();
-        if (data) {
-          afficher(data);
-        } else {
-          // ID invalide : on le supprime et recommence
-          localStorage.removeItem("player_id");
-          await inscrireOuConnecter();
-        }
-      }
-    }
+    async function afficherProchaineManche() {
+      if (!playerId) return;
 
-    
-    async function inscrireOuConnecter() {
-      const baseName = prompt("Entrez votre nom et prénom");
-      if (!baseName) return;
-
-      const { data: existing } = await supabase
+      const { data, error } = await supabase
         .from("players")
-        .select("id, name")
-        .ilike("name", `${baseName}%`);
+        .select("*")
+        .eq("id", playerId)
+        .single();
 
-      if (existing.length > 0) {
-        playerId = existing[0].id;
-        localStorage.setItem("player_id", playerId);
-        afficher(existing[0]);
+      if (error || !data) {
+        document.getElementById("welcome").textContent = "Joueur non trouvé.";
       } else {
-        const { data: allPlayers } = await supabase.from("players").select("name");
-        const usedNumbers = new Set();
-        allPlayers.forEach(p => {
-          const match = p.name.match(/#(\d+)/);
-          if (match) usedNumbers.add(parseInt(match[1]));
-        });
-
-        let assigned = null;
-        for (let i = 1; i <= 120; i++) {
-          if (!usedNumbers.has(i)) {
-            assigned = i;
-            break;
-          }
-        }
-
-        const fullName = `${baseName} #${assigned || Math.floor(Math.random() * 1000)}`;
-        const { data: inserted } = await supabase
-          .from("players")
-          .insert({ name: fullName })
-          .select()
-          .single();
-
-        playerId = inserted.id;
-        localStorage.setItem("player_id", playerId);
-        afficher(inserted);
+        document.getElementById("welcome").textContent =
+          data.name + " - Piste " + data.terrain + " - Phase " + data.phase + data.round;
       }
     }
 
-      const baseName = prompt("Entrez votre nom et prénom");
-      if (!baseName) return;
-
-      const { data: existing } = await supabase
-        .from("players")
-        .select("id, name")
-        .ilike("name", `${baseName}%`);
-
-      if (existing.length > 0) {
-        playerId = existing[0].id;
-        localStorage.setItem("player_id", playerId);
-        afficher(existing[0]);
-      } else {
-        const num = Math.floor(Math.random() * 120) + 1;
-        const fullName = `${baseName} #${num}`;
-        const { data: inserted } = await supabase
-          .from("players")
-          .insert({ name: fullName })
-          .select()
-          .single();
-
-        playerId = inserted.id;
-        localStorage.setItem("player_id", playerId);
-        afficher(inserted);
-      }
-    }
-
-    function afficher(data) {
-      document.getElementById("terrain").textContent = "🎯 Piste actuelle : " + (data.terrain || "non affecté");
-      document.getElementById("message").textContent = `👤 Joueur : ${data.name}`;
-    }
-
-    async function afficherManche() {
-  const playerId = localStorage.getItem("player_id");
-      const { data } = await supabase.from("players").select("name, terrain").eq("id", playerId).single();
-      if (data) {
-        afficher(data);
-      } else {
-        document.getElementById("terrain").textContent = "Aucune manche disponible.";
-      }
-    }
-
-    document.getElementById("recharger").addEventListener("click", afficherManche);
-
-    setup();
-  
-    function changerDeJoueur() {
-  localStorage.removeItem("player_id");
-  location.reload();
-}
+    window.changerDeJoueur = function () {
       localStorage.removeItem("player_id");
-      location.reload();
+      window.location.reload();
     }
-</script>
-</head>
-<body>
-  <header>
-    <img src="../assets/FingerGame_logo_blanc_tagline.png" alt="Finger Game">
-    <h1>Bienvenue dans le Finger Game</h1>
-  </header>
 
-  <div id="terrain">Chargement...</div>
-  <div id="message"></div>
-
-  <button id="recharger">🔁 Afficher la prochaine manche</button>
-  <button onclick="changerDeJoueur()">🔄 Changer de joueur</button>
-  <button onclick="changerDeJoueur()">🔄 Changer de joueur</button>
-  <button onclick="changerDeJoueur()">🔄 Changer de joueur</button>
-
-  <a href="/classement/">📊 Voir le classement</a>
+    afficherProchaineManche();
+  </script>
 </body>
 </html>
