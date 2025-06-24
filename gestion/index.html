@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Gestion – Finger Game</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      background: linear-gradient(to right, #0d47a1, #b71c1c);
+      color: white;
+      font-family: 'Segoe UI', sans-serif;
+      padding: 20px;
+      text-align: center;
+    }
+    header img {
+      width: 200px;
+      margin-top: 20px;
+    }
+    h1 {
+      margin-bottom: 10px;
+    }
+    table {
+      margin: 20px auto;
+      width: 95%;
+      max-width: 800px;
+      border-collapse: collapse;
+      background: rgba(0, 0, 0, 0.2);
+    }
+    th, td {
+      padding: 10px;
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+    th {
+      background-color: rgba(255,255,255,0.1);
+    }
+    input, button {
+      font-size: 14px;
+      padding: 6px;
+      margin: 5px;
+    }
+  </style>
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+    const supabase = createClient(
+      'https://ckolzmqarfizoxjgolft.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrb2x6bXFhcmZpem94amdvbGZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk2Nzg3NTYsImV4cCI6MjA2NTI1NDc1Nn0.ZlpERz1uznM0fn--GR9YgM2vjwe_kw-qiPF8KHJvMpI'
+    );
+
+    async function chargerJoueurs() {
+      const { data } = await supabase.from("players").select("*").order("name");
+      const tbody = document.getElementById("liste");
+      tbody.innerHTML = "";
+      data.forEach(j => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${j.name}</td>
+          <td>${j.total_points}</td>
+          <td>${j.matches}</td>
+          <td>${j.terrain || '-'}</td>
+          <td>${j.phase || '-'}</td>
+          <td>${j.round || '-'}</td>
+          <td><button onclick="supprimerJoueur('${j.id}')">❌</button></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    async function ajouterJoueur() {
+      const nom = document.getElementById("nom").value;
+      if (!nom) return alert("Nom requis");
+      const num = Math.floor(Math.random() * 120) + 1;
+      const nomComplet = `${nom} #${num}`;
+      await supabase.from("players").insert({ name: nomComplet });
+      chargerJoueurs();
+    }
+
+    async function supprimerJoueur(id) {
+      await supabase.from("players").delete().eq("id", id);
+      chargerJoueurs();
+    }
+
+    async function resetTournoi() {
+      if (!confirm("Réinitialiser tous les scores, phases et terrains ?")) return;
+      await supabase.from("players").update({ total_points: 0, matches: 0, phase: null, round: null, terrain: null });
+      await supabase.from("eliminations").delete().neq("id", "");
+      chargerJoueurs();
+    }
+
+    async function supprimerTousJoueurs() {
+      if (!confirm("Supprimer tous les joueurs ? Action irréversible.")) return;
+      await supabase.from("players").delete().neq("id", "");
+      chargerJoueurs();
+    }
+
+    async function genererFinale() {
+      const { data } = await supabase
+        .from("players")
+        .select("*")
+        .order("total_points", { ascending: false })
+        .limit(5);
+
+      for (const joueur of data) {
+        await supabase.from("players").update({
+          phase: 5,
+          round: 'F',
+          terrain: 1
+        }).eq("id", joueur.id);
+      }
+      chargerJoueurs();
+    }
+
+    window.onload = chargerJoueurs;
+    window.ajouterJoueur = ajouterJoueur;
+    window.supprimerJoueur = supprimerJoueur;
+    window.resetTournoi = resetTournoi;
+    window.supprimerTousJoueurs = supprimerTousJoueurs;
+    window.genererFinale = genererFinale;
+  </script>
+</head>
+<body>
+  <header>
+    <img src="../assets/FingerGame_logo_blanc_tagline.png" alt="Finger Game" />
+    <h1>Gestion des Joueurs</h1>
+  </header>
+
+  <section>
+    <input type="text" id="nom" placeholder="Nom et prénom" />
+    <button onclick="ajouterJoueur()">➕ Ajouter un joueur</button>
+  </section>
+
+  <table>
+    <thead>
+      <tr><th>Nom</th><th>Points</th><th>Matches</th><th>Piste</th><th>Phase</th><th>Round</th><th>❌</th></tr>
+    </thead>
+    <tbody id="liste"></tbody>
+  </table>
+
+  <section>
+    <button onclick="resetTournoi()">🧽 Réinitialiser le tournoi</button>
+    <button onclick="supprimerTousJoueurs()">🔥 Supprimer tous les joueurs</button>
+    <button onclick="genererFinale()">🏁 Générer la finale (top 5)</button>
+  </section>
+</body>
+</html>
