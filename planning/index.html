@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -54,20 +53,17 @@
     async function genererPlanningComplet() {
       if (planningGenerated) return; // Prevent regeneration
 
-      const totalJoueurs = 100; // Maximum de 100 joueurs
-
       const { data: joueurs } = await supabase
         .from("players")
         .select("*")
         .order("matches", { ascending: true });
 
-      if (joueurs.length < totalJoueurs) {
-        alert("Il faut inscrire tous les joueurs avant de générer le planning.");
+      if (joueurs.length < 10) {
+        alert("Il faut inscrire au moins 10 joueurs avant de générer le planning.");
         return;
       }
 
-      // Répartition des joueurs sur les phases et rounds
-      const joueursParTerrain = 10; // À ajuster selon le nombre de joueurs par terrain
+      const joueursParTerrain = 10; // 10 joueurs par terrain
       const groupes = Array.from({ length: 5 }, () => []);
 
       joueurs.forEach((j, i) => {
@@ -88,48 +84,28 @@
         }
       }
 
+      // Store planning in localStorage
       planningGenerated = true;
+      localStorage.setItem('planningData', JSON.stringify(groupes)); 
       afficherDispatch();
     }
 
-    async function afficherDispatch() {
-      const { data } = await supabase
-        .from("players")
-        .select("name, terrain, phase, round")
-        .order("phase, round");
+    function afficherDispatch() {
+      const storedPlanningData = localStorage.getItem('planningData');
+      if (!storedPlanningData) {
+        return; // No data to display
+      }
 
-      const repartition = {};
-
-      // Organiser les joueurs par phase, round et terrain
-      data.forEach(p => {
-        if (!repartition[p.phase]) repartition[p.phase] = {};
-        if (!repartition[p.phase][p.round]) repartition[p.phase][p.round] = {};
-        if (!repartition[p.phase][p.round][p.terrain]) repartition[p.phase][p.round][p.terrain] = [];
-
-        repartition[p.phase][p.round][p.terrain].push(p.name);
-      });
-
+      const groupes = JSON.parse(storedPlanningData);
       const tbody = document.getElementById("dispatch");
       tbody.innerHTML = "";
 
       // Affichage des phases, rounds et terrains
-      Object.keys(repartition).forEach(phase => {
-        const phaseTitle = document.createElement("tr");
-        phaseTitle.innerHTML = `<td colspan="2" style="text-align:center; background: #444; color: white;">Phase ${phase}</td>`;
-        tbody.appendChild(phaseTitle);
-
-        Object.keys(repartition[phase]).forEach(round => {
-          Object.keys(repartition[phase][round]).forEach(terrain => {
-            const terrainHeader = document.createElement("tr");
-            terrainHeader.innerHTML = `<td colspan="2" style="background: #333; color: white;">Round ${round}, Piste ${terrain}</td>`;
-            tbody.appendChild(terrainHeader);
-
-            repartition[phase][round][terrain].forEach(name => {
-              const tr = document.createElement("tr");
-              tr.innerHTML = `<td>${name}</td><td></td>`; // Le second <td> pourrait être utilisé pour des informations supplémentaires
-              tbody.appendChild(tr);
-            });
-          });
+      groupes.forEach((group, i) => {
+        group.forEach(player => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `<td>Phase ${player.phase}, Round ${player.round}, Piste ${player.terrain}</td><td>${player.name}</td>`;
+          tbody.appendChild(tr);
         });
       });
     }
@@ -139,10 +115,11 @@
         .from("players")
         .select("*")
         .order("total_points", { ascending: false })
-        .limit(10); // 10 joueurs pour chaque match final
+        .limit(10); // 10 meilleurs joueurs pour la finale
 
       let terrain = 1; // Répartir les 10 joueurs sur un terrain spécifique pour la finale
 
+      // Répartition finale avec 10 joueurs par match
       for (let i = 0; i < data.length; i++) {
         const joueur = data[i];
         await supabase.from("players").update({
@@ -159,6 +136,7 @@
 
     function resetPlanning() {
       planningGenerated = false;
+      localStorage.removeItem('planningData'); // Clear planning from localStorage
       const tbody = document.getElementById("dispatch");
       tbody.innerHTML = ""; // Reset the table content
     }
