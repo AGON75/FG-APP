@@ -1,8 +1,7 @@
-
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>Joueur – Finger Game</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
@@ -35,13 +34,13 @@
       border: none;
       border-radius: 8px;
       cursor: pointer;
-      margin: 10px;
+      margin-top: 20px;
     }
     a {
       color: #fff;
       text-decoration: underline;
       display: block;
-      margin-top: 20px;
+      margin-top: 15px;
     }
   </style>
   <script type="module">
@@ -53,26 +52,31 @@
 
     let playerId = localStorage.getItem("player_id");
 
+    
     async function setup() {
       if (!playerId) {
         await inscrireOuConnecter();
       } else {
-        const { data, error } = await supabase.from("players").select("name, terrain").eq("id", playerId).single();
-        if (error || !data) {
-          localStorage.removeItem("player_id");
-          alert("Joueur introuvable. Reconnexion nécessaire.");
-          await inscrireOuConnecter();
-        } else {
+        const { data } = await supabase.from("players").select("name, terrain").eq("id", playerId).single();
+        if (data) {
           afficher(data);
+        } else {
+          // ID invalide : on le supprime et recommence
+          localStorage.removeItem("player_id");
+          await inscrireOuConnecter();
         }
       }
     }
 
+    
     async function inscrireOuConnecter() {
       const baseName = prompt("Entrez votre nom et prénom");
       if (!baseName) return;
 
-      const { data: existing } = await supabase.from("players").select("id, name").ilike("name", `${baseName}%`);
+      const { data: existing } = await supabase
+        .from("players")
+        .select("id, name")
+        .ilike("name", `${baseName}%`);
 
       if (existing.length > 0) {
         playerId = existing[0].id;
@@ -85,6 +89,7 @@
           const match = p.name.match(/#(\d+)/);
           if (match) usedNumbers.add(parseInt(match[1]));
         });
+
         let assigned = null;
         for (let i = 1; i <= 120; i++) {
           if (!usedNumbers.has(i)) {
@@ -92,8 +97,40 @@
             break;
           }
         }
+
         const fullName = `${baseName} #${assigned || Math.floor(Math.random() * 1000)}`;
-        const { data: inserted } = await supabase.from("players").insert({ name: fullName }).select().single();
+        const { data: inserted } = await supabase
+          .from("players")
+          .insert({ name: fullName })
+          .select()
+          .single();
+
+        playerId = inserted.id;
+        localStorage.setItem("player_id", playerId);
+        afficher(inserted);
+      }
+    }
+
+      const baseName = prompt("Entrez votre nom et prénom");
+      if (!baseName) return;
+
+      const { data: existing } = await supabase
+        .from("players")
+        .select("id, name")
+        .ilike("name", `${baseName}%`);
+
+      if (existing.length > 0) {
+        playerId = existing[0].id;
+        localStorage.setItem("player_id", playerId);
+        afficher(existing[0]);
+      } else {
+        const num = Math.floor(Math.random() * 120) + 1;
+        const fullName = `${baseName} #${num}`;
+        const { data: inserted } = await supabase
+          .from("players")
+          .insert({ name: fullName })
+          .select()
+          .single();
 
         playerId = inserted.id;
         localStorage.setItem("player_id", playerId);
@@ -107,6 +144,7 @@
     }
 
     async function afficherManche() {
+  const playerId = localStorage.getItem("player_id");
       const { data } = await supabase.from("players").select("name, terrain").eq("id", playerId).single();
       if (data) {
         afficher(data);
@@ -115,13 +153,18 @@
       }
     }
 
+    document.getElementById("recharger").addEventListener("click", afficherManche);
+
+    setup();
+  
     function changerDeJoueur() {
+  localStorage.removeItem("player_id");
+  location.reload();
+}
       localStorage.removeItem("player_id");
       location.reload();
     }
-
-    window.onload = setup;
-  </script>
+</script>
 </head>
 <body>
   <header>
@@ -132,7 +175,9 @@
   <div id="terrain">Chargement...</div>
   <div id="message"></div>
 
-  <button onclick="afficherManche()">📄 Afficher la prochaine manche</button>
+  <button id="recharger">🔁 Afficher la prochaine manche</button>
+  <button onclick="changerDeJoueur()">🔄 Changer de joueur</button>
+  <button onclick="changerDeJoueur()">🔄 Changer de joueur</button>
   <button onclick="changerDeJoueur()">🔄 Changer de joueur</button>
 
   <a href="/classement/">📊 Voir le classement</a>
