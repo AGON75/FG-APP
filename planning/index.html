@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -62,29 +61,30 @@
         return;
       }
 
-      let phase = 1;
-      let round = "A"; // Initialiser pour le round A
-
       // Répartition des joueurs sur les phases et rounds
       const joueursParTerrain = 10; // À ajuster selon le nombre de joueurs par terrain
       const groupes = Array.from({ length: 5 }, () => []);
 
+      // Répartition des joueurs pour chaque phase, round et terrain
       joueurs.forEach((j, i) => {
-        const terrain = (i % 5) + 1;
-        groupes[terrain - 1].push({ ...j, phase, round });
+        const phase = Math.floor(i / 20) + 1; // 20 joueurs par phase
+        const round = (Math.floor(i / 10) % 2 === 0) ? "A" : "B"; // Round A et B alternés
+        const terrain = (i % 5) + 1; // 5 terrains
+
+        groupes[terrain - 1].push({ ...j, phase, round, terrain });
       });
 
-      // Assignation des joueurs aux terrains pour chaque phase et round
+      // Mise à jour dans la base de données Supabase
       for (let i = 0; i < 5; i++) {
         for (let j = 0; j < groupes[i].length; j++) {
           const joueur = groupes[i][j];
           await supabase.from("players")
-            .update({ phase, round, terrain: joueur.terrain })
+            .update({ phase: joueur.phase, round: joueur.round, terrain: joueur.terrain })
             .eq("id", joueur.id);
         }
       }
 
-      afficherDispatch(); // Afficher la répartition après génération
+      afficherDispatch();
     }
 
     async function afficherDispatch() {
@@ -109,11 +109,19 @@
 
       // Affichage des phases, rounds et terrains
       Object.keys(repartition).forEach(phase => {
+        const phaseTitle = document.createElement("tr");
+        phaseTitle.innerHTML = `<td colspan="2" style="text-align:center; background: #444; color: white;">Phase ${phase}</td>`;
+        tbody.appendChild(phaseTitle);
+
         Object.keys(repartition[phase]).forEach(round => {
           Object.keys(repartition[phase][round]).forEach(terrain => {
+            const terrainHeader = document.createElement("tr");
+            terrainHeader.innerHTML = `<td colspan="2" style="background: #333; color: white;">Round ${round}, Piste ${terrain}</td>`;
+            tbody.appendChild(terrainHeader);
+
             repartition[phase][round][terrain].forEach(name => {
               const tr = document.createElement("tr");
-              tr.innerHTML = `<td>Phase ${phase}, Round ${round}, Piste ${terrain}</td><td>${name}</td>`;
+              tr.innerHTML = `<td>${name}</td><td></td>`; // Le second <td> pourrait être utilisé pour des informations supplémentaires
               tbody.appendChild(tr);
             });
           });
@@ -137,7 +145,7 @@
       }
 
       alert("🏁 Finale générée avec les 5 meilleurs joueurs !");
-      afficherDispatch(); // Afficher la répartition finale
+      afficherDispatch();
     }
 
     window.genererPlanningComplet = genererPlanningComplet;
@@ -150,31 +158,11 @@
     <h1>📅 Planning des Phases</h1>
   </header>
 
-  <label>Phase :</label>
-  <select id="phase">
-    <option value="1">1</option><option value="2">2</option>
-    <option value="3">3</option><option value="4">4</option><option value="5">5</option>
-  </select>
-  <label>Round :</label>
-  <select id="round">
-    <option value="A">A</option>
-    <option value="B">B</option>
-  </select>
-  <label>Joueurs par terrain :</label>
-  <select id="nb_joueurs">
-    <option value="4">4</option>
-    <option value="5">5</option>
-    <option value="6">6</option>
-    <option value="7">7</option>
-    <option selected value="8">8</option>
-    <option value="9">9</option>
-    <option value="10">10</option>
-  </select>
   <button onclick="genererPlanningComplet()">🚀 Générer le planning complet</button>
   <button onclick="genererFinale()">🏁 Générer la finale</button>
 
   <table>
-    <thead><tr><th>Phase, Round, Piste</th><th>Joueur</th></tr></thead>
+    <thead><tr><th>Joueur</th><th>Details</th></tr></thead>
     <tbody id="dispatch"></tbody>
   </table>
 </body>
