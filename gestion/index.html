@@ -43,6 +43,19 @@
       margin-bottom: 10px;
       display: block;
     }
+    .edit-btn {
+      background: #ffd700;
+      color: #222;
+      border-radius: 4px;
+      border: none;
+      cursor: pointer;
+      margin-left: 5px;
+      font-size: 14px;
+      padding: 2px 7px;
+    }
+    .edit-btn:hover {
+      background: #ffe066;
+    }
   </style>
   <script type="module">
     import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
@@ -61,7 +74,10 @@
           const tr = document.createElement("tr");
           tr.innerHTML = `
             <td>${j.name}</td>
-            <td>${j.total_points ?? 0}</td>
+            <td>
+              <span id="pts-${j.id}">${j.total_points ?? 0}</span>
+              <button class="edit-btn" onclick="modifierPoints('${j.id}', ${j.total_points ?? 0})">✏️</button>
+            </td>
             <td>${j.matches ?? 0}</td>
             <td>${j.terrain || '-'}</td>
             <td>${j.phase || '-'}</td>
@@ -145,6 +161,19 @@
       }
     }
 
+    async function modifierPoints(id, pointsActuels) {
+      const nv = prompt("Nouveau total de points :", pointsActuels);
+      if (nv === null) return;
+      const pts = parseInt(nv, 10);
+      if (isNaN(pts)) return alert("Valeur invalide !");
+      try {
+        await supabase.from("players").update({ total_points: pts }).eq("id", id);
+        chargerJoueurs();
+      } catch (e) {
+        alert("Erreur lors de la modification des points.");
+      }
+    }
+
     window.onload = chargerJoueurs;
     window.ajouterJoueur = ajouterJoueur;
     window.supprimerJoueur = supprimerJoueur;
@@ -152,6 +181,7 @@
     window.supprimerTousJoueurs = supprimerTousJoueurs;
     window.genererFinale = genererFinale;
     window.chargerJoueurs = chargerJoueurs;
+    window.modifierPoints = modifierPoints;
   </script>
 </head>
 <body>
@@ -179,4 +209,3 @@
     <button onclick="resetTournoi()">🧽 Réinitialiser le tournoi</button>
     <button onclick="supprimerTousJoueurs()">🔥 Supprimer tous les joueurs</button>
     <button onclick="genererFinale()">🏁 Générer la finale (top 5)</button>
-  </section>
