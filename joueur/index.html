@@ -96,11 +96,14 @@
       return data;
     }
 
-    async function afficherProchaineManche() { window.afficherProchaineManche = afficherProchaineManche;
-      if (!playerId) return;
-      const joueur = await getPlayerById(playerId);
-      afficher(joueur);
-    }
+async function afficherProchaineManche() {
+  if (!playerId) return;
+  const joueur = await getPlayerById(playerId);
+  afficher(joueur);
+}
+
+window.afficherProchaineManche = afficherProchaineManche;
+
 
     function afficher(joueur) {
       const etat = document.getElementById("etat");
