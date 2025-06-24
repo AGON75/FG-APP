@@ -5,9 +5,33 @@
   <title>Joueur – Finger Game</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
-    body { background: #000; color: #fff; font-family: sans-serif; text-align: center; padding: 20px; }
-    #terrain { font-size: 48px; margin-top: 30px; }
-    #message { font-size: 20px; margin-top: 20px; color: #0f0; }
+    body {
+      background: linear-gradient(to right, #0d47a1, #b71c1c);
+      color: white;
+      font-family: 'Segoe UI', sans-serif;
+      text-align: center;
+      padding: 20px;
+      margin: 0;
+    }
+    header img {
+      width: 200px;
+      max-width: 90%;
+      margin-top: 20px;
+    }
+    h1 {
+      margin: 20px 0 10px;
+      font-size: 26px;
+    }
+    #terrain {
+      font-size: 32px;
+      margin-top: 20px;
+      font-weight: bold;
+    }
+    #message {
+      font-size: 18px;
+      margin-top: 15px;
+      color: #c8ffc8;
+    }
   </style>
   <script type="module">
     import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
@@ -69,7 +93,11 @@
   </script>
 </head>
 <body>
-  <h1>👆 Bienvenue dans le Finger Game</h1>
+  <header>
+    <img src="../assets/FingerGame_logo_blanc_tagline.png" alt="Finger Game" />
+    <h1>Bienvenue dans le Finger Game</h1>
+  </header>
+
   <div id="terrain">Chargement...</div>
   <div id="message"></div>
 </body>
