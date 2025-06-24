@@ -2,116 +2,99 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <title>Classement – Finger Game</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Classement - Finger Game</title>
   <style>
     body {
-      margin: 0;
-      padding: 0;
+      font-family: 'Segoe UI', sans-serif;
       background: linear-gradient(to right, #0d47a1, #b71c1c);
       color: white;
-      font-family: 'Segoe UI', sans-serif;
       text-align: center;
-    }
-    header {
-      padding: 20px;
+      padding: 30px;
+      margin: 0;
     }
     img {
       width: 200px;
+      margin-top: 20px;
       max-width: 90%;
     }
     h1 {
-      margin-top: 0;
-      font-size: 28px;
+      margin: 10px 0;
     }
     table {
-      margin: 20px auto;
-      width: 90%;
-      max-width: 600px;
+      margin: 30px auto;
       border-collapse: collapse;
-      background: rgba(0, 0, 0, 0.2);
-      border-radius: 8px;
-      overflow: hidden;
+      width: 95%;
+      max-width: 700px;
+      background: rgba(0,0,0,0.2);
     }
     th, td {
-      padding: 12px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255,255,255,0.2);
+      padding: 10px;
+      text-align: center;
     }
     th {
-      background-color: rgba(255, 255, 255, 0.1);
+      background: rgba(255,255,255,0.1);
     }
-    tr:first-child {
-      background-color: rgba(255, 255, 255, 0.2);
-      font-weight: bold;
-    }
-    #export-btn {
-      margin-top: 10px;
-      padding: 10px 20px;
-      background-color: white;
-      color: black;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
+    .finaliste {
+      background: #ffd700;
+      color: #222;
       font-weight: bold;
     }
   </style>
-  <script type="module">
-    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
-    const supabase = createClient(
-      'https://ckolzmqarfizoxjgolft.supabase.co',
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrb2x6bXFhcmZpem94amdvbGZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk2Nzg3NTYsImV4cCI6MjA2NTI1NDc1Nn0.ZlpERz1uznM0fn--GR9YgM2vjwe_kw-qiPF8KHJvMpI'
-    );
-
-    let joueurs = [];
-
-    async function chargerClassement() {
-      const { data, error } = await supabase
-        .from("players")
-        .select("*")
-        .order("total_points", { ascending: false });
-
-      const tbody = document.getElementById("classement");
-      tbody.innerHTML = "";
-
-      if (data) {
-        joueurs = data;
-        data.forEach((p, i) => {
-          const tr = document.createElement("tr");
-          tr.innerHTML = `<td>#${i + 1}</td><td>${p.name}</td><td>${p.total_points}</td>`;
-          tbody.appendChild(tr);
-        });
-      }
-    }
-
-    function exporterCSV() {
-      let csv = "Rang,Nom,Points\n";
-      joueurs.forEach((p, i) => {
-        csv += `#${i + 1},"${p.name}",${p.total_points}\n`;
-      });
-      const blob = new Blob([csv], { type: "text/csv" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "classement_finger_game.csv";
-      a.click();
-    }
-
-    window.onload = chargerClassement;
-    window.exporterCSV = exporterCSV;
-  </script>
 </head>
 <body>
-  <header>
-    <img src="../assets/FingerGame_logo_blanc_tagline.png" alt="Finger Game" />
-    <h1>Classement Général</h1>
-    <button id="export-btn" onclick="exporterCSV()">📤 Exporter CSV</button>
-  </header>
-
+  <img src="../assets/FingerGame_logo_blanc_tagline.png" alt="Finger Game">
+  <h1>📊 Classement Général</h1>
   <table>
     <thead>
-      <tr><th>Rang</th><th>Joueur</th><th>Points</th></tr>
+      <tr>
+        <th>Rang</th>
+        <th>Joueur</th>
+        <th>Points</th>
+        <th>Matchs</th>
+      </tr>
     </thead>
     <tbody id="classement"></tbody>
   </table>
+  <a href="../joueur/index.html">⬅️ Retour joueur</a>
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+
+    const supabase = createClient(
+      'https://ckolzmqarfizoxjgolft.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrb2x6bXFhcmZpem94amdvbGZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk2Nzg3NTYsImV4cCI6MjA2NTI1NDc1Nn0.ZlpERz1uznM0fn--GR9YgM2vjwe_kw-qiPF8KHJvMpI'
+    )
+
+    async function afficherClassement() {
+      try {
+        const { data, error } = await supabase
+          .from("players")
+          .select("name, total_points, matches, phase")
+          .order("total_points", { ascending: false });
+
+        if (error) throw error;
+
+        const tbody = document.getElementById("classement");
+        tbody.innerHTML = "";
+
+        data.forEach((joueur, i) => {
+          const tr = document.createElement("tr");
+          if (joueur.phase == 99) tr.classList.add("finaliste");
+          tr.innerHTML = `
+            <td>${i + 1}</td>
+            <td>${joueur.name}</td>
+            <td>${joueur.total_points ?? 0}</td>
+            <td>${joueur.matches ?? 0}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+      } catch (e) {
+        document.getElementById("classement").innerHTML = `<tr><td colspan="4">Erreur de connexion. Veuillez vérifier votre réseau.</td></tr>`;
+      }
+    }
+
+    afficherClassement();
+  </script>
 </body>
 </html>
