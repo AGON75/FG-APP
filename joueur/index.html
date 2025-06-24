@@ -65,13 +65,34 @@
           // ID invalide : on le supprime et recommence
           localStorage.removeItem("player_id");
           await inscrireOuConnecter();
-        }
-      }
-    }
 
     
     async function inscrireOuConnecter() {
-        }
+      const baseName = prompt("Entrez votre nom et prénom");
+      if (!baseName) return;
+
+      const { data: existing } = await supabase
+        .from("players")
+        .select("id, name")
+        .ilike("name", `${baseName}%`);
+
+      if (existing.length > 0) {
+        playerId = existing[0].id;
+        localStorage.setItem("player_id", playerId);
+        afficher(existing[0]);
+      } else {
+        const { data: allPlayers } = await supabase.from("players").select("name");
+        const usedNumbers = new Set();
+        allPlayers.forEach(p => {
+          const match = p.name.match(/#(\d+)/);
+          if (match) usedNumbers.add(parseInt(match[1]));
+        });
+
+        let assigned = null;
+        for (let i = 1; i <= 120; i++) {
+          if (!usedNumbers.has(i)) {
+            assigned = i;
+            break;
 
         const fullName = `${baseName} #${assigned || Math.floor(Math.random() * 1000)}`;
         const { data: inserted } = await supabase
@@ -83,8 +104,6 @@
         playerId = inserted.id;
         localStorage.setItem("player_id", playerId);
         afficher(inserted);
-      }
-    }
 
       const baseName = prompt("Entrez votre nom et prénom");
       if (!baseName) return;
@@ -110,13 +129,10 @@
         playerId = inserted.id;
         localStorage.setItem("player_id", playerId);
         afficher(inserted);
-      }
-    }
 
     function afficher(data) {
       document.getElementById("terrain").textContent = "🎯 Piste actuelle : " + (data.terrain || "non affecté");
       document.getElementById("message").textContent = `👤 Joueur : ${data.name}`;
-    }
 
     async function afficherManche() {
       const { data } = await supabase.from("players").select("name, terrain").eq("id", playerId).single();
@@ -124,8 +140,6 @@
         afficher(data);
       } else {
         document.getElementById("terrain").textContent = "Aucune manche disponible.";
-      }
-    }
 
     document.getElementById("recharger").addEventListener("click", afficherManche);
 
@@ -133,20 +147,19 @@
   
     function changerDeJoueur() {
       localStorage.removeItem("player_id");
-      location.reload();
-    }</script>
+      location.reload();</script>
 </meta></head>
 <body>
 <header>
-<img alt="Finger Game" src="/FingerGame_logo_blanc_tagline.png"/>
+<img alt="Finger Game" src="https://finger-game.s3.eu-west-3.amazonaws.com/FingerGame_logo_blanc_tagline.png"/>
 <h1>Bienvenue dans le Finger Game</h1>
 </header>
 <div id="terrain">Chargement...</div>
 <div id="message"></div>
 <button id="recharger">🔁 Afficher la prochaine manche</button>
 <button onclick="changerDeJoueur()">🔄 Changer de joueur</button>
-
-
+<button onclick="changerDeJoueur()">🔄 Changer de joueur</button>
+<button onclick="changerDeJoueur()">🔄 Changer de joueur</button>
 <a href="/classement/">📊 Voir le classement</a>
 </body>
 </html>
