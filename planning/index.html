@@ -52,23 +52,19 @@
       const phase = parseInt(document.getElementById("phase").value);
       const round = document.getElementById("round").value;
       const joueursParTerrain = parseInt(document.getElementById("nb_joueurs").value);
-      const maxJoueurs = joueursParTerrain * 5;
+      const totalJoueurs = joueursParTerrain * 5;
 
       const { data: joueurs } = await supabase
         .from("players")
         .select("*")
         .order("matches", { ascending: true });
 
-      const assignables = joueurs.slice(0, maxJoueurs);
       const groupes = Array.from({ length: 5 }, () => []);
-      let terrainIndex = 0;
+      const assignables = joueurs.slice(0, totalJoueurs);
 
-      assignables.forEach((j) => {
-        // Trouver le premier terrain dispo
-        while (groupes[terrainIndex].length >= joueursParTerrain) {
-          terrainIndex = (terrainIndex + 1) % 5;
-        }
-        groupes[terrainIndex].push({ ...j, terrain: terrainIndex + 1 });
+      assignables.forEach((j, i) => {
+        const terrain = (i % 5) + 1;
+        groupes[terrain - 1].push({ ...j, terrain });
       });
 
       for (const groupe of groupes) {
@@ -130,104 +126,128 @@
     window.genererFinale = genererFinale;
   
 
-
+window.genererPlanningComplet = genererPlanningComplet;
+window.genererFinale = genererFinale;
 
 async function genererPlanningComplet() {
   const terrains = 5;
-  const joueursParTerrain = parseInt(document.getElementById("nb_joueurs").value);
+  const joueursParTerrain = 10;
   const maxParRound = terrains * joueursParTerrain;
+  const totalPhases = 4;
 
   const { data: joueurs } = await supabase
     .from("players")
     .select("*")
     .order("matches", { ascending: true });
 
+  if (!joueurs) return;
+
+  const planning = {}; // phase -> round -> terrain -> array de joueurs
+
+  for (let p = 1; p <= totalPhases; p++) {
+    planning[p] = { A: [[], [], [], [], []], B: [[], [], [], [], []] };
+  }
+
+  // Répartition équilibrée : chaque joueur joue 4 fois
+  const joueursCopies = joueurs.map(j => ({ ...j, slots: 0 }));
+
+  for (let p = 1; p <= totalPhases; p++) {
+    for (const round of ["A", "B"]) {
+      for (let t = 0; t < terrains; t++) {
+        while (planning[p][round][t].length < joueursParTerrain) {
+          const dispo = joueursCopies.filter(j => j.slots < totalPhases && !j[`p${p}`]);
+          if (dispo.length === 0) break;
+          const j = dispo[Math.floor(Math.random() * dispo.length)];
+          planning[p][round][t].push(j.name);
+          j.slots++;
+          j[`p${p}`] = true;
+          await supabase.from("players")
+            .update({ phase: p, round: round, terrain: t + 1 })
+            .eq("id", j.id);
+        }
+      }
+    }
+  }
+
+  afficherPlanningComplet();
+}
+
+async function genererFinale() {
+  const { data: top } = await supabase
+    .from("players")
+    .select("*")
+    .order("total_points", { ascending: true })
+    .limit(5);
+
+  if (!top) return;
+
+  for (const joueur of top) {
+    await supabase.from("players")
+      .update({ phase: 5, round: "F", terrain: 1 })
+      .eq("id", joueur.id);
+  }
+
+  alert("🏁 Finale générée avec succès !");
+}
+
+async function afficherPlanningComplet() {
+  const container = document.getElementById("planningTable");
+  container.innerHTML = "<h2>Planning complet</h2>";
+
+  const { data: joueurs } = await supabase
+    .from("players")
+    .select("*")
+    .order("phase", { ascending: true });
+
   if (!joueurs || joueurs.length === 0) {
-    alert("Aucun joueur trouvé.");
+    container.innerHTML += "<p>Aucun joueur trouvé.</p>";
     return;
   }
 
-  // Initialiser tous les créneaux [phase][round][terrain] = []
   const planning = {};
-  for (let phase = 1; phase <= 4; phase++) {
-    for (const round of ['A', 'B']) {
-      for (let terrain = 1; terrain <= 5; terrain++) {
-        planning[`${phase}_${round}_${terrain}`] = [];
-      }
-    }
-  }
 
-  // Prévoir 4 créneaux pour chaque joueur
-  const assignments = joueurs.map(joueur => ({
-    id: joueur.id,
-    name: joueur.name,
-    assignations: []
-  }));
+  joueurs.forEach(j => {
+    const key = `Phase ${j.phase || "-"} | Round ${j.round || "-"} | Terrain ${j.terrain || "-"}`;
+    if (!planning[key]) planning[key] = [];
+    planning[key].push(j.name);
+  });
 
-  // Remplir en distribuant les créneaux de façon équilibrée
-  for (let i = 0; i < 4; i++) {
-    // pour chaque manche à attribuer
-    for (const joueur of assignments) {
-      const tries = Object.keys(planning).filter(k => planning[k].length < joueursParTerrain);
+  const table = document.createElement("table");
+  table.style.borderCollapse = "collapse";
+  table.style.width = "100%";
+  table.innerHTML = "<tr><th>Phase</th><th>Round</th><th>Terrain</th><th>Joueurs</th></tr>";
 
-      let slotFound = false;
-      for (const slot of tries) {
-        const [p, r, t] = slot.split("_");
-        const alreadyInPhase = joueur.assignations.some(a => a.phase === p);
-        if (!alreadyInPhase) {
-          planning[slot].push(joueur.name);
-          joueur.assignations.push({ phase: p, round: r, terrain: t });
-          await supabase.from("players").update({
-            phase: parseInt(p),
-            round: r,
-            terrain: parseInt(t)
-          }).eq("id", joueur.id);
-          slotFound = true;
-          break;
-        }
-      }
-      if (!slotFound) {
-        console.warn(`⚠️ Pas de créneau trouvé pour ${joueur.name} à la manche ${i + 1}`);
-      }
-    }
-  }
+  Object.entries(planning).forEach(([key, names]) => {
+    const [_, phase, round, terrain] = key.match(/Phase (.+) \| Round (.+) \| Terrain (.+)/);
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td style='border: 1px solid white; padding: 5px;'>${phase}</td>
+      <td style='border: 1px solid white; padding: 5px;'>${round}</td>
+      <td style='border: 1px solid white; padding: 5px;'>${terrain}</td>
+      <td style='border: 1px solid white; padding: 5px;'>${names.join(", ")}</td>`;
+    table.appendChild(row);
+  });
 
-  alert("✅ Planning complet généré : chaque joueur participe à 4 manches.");
+  container.appendChild(table);
 }
-
-window.genererPlanningComplet = genererPlanningComplet;
 </script>
 </head>
 <body>
 <header>
 <img alt="Finger Game" src="../assets/FingerGame_logo_blanc_tagline.png"/>
 <h1>📅 Planning des Phases</h1>
-</header><button onclick="genererPlanningComplet()">🧩 Générer tout le planning des 4 premières phases</button>
+</header>
 <label>Phase :</label>
-<select id="phase">
-<option value="1">1</option><option value="2">2</option>
-<option value="3">3</option><option value="4">4</option><option value="5">5</option>
-</select>
+
 <label>Round :</label>
-<select id="round">
-<option value="A">A</option>
-<option value="B">B</option>
-</select>
+
 <label>Joueurs par terrain :</label>
-<select id="nb_joueurs">
-<option value="4">4</option>
-<option value="5">5</option>
-<option value="6">6</option>
-<option value="7">7</option>
-<option selected="" value="8">8</option>
-<option value="9">9</option>
-<option value="10">10</option>
-</select>
-<button onclick="genererPhase()">🚀 Générer la phase</button>
-<button onclick="genererFinale()">🏁 Générer la finale</button>
+
+
+
 <table>
 <thead><tr><th>Piste</th><th>Joueur</th></tr></thead>
 <tbody id="dispatch"></tbody>
 </table>
-<button onclick="afficherPlanningComplet()">📊 Afficher le planning complet</button><div id="planningTable" style="margin-top: 30px;"></div><button onclick="exporterCSV()">⬇️ Exporter le planning en CSV</button></body>
+<button onclick="genererPlanningComplet()">🧩 Générer les 4 phases complètes</button><button onclick="genererFinale()">🏁 Générer la finale (top 5)</button><div id="planningTable" style="margin-top: 30px;"></div></body>
 </html>
