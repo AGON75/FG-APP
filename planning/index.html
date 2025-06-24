@@ -49,7 +49,11 @@
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrb2x6bXFhcmZpem94amdvbGZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk2Nzg3NTYsImV4cCI6MjA2NTI1NDc1Nn0.ZlpERz1uznM0fn--GR9YgM2vjwe_kw-qiPF8KHJvMpI'
     );
 
+    let planningGenerated = false;
+
     async function genererPlanningComplet() {
+      if (planningGenerated) return; // Prevent regeneration
+
       const totalJoueurs = 100; // Maximum de 100 joueurs
 
       const { data: joueurs } = await supabase
@@ -66,7 +70,6 @@
       const joueursParTerrain = 10; // À ajuster selon le nombre de joueurs par terrain
       const groupes = Array.from({ length: 5 }, () => []);
 
-      // Répartition des joueurs pour chaque phase, round et terrain
       joueurs.forEach((j, i) => {
         const phase = Math.floor(i / 20) + 1; // 20 joueurs par phase
         const round = (Math.floor(i / 10) % 2 === 0) ? "A" : "B"; // Round A et B alternés
@@ -85,6 +88,7 @@
         }
       }
 
+      planningGenerated = true;
       afficherDispatch();
     }
 
@@ -135,22 +139,33 @@
         .from("players")
         .select("*")
         .order("total_points", { ascending: false })
-        .limit(5);
+        .limit(10); // 10 joueurs pour chaque match final
 
-      for (const joueur of data) {
+      let terrain = 1; // Répartir les 10 joueurs sur un terrain spécifique pour la finale
+
+      for (let i = 0; i < data.length; i++) {
+        const joueur = data[i];
         await supabase.from("players").update({
           phase: 5,
           round: 'F',
-          terrain: 1
+          terrain: terrain
         }).eq("id", joueur.id);
+        terrain = (terrain % 5) + 1; // Passer au terrain suivant après chaque joueur
       }
 
-      alert("🏁 Finale générée avec les 5 meilleurs joueurs !");
+      alert("🏁 Finale générée avec les 10 meilleurs joueurs !");
       afficherDispatch();
+    }
+
+    function resetPlanning() {
+      planningGenerated = false;
+      const tbody = document.getElementById("dispatch");
+      tbody.innerHTML = ""; // Reset the table content
     }
 
     window.genererPlanningComplet = genererPlanningComplet;
     window.genererFinale = genererFinale;
+    window.resetPlanning = resetPlanning;
   </script>
 </head>
 <body>
@@ -161,6 +176,7 @@
 
   <button onclick="genererPlanningComplet()">🚀 Générer le planning complet</button>
   <button onclick="genererFinale()">🏁 Générer la finale</button>
+  <button onclick="resetPlanning()">🗑️ Réinitialiser le planning</button>
 
   <table>
     <thead><tr><th>Joueur</th><th>Details</th></tr></thead>
