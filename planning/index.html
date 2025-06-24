@@ -101,7 +101,28 @@
       });
     }
 
+    
+    async function genererFinale() {
+      const { data } = await supabase
+        .from("players")
+        .select("*")
+        .order("total_points", { ascending: false })
+        .limit(5);
+
+      for (const joueur of data) {
+        await supabase.from("players").update({
+          phase: 5,
+          round: 'F',
+          terrain: 1
+        }).eq("id", joueur.id);
+      }
+
+      alert("🏁 Finale générée avec les 5 meilleurs joueurs !");
+      afficherDispatch(5, 'F');
+    }
+
     window.genererPhase = genererPhase;
+    window.genererFinale = genererFinale;
   </script>
 </head>
 <body>
@@ -131,6 +152,7 @@
     <option value="10">10</option>
   </select>
   <button onclick="genererPhase()">🚀 Générer la phase</button>
+  <button onclick="genererFinale()">🏁 Générer la finale</button>
 
   <table>
     <thead><tr><th>Piste</th><th>Joueur</th></tr></thead>
