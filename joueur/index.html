@@ -54,41 +54,58 @@
 
     async function setup() {
       if (!playerId) {
-        const baseName = prompt("Entrez votre nom et prénom");
-        if (!baseName) return;
-
-        const { data: existing } = await supabase
-          .from("players")
-          .select("id, name")
-          .ilike("name", `${baseName}%`);
-
-        if (existing.length > 0) {
-          playerId = existing[0].id;
-          localStorage.setItem("player_id", playerId);
-          document.getElementById("message").textContent = `🟢 Connecté : ${existing[0].name}`;
+        await inscrireOuConnecter();
+      } else {
+        const { data } = await supabase.from("players").select("name, terrain").eq("id", playerId).single();
+        if (data) {
+          afficher(data);
         } else {
-          const num = Math.floor(Math.random() * 120) + 1;
-          const fullName = `${baseName} #${num}`;
-          const { data: inserted } = await supabase
-            .from("players")
-            .insert({ name: fullName })
-            .select()
-            .single();
-
-          playerId = inserted.id;
-          localStorage.setItem("player_id", playerId);
-          document.getElementById("message").textContent = `🆕 Inscrit : ${fullName}`;
+          // ID invalide : on le supprime et recommence
+          localStorage.removeItem("player_id");
+          await inscrireOuConnecter();
         }
       }
+    }
 
-      afficherManche();
+    async function inscrireOuConnecter() {
+      const baseName = prompt("Entrez votre nom et prénom");
+      if (!baseName) return;
+
+      const { data: existing } = await supabase
+        .from("players")
+        .select("id, name")
+        .ilike("name", `${baseName}%`);
+
+      if (existing.length > 0) {
+        playerId = existing[0].id;
+        localStorage.setItem("player_id", playerId);
+        afficher(existing[0]);
+      } else {
+        const num = Math.floor(Math.random() * 120) + 1;
+        const fullName = `${baseName} #${num}`;
+        const { data: inserted } = await supabase
+          .from("players")
+          .insert({ name: fullName })
+          .select()
+          .single();
+
+        playerId = inserted.id;
+        localStorage.setItem("player_id", playerId);
+        afficher(inserted);
+      }
+    }
+
+    function afficher(data) {
+      document.getElementById("terrain").textContent = "🎯 Piste actuelle : " + (data.terrain || "non affecté");
+      document.getElementById("message").textContent = `👤 Joueur : ${data.name}`;
     }
 
     async function afficherManche() {
       const { data } = await supabase.from("players").select("name, terrain").eq("id", playerId).single();
       if (data) {
-        document.getElementById("terrain").textContent = "🎯 Piste actuelle : " + (data.terrain || "non affecté");
-        document.getElementById("message").textContent = `👤 Joueur : ${data.name}`;
+        afficher(data);
+      } else {
+        document.getElementById("terrain").textContent = "Aucune manche disponible.";
       }
     }
 
