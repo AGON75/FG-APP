@@ -10,78 +10,213 @@
       color: white;
       font-family: 'Segoe UI', sans-serif;
       text-align: center;
-      margin: 0;
       padding: 20px;
+      margin: 0;
     }
     header img {
       width: 200px;
+      max-width: 90%;
       margin-top: 20px;
     }
     h1 {
-      margin: 10px 0;
+      margin-top: 10px;
     }
-    table {
-      margin: 20px auto;
-      border-collapse: collapse;
-      width: 95%;
-      max-width: 1200px;
-      background: rgba(0,0,0,0.2);
-    }
-    th, td {
-      border: 1px solid rgba(255,255,255,0.2);
+    select, button {
+      font-size: 16px;
       padding: 10px;
-      text-align: center;
+      margin: 10px 5px;
     }
-    th {
-      background: rgba(255,255,255,0.1);
+    .player-button {
+      display: inline-block;
+      margin: 6px;
+      padding: 10px 16px;
+      border-radius: 6px;
+      border: none;
+      background: #444;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    .eliminated {
+      background-color: #b71c1c !important;
+      text-decoration: line-through;
     }
   </style>
   <script type="module">
-    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
     const supabase = createClient(
       'https://ckolzmqarfizoxjgolft.supabase.co',
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrb2x6bXFhcmZpem94amdvbGZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk2Nzg3NTYsImV4cCI6MjA2NTI1NDc1Nn0.ZlpERz1uznM0fn--GR9YgM2vjwe_kw-qiPF8KHJvMpI'
     );
 
-    async function afficherAffectations() {
-      const { data } = await supabase.from("players").select("name, terrain, phase, round").order("phase, round, terrain");
-      const tbody = document.getElementById("arbitre");
-      tbody.innerHTML = "";
+    let players = [];
+    let eliminatedOrder = [];
+    let currentPhase = 1;
+    let currentRound = "A";
+    let currentTerrain = 1;
 
-      const grouped = {};
-      for (const joueur of data) {
-        if (!joueur.phase) continue;
-        const key = joueur.phase == 99
-          ? "🏁 Finale"
-          : `Phase ${joueur.phase} – Round ${joueur.round} – Piste ${joueur.terrain}`;
-        if (!grouped[key]) grouped[key] = [];
-        grouped[key].push(joueur.name);
-      }
+    const baremes = {
+      4: [20, 10, 0, -5],
+      5: [25, 20, 10, 0, -5],
+      6: [30, 25, 15, 5, 0, -5],
+      7: [30, 25, 20, 15, 10, 0, -5],
+      8: [30, 25, 20, 15, 10, 5, 0, -5],
+      9: [35, 30, 25, 20, 15, 10, 5, 0, -5],
+      10:[40, 35, 30, 25, 20, 15, 10, 5, 0, -5]
+    };
 
-      for (const bloc in grouped) {
-        const header = document.createElement("tr");
-        header.innerHTML = `<th colspan="2">${bloc}</th>`;
-        tbody.appendChild(header);
-        for (const joueur of grouped[bloc]) {
-          const tr = document.createElement("tr");
-          tr.innerHTML = `<td>${joueur}</td><td></td>`;
-          tbody.appendChild(tr);
+    function isFinale() {
+      return parseInt(currentPhase) === 99 && currentRound === "F";
+    }
+
+    async function chargerJoueurs() {
+      currentPhase = parseInt(document.getElementById("phase").value);
+      currentRound = document.getElementById("round").value;
+      currentTerrain = parseInt(document.getElementById("terrain").value);
+
+      const { data } = await supabase
+        .from("players")
+        .select("*")
+        .eq("phase", currentPhase)
+        .eq("round", currentRound)
+        .eq("terrain", currentTerrain)
+        .order("name");
+
+      players = data;
+      eliminatedOrder = [];
+      renderPlayers();
+    }
+
+    function renderPlayers() {
+      const zone = document.getElementById("joueurs");
+      zone.innerHTML = "";
+      players.forEach(p => {
+        const btn = document.createElement("button");
+        btn.textContent = p.name;
+        btn.className = "player-button";
+        let elim = eliminatedOrder.filter(id => id === p.id).length;
+        if (elim > 0) {
+          btn.classList.add("eliminated");
+          btn.textContent += isFinale() ? ` (${elim}/2)` : ` (#${elim})`;
         }
+        btn.onclick = () => toggleElimination(p.id);
+        zone.appendChild(btn);
+      });
+      if (isFinale()) {
+        document.getElementById("ordre").textContent = `${eliminatedOrder.length} éliminations / ${players.length * 2} nécessaires`;
+      } else {
+        document.getElementById("ordre").textContent = `${eliminatedOrder.length} / ${players.length} éliminés`;
       }
     }
 
-    window.onload = afficherAffectations;
+    function toggleElimination(id) {
+      if (isFinale()) {
+        // Pour la finale, chaque joueur doit être éliminé 2 fois
+        const count = eliminatedOrder.filter(pid => pid === id).length;
+        if (count < 2) {
+          eliminatedOrder.push(id);
+        }
+      } else {
+        // Pour les autres phases, élimination classique
+        const index = eliminatedOrder.indexOf(id);
+        if (index > -1) {
+          eliminatedOrder.splice(index, 1);
+        } else {
+          eliminatedOrder.push(id);
+        }
+      }
+      renderPlayers();
+    }
+
+    async function validerManche() {
+      if (isFinale()) {
+        // Pour la finale, il doit rester un seul joueur avec moins de 2 éliminations
+        const counts = {};
+        players.forEach(p => counts[p.id] = 0);
+        eliminatedOrder.forEach(id => counts[id]++);
+        const stillIn = Object.entries(counts).filter(([id, c]) => c < 2);
+        if (stillIn.length !== 1) {
+          alert("⚠ Il doit rester un seul joueur avec moins de 2 éliminations.");
+          return;
+        }
+        // Ajouter la dernière élimination pour le vainqueur
+        eliminatedOrder.push(parseInt(stillIn[0][0]));
+      } else {
+        if (eliminatedOrder.length !== players.length - 1) {
+          alert("⚠ Il doit rester un seul joueur non éliminé.");
+          return;
+        }
+        const winner = players.find(p => !eliminatedOrder.includes(p.id));
+        if (winner) eliminatedOrder.push(winner.id);
+      }
+
+      const barème = baremes[players.length] || baremes[8];
+
+      for (let i = 0; i < eliminatedOrder.length; i++) {
+        const playerId = eliminatedOrder[i];
+        const points = barème[i] !== undefined ? barème[i] : 0;
+
+        await supabase.from("eliminations").insert({
+          player_id: playerId,
+          terrain: currentTerrain,
+          rank: i + 1
+        });
+
+        const { data } = await supabase.from("players").select("*").eq("id", playerId).single();
+        if (data) {
+          await supabase.from("players").update({
+            total_points: data.total_points + points,
+            matches: data.matches + 1
+          }).eq("id", playerId);
+        }
+      }
+
+      alert("✅ Manche enregistrée !");
+      players = [];
+      eliminatedOrder = [];
+      renderPlayers();
+    }
+
+    window.onload = () => {
+      const t = document.getElementById("terrain");
+      const p = document.getElementById("phase");
+      const r = document.getElementById("round");
+      for (let i = 1; i <= 5; i++) {
+        t.innerHTML += `<option value="${i}">Piste ${i}</option>`;
+        p.innerHTML += `<option value="${i}">Phase ${i}</option>`;
+      }
+      // Ajout de la finale (phase 99)
+      p.innerHTML += `<option value="99">Finale</option>`;
+      // Ajout du round C
+      r.innerHTML += `<option value="C">C</option>`;
+    };
+
+    window.chargerJoueurs = chargerJoueurs;
+    window.validerManche = validerManche;
   </script>
 </head>
 <body>
   <header>
-    <img src="../assets/FingerGame_logo_blanc_tagline.png" alt="Finger Game">
-    <h1>🦾 Affectations Arbitre</h1>
+    <img src="../assets/FingerGame_logo_blanc_tagline.png" alt="Finger Game" />
+    <h1>🎯 Arbitrage – Finger Game</h1>
   </header>
 
-  <table>
-    <thead><tr><th>Joueur</th><th>Détails</th></tr></thead>
-    <tbody id="arbitre"></tbody>
-  </table>
+  <label>Phase :</label>
+  <select id="phase"></select>
+  <label>Round :</label>
+  <select id="round">
+    <option value="A">A</option>
+    <option value="B">B</option>
+    <option value="F">F</option>
+    <!-- Le round C sera ajouté dynamiquement au chargement -->
+  </select>
+  <label>Piste :</label>
+  <select id="terrain"></select>
+  <button onclick="chargerJoueurs()">Charger les joueurs</button>
+
+  <div id="joueurs" style="margin-top: 20px;"></div>
+  <p id="ordre"></p>
+
+  <button onclick="validerManche()">✅ Valider la manche</button>
 </body>
 </html>
