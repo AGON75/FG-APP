@@ -128,13 +128,54 @@
 
     window.genererPhase = genererPhase;
     window.genererFinale = genererFinale;
-  </script>
+  
+
+async function genererPlanningComplet() {
+  const terrains = 5;
+  const joueursParTerrain = parseInt(document.getElementById("nb_joueurs").value);
+  const maxParRound = terrains * joueursParTerrain;
+
+  const { data: joueurs } = await supabase
+    .from("players")
+    .select("*")
+    .order("matches", { ascending: true });
+
+  let file = [...joueurs];
+  let phase = 1;
+
+  while (phase <= 4) {
+    for (const round of ['A', 'B']) {
+      const assignables = file.splice(0, maxParRound);
+      const groupes = Array.from({ length: terrains }, () => []);
+      let terrainIndex = 0;
+
+      assignables.forEach(j => {
+        while (groupes[terrainIndex].length >= joueursParTerrain) {
+          terrainIndex = (terrainIndex + 1) % terrains;
+        }
+        groupes[terrainIndex].push({ ...j, terrain: terrainIndex + 1 });
+      });
+
+      for (const groupe of groupes) {
+        for (const joueur of groupe) {
+          await supabase.from("players")
+            .update({ phase: phase, round: round, terrain: joueur.terrain })
+            .eq("id", joueur.id);
+        }
+      }
+    }
+    phase++;
+  }
+
+  alert("✅ Planning des 4 premières phases généré avec succès !");
+}
+</script>
 </head>
 <body>
 <header>
 <img alt="Finger Game" src="../assets/FingerGame_logo_blanc_tagline.png"/>
 <h1>📅 Planning des Phases</h1>
-</header>
+</header><button onclick="genererPlanningComplet()">🧩 Générer tout le planning des 4 premières phases</button>
 <label>Phase :</label>
 <select id="phase">
 <option value="1">1</option><option value="2">2</option>
