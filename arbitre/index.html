@@ -65,6 +65,10 @@
       10:[40, 35, 30, 25, 20, 15, 10, 5, 0, -5]
     };
 
+    function isFinale() {
+      return parseInt(currentPhase) === 99 && currentRound === "F";
+    }
+
     async function chargerJoueurs() {
       currentPhase = parseInt(document.getElementById("phase").value);
       currentRound = document.getElementById("round").value;
@@ -90,35 +94,61 @@
         const btn = document.createElement("button");
         btn.textContent = p.name;
         btn.className = "player-button";
-        if (eliminatedOrder.includes(p.id)) {
+        let elim = eliminatedOrder.filter(id => id === p.id).length;
+        if (elim > 0) {
           btn.classList.add("eliminated");
-          const rank = eliminatedOrder.indexOf(p.id) + 1;
-          btn.textContent += ` (#${rank})`;
+          btn.textContent += isFinale() ? ` (${elim}/2)` : ` (#${elim})`;
         }
         btn.onclick = () => toggleElimination(p.id);
         zone.appendChild(btn);
       });
-      document.getElementById("ordre").textContent = `${eliminatedOrder.length} / ${players.length} éliminés`;
+      if (isFinale()) {
+        document.getElementById("ordre").textContent = `${eliminatedOrder.length} éliminations / ${players.length * 2} nécessaires`;
+      } else {
+        document.getElementById("ordre").textContent = `${eliminatedOrder.length} / ${players.length} éliminés`;
+      }
     }
 
     function toggleElimination(id) {
-      const index = eliminatedOrder.indexOf(id);
-      if (index > -1) {
-        eliminatedOrder.splice(index, 1);
+      if (isFinale()) {
+        // Pour la finale, chaque joueur doit être éliminé 2 fois
+        const count = eliminatedOrder.filter(pid => pid === id).length;
+        if (count < 2) {
+          eliminatedOrder.push(id);
+        }
       } else {
-        eliminatedOrder.push(id);
+        // Pour les autres phases, élimination classique
+        const index = eliminatedOrder.indexOf(id);
+        if (index > -1) {
+          eliminatedOrder.splice(index, 1);
+        } else {
+          eliminatedOrder.push(id);
+        }
       }
       renderPlayers();
     }
 
     async function validerManche() {
-      if (eliminatedOrder.length !== players.length - 1) {
-        alert("⚠ Il doit rester un seul joueur non éliminé.");
-        return;
+      if (isFinale()) {
+        // Pour la finale, il doit rester un seul joueur avec moins de 2 éliminations
+        const counts = {};
+        players.forEach(p => counts[p.id] = 0);
+        eliminatedOrder.forEach(id => counts[id]++);
+        const stillIn = Object.entries(counts).filter(([id, c]) => c < 2);
+        if (stillIn.length !== 1) {
+          alert("⚠ Il doit rester un seul joueur avec moins de 2 éliminations.");
+          return;
+        }
+        // Ajouter la dernière élimination pour le vainqueur
+        eliminatedOrder.push(parseInt(stillIn[0][0]));
+      } else {
+        if (eliminatedOrder.length !== players.length - 1) {
+          alert("⚠ Il doit rester un seul joueur non éliminé.");
+          return;
+        }
+        const winner = players.find(p => !eliminatedOrder.includes(p.id));
+        if (winner) eliminatedOrder.push(winner.id);
       }
-
-      const winner = players.find(p => !eliminatedOrder.includes(p.id));
-      if (winner) eliminatedOrder.push(winner.id);
 
       const barème = baremes[players.length] || baremes[8];
 
@@ -155,6 +185,8 @@
         t.innerHTML += `<option value="${i}">Piste ${i}</option>`;
         p.innerHTML += `<option value="${i}">Phase ${i}</option>`;
       }
+      // Ajout de la finale (phase 99)
+      p.innerHTML += `<option value="99">Finale</option>`;
     };
 
     window.chargerJoueurs = chargerJoueurs;
