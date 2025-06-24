@@ -1,10 +1,11 @@
 <!DOCTYPE html>
+
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <title>Planning – Finger Game</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
+<meta charset="utf-8"/>
+<title>Planning – Finger Game</title>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<style>
     body {
       background: linear-gradient(to right, #0d47a1, #b71c1c);
       color: white;
@@ -40,7 +41,7 @@
       background: rgba(255,255,255,0.1);
     }
   </style>
-  <script type="module">
+<script type="module">
     import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
     const supabase = createClient(
       'https://ckolzmqarfizoxjgolft.supabase.co',
@@ -51,57 +52,24 @@
       const phase = parseInt(document.getElementById("phase").value);
       const round = document.getElementById("round").value;
       const joueursParTerrain = parseInt(document.getElementById("nb_joueurs").value);
-      const totalJoueurs = joueursParTerrain * 5;
+      const maxJoueurs = joueursParTerrain * 5;
 
       const { data: joueurs } = await supabase
         .from("players")
         .select("*")
         .order("matches", { ascending: true });
 
+      const assignables = joueurs.slice(0, maxJoueurs);
       const groupes = Array.from({ length: 5 }, () => []);
-      const assignables = joueurs.slice(0, totalJoueurs);
+      let terrainIndex = 0;
 
-const terrains = 5;
-const joueursParTerrain = parseInt(document.getElementById("nb_joueurs").value);
-const totalJoueurs = joueursParTerrain * terrains;
-
-// Séparer en deux rounds si nécessaire
-const joueursRoundA = assignables.slice(0, totalJoueurs);
-const joueursRoundB = assignables.slice(totalJoueurs);
-
-// Fonction pour répartir intelligemment sur les terrains
-function repartitionParTerrains(joueurs, round) {
-  const groupes = Array.from({ length: terrains }, () => []);
-
-  joueurs.forEach((joueur, index) => {
-    const terrainCandidat = groupes.findIndex(g => g.length < joueursParTerrain);
-    if (terrainCandidat !== -1) {
-      const terrain = terrainCandidat + 1;
-      groupes[terrainCandidat].push(joueur);
-
-      joueur.phase = phase;
-      joueur.round = round;
-      joueur.terrain = terrain;
-    }
-  });
-
-  return joueurs;
-}
-
-// Répartition
-const joueursAvecTerrains = [
-  ...repartitionParTerrains(joueursRoundA, "A"),
-  ...repartitionParTerrains(joueursRoundB, "B")
-];
-
-// Mise à jour Supabase
-await Promise.all(joueursAvecTerrains.map(j =>
-  supabase.from("players").update({
-    phase,
-    round: j.round,
-    terrain: j.terrain
-  }).eq("id", j.id)
-));
+      assignables.forEach((j) => {
+        // Trouver le premier terrain dispo
+        while (groupes[terrainIndex].length >= joueursParTerrain) {
+          terrainIndex = (terrainIndex + 1) % 5;
+        }
+        groupes[terrainIndex].push({ ...j, terrain: terrainIndex + 1 });
+      });
 
       for (const groupe of groupes) {
         for (const joueur of groupe) {
@@ -163,37 +131,35 @@ await Promise.all(joueursAvecTerrains.map(j =>
   </script>
 </head>
 <body>
-  <header>
-    <img src="../assets/FingerGame_logo_blanc_tagline.png" alt="Finger Game">
-    <h1>📅 Planning des Phases</h1>
-  </header>
-
-  <label>Phase :</label>
-  <select id="phase">
-    <option value="1">1</option><option value="2">2</option>
-    <option value="3">3</option><option value="4">4</option><option value="5">5</option>
-  </select>
-  <label>Round :</label>
-  <select id="round">
-    <option value="A">A</option>
-    <option value="B">B</option>
-  </select>
-  <label>Joueurs par terrain :</label>
-  <select id="nb_joueurs">
-    <option value="4">4</option>
-    <option value="5">5</option>
-    <option value="6">6</option>
-    <option value="7">7</option>
-    <option value="8" selected>8</option>
-    <option value="9">9</option>
-    <option value="10">10</option>
-  </select>
-  <button onclick="genererPhase()">🚀 Générer la phase</button>
-  <button onclick="genererFinale()">🏁 Générer la finale</button>
-
-  <table>
-    <thead><tr><th>Piste</th><th>Joueur</th></tr></thead>
-    <tbody id="dispatch"></tbody>
-  </table>
+<header>
+<img alt="Finger Game" src="../assets/FingerGame_logo_blanc_tagline.png"/>
+<h1>📅 Planning des Phases</h1>
+</header>
+<label>Phase :</label>
+<select id="phase">
+<option value="1">1</option><option value="2">2</option>
+<option value="3">3</option><option value="4">4</option><option value="5">5</option>
+</select>
+<label>Round :</label>
+<select id="round">
+<option value="A">A</option>
+<option value="B">B</option>
+</select>
+<label>Joueurs par terrain :</label>
+<select id="nb_joueurs">
+<option value="4">4</option>
+<option value="5">5</option>
+<option value="6">6</option>
+<option value="7">7</option>
+<option selected="" value="8">8</option>
+<option value="9">9</option>
+<option value="10">10</option>
+</select>
+<button onclick="genererPhase()">🚀 Générer la phase</button>
+<button onclick="genererFinale()">🏁 Générer la finale</button>
+<table>
+<thead><tr><th>Piste</th><th>Joueur</th></tr></thead>
+<tbody id="dispatch"></tbody>
+</table>
 </body>
 </html>
