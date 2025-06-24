@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="utf-8"/>
   <title>Planning – Finger Game</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
   <style>
     body {
       background: linear-gradient(to right, #0d47a1, #b71c1c);
@@ -47,28 +47,35 @@
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrb2x6bXFhcmZpem94amdvbGZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk2Nzg3NTYsImV4cCI6MjA2NTI1NDc1Nn0.ZlpERz1uznM0fn--GR9YgM2vjwe_kw-qiPF8KHJvMpI'
     );
 
-    async function genererPhase() {
-      const phase = parseInt(document.getElementById("phase").value);
-      const round = document.getElementById("round").value;
-      const joueursParTerrain = parseInt(document.getElementById("nb_joueurs").value);
-      const totalJoueurs = joueursParTerrain * 5;
+    async function genererPlanningComplet() {
+      const totalJoueurs = 100; // Maximum de 100 joueurs
 
       const { data: joueurs } = await supabase
         .from("players")
         .select("*")
         .order("matches", { ascending: true });
 
-      const groupes = Array.from({ length: 5 }, () => []);
-      const assignables = joueurs.slice(0, totalJoueurs);
+      if (joueurs.length < totalJoueurs) {
+        alert("Il faut inscrire tous les joueurs avant de générer le planning.");
+        return;
+      }
 
-      // Répartition équilibrée des joueurs pour chaque terrain et round
-      assignables.forEach((j, i) => {
+      let phase = 1;
+      let round = "A"; // Initialiser pour le round A
+
+      // Répartition des joueurs sur les phases et rounds
+      const joueursParTerrain = 10; // À ajuster selon le nombre de joueurs par terrain
+      const groupes = Array.from({ length: 5 }, () => []);
+
+      joueurs.forEach((j, i) => {
         const terrain = (i % 5) + 1;
-        groupes[terrain - 1].push({ ...j, terrain });
+        groupes[terrain - 1].push({ ...j, phase, round });
       });
 
-      for (const groupe of groupes) {
-        for (const joueur of groupe) {
+      // Assignation des joueurs aux terrains pour chaque phase et round
+      for (let i = 0; i < 5; i++) {
+        for (let j = 0; j < groupes[i].length; j++) {
+          const joueur = groupes[i][j];
           await supabase.from("players")
             .update({ phase, round, terrain: joueur.terrain })
             .eq("id", joueur.id);
@@ -121,7 +128,7 @@
       afficherDispatch(5, 'F');
     }
 
-    window.genererPhase = genererPhase;
+    window.genererPlanningComplet = genererPlanningComplet;
     window.genererFinale = genererFinale;
   </script>
 </head>
@@ -147,11 +154,11 @@
     <option value="5">5</option>
     <option value="6">6</option>
     <option value="7">7</option>
-    <option value="8" selected>8</option>
+    <option selected value="8">8</option>
     <option value="9">9</option>
     <option value="10">10</option>
   </select>
-  <button onclick="genererPhase()">🚀 Générer la phase</button>
+  <button onclick="genererPlanningComplet()">🚀 Générer le planning complet</button>
   <button onclick="genererFinale()">🏁 Générer la finale</button>
 
   <table>
@@ -160,3 +167,4 @@
   </table>
 </body>
 </html>
+
