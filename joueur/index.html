@@ -36,12 +36,12 @@
   </style>
 </head>
 <body>
-  <img src="https://finger-game.s3.eu-west-3.amazonaws.com/FingerGame_logo_blanc_tagline.png" alt="Logo Finger Game" /> style="height: 80px;" />
+  <img src="https://finger-game.s3.eu-west-3.amazonaws.com/FingerGame_logo_blanc_tagline.png" alt="Logo Finger Game" style="height: 80px;" />
   <h1>Page Joueur</h1>
 
   <div id="etat">Chargement...</div>
 
-  <button onclick="afficherProchaineManche()">📘 Afficher la prochaine manche</button>
+  <button onclick="location.reload()">📘 Afficher la prochaine manche</button>
   <button onclick="changerDeJoueur()">🔄 Changer de joueur</button><br>
   <a href="/classement.html">📊 Voir le classement</a>
 
@@ -96,15 +96,6 @@
       return data;
     }
 
-async function afficherProchaineManche() {
-  if (!playerId) return;
-  const joueur = await getPlayerById(playerId);
-  afficher(joueur);
-}
-
-window.afficherProchaineManche = afficherProchaineManche;
-
-
     function afficher(joueur) {
       const etat = document.getElementById("etat");
       if (!joueur) {
@@ -122,7 +113,7 @@ window.afficherProchaineManche = afficherProchaineManche;
     if (!playerId) {
       inscrireOuConnecter();
     } else {
-      afficherProchaineManche();
+      getPlayerById(playerId).then(afficher);
     }
   </script>
 </body>
