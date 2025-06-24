@@ -61,10 +61,47 @@
       const groupes = Array.from({ length: 5 }, () => []);
       const assignables = joueurs.slice(0, totalJoueurs);
 
-      assignables.forEach((j, i) => {
-        const terrain = (i % 5) + 1;
-        groupes[terrain - 1].push({ ...j, terrain });
-      });
+const terrains = 5;
+const joueursParTerrain = parseInt(document.getElementById("nb_joueurs").value);
+const totalJoueurs = joueursParTerrain * terrains;
+
+// Séparer en deux rounds si nécessaire
+const joueursRoundA = assignables.slice(0, totalJoueurs);
+const joueursRoundB = assignables.slice(totalJoueurs);
+
+// Fonction pour répartir intelligemment sur les terrains
+function repartitionParTerrains(joueurs, round) {
+  const groupes = Array.from({ length: terrains }, () => []);
+
+  joueurs.forEach((joueur, index) => {
+    const terrainCandidat = groupes.findIndex(g => g.length < joueursParTerrain);
+    if (terrainCandidat !== -1) {
+      const terrain = terrainCandidat + 1;
+      groupes[terrainCandidat].push(joueur);
+
+      joueur.phase = phase;
+      joueur.round = round;
+      joueur.terrain = terrain;
+    }
+  });
+
+  return joueurs;
+}
+
+// Répartition
+const joueursAvecTerrains = [
+  ...repartitionParTerrains(joueursRoundA, "A"),
+  ...repartitionParTerrains(joueursRoundB, "B")
+];
+
+// Mise à jour Supabase
+await Promise.all(joueursAvecTerrains.map(j =>
+  supabase.from("players").update({
+    phase,
+    round: j.round,
+    terrain: j.terrain
+  }).eq("id", j.id)
+));
 
       for (const groupe of groupes) {
         for (const joueur of groupe) {
