@@ -29,12 +29,13 @@
       margin: 20px auto;
       border-collapse: collapse;
       width: 90%;
-      max-width: 600px;
+      max-width: 1000px;
       background: rgba(0,0,0,0.2);
     }
     th, td {
       border: 1px solid rgba(255,255,255,0.2);
       padding: 10px;
+      text-align: center;
     }
     th {
       background: rgba(255,255,255,0.1);
@@ -82,29 +83,37 @@
         }
       }
 
-      afficherDispatch(phase, round);
+      afficherDispatch();
     }
 
-    async function afficherDispatch(phase, round) {
+    async function afficherDispatch() {
       const { data } = await supabase
         .from("players")
         .select("name, terrain, phase, round")
-        .eq("phase", phase)
-        .eq("round", round);
+        .order("phase, round");
 
       const repartition = {};
+
       data.forEach(p => {
-        if (!repartition[p.terrain]) repartition[p.terrain] = [];
-        repartition[p.terrain].push(p.name);
+        if (!repartition[p.phase]) repartition[p.phase] = {};
+        if (!repartition[p.phase][p.round]) repartition[p.phase][p.round] = {};
+        if (!repartition[p.phase][p.round][p.terrain]) repartition[p.phase][p.round][p.terrain] = [];
+
+        repartition[p.phase][p.round][p.terrain].push(p.name);
       });
 
       const tbody = document.getElementById("dispatch");
       tbody.innerHTML = "";
-      Object.keys(repartition).forEach(terrain => {
-        repartition[terrain].forEach(name => {
-          const tr = document.createElement("tr");
-          tr.innerHTML = `<td>Piste ${terrain}</td><td>${name}</td>`;
-          tbody.appendChild(tr);
+      // Affichage des phases, rounds et terrains
+      Object.keys(repartition).forEach(phase => {
+        Object.keys(repartition[phase]).forEach(round => {
+          Object.keys(repartition[phase][round]).forEach(terrain => {
+            repartition[phase][round][terrain].forEach(name => {
+              const tr = document.createElement("tr");
+              tr.innerHTML = `<td>Phase ${phase}, Round ${round}, Piste ${terrain}</td><td>${name}</td>`;
+              tbody.appendChild(tr);
+            });
+          });
         });
       });
     }
@@ -125,7 +134,7 @@
       }
 
       alert("🏁 Finale générée avec les 5 meilleurs joueurs !");
-      afficherDispatch(5, 'F');
+      afficherDispatch();
     }
 
     window.genererPlanningComplet = genererPlanningComplet;
@@ -162,7 +171,7 @@
   <button onclick="genererFinale()">🏁 Générer la finale</button>
 
   <table>
-    <thead><tr><th>Piste</th><th>Joueur</th></tr></thead>
+    <thead><tr><th>Phase, Round, Piste</th><th>Joueur</th></tr></thead>
     <tbody id="dispatch"></tbody>
   </table>
 </body>
