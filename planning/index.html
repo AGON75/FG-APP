@@ -238,16 +238,121 @@ async function afficherPlanningComplet() {
 <h1>📅 Planning des Phases</h1>
 </header>
 <label>Phase :</label>
-
 <label>Round :</label>
-
 <label>Joueurs par terrain :</label>
-
-
-
 <table>
 <thead><tr><th>Piste</th><th>Joueur</th></tr></thead>
 <tbody id="dispatch"></tbody>
 </table>
-<button onclick="genererPlanningComplet()">🧩 Générer les 4 phases complètes</button><button onclick="genererFinale()">🏁 Générer la finale (top 5)</button><div id="planningTable" style="margin-top: 30px;"></div></body>
+<button onclick="genererPlanningComplet()">🧩 Générer les 4 phases complètes</button><button onclick="genererFinale()">🏁 Générer la finale (top 5)</button><div id="planningTable" style="margin-top: 30px;"></div><script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+
+const supabase = createClient(
+  'https://ckolzmqarfizoxjgolft.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrb2x6bXFhcmZpem94amdvbGZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk2Nzg3NTYsImV4cCI6MjA2NTI1NDc1Nn0.ZlpERz1uznM0fn--GR9YgM2vjwe_kw-qiPF8KHJvMpI'
+);
+
+async function genererPlanningComplet() {
+  const terrains = 5;
+  const joueursParTerrain = 10;
+  const totalPhases = 4;
+  const maxParRound = terrains * joueursParTerrain;
+
+  const { data: joueurs } = await supabase
+    .from("players")
+    .select("*")
+    .order("matches", { ascending: true });
+
+  if (!joueurs) return;
+
+  const planning = {};
+  for (let p = 1; p <= totalPhases; p++) {
+    planning[p] = { A: [[], [], [], [], []], B: [[], [], [], [], []] };
+  }
+
+  const joueursCopies = joueurs.map(j => ({ ...j, slots: 0 }));
+
+  for (let p = 1; p <= totalPhases; p++) {
+    for (const round of ["A", "B"]) {
+      for (let t = 0; t < terrains; t++) {
+        while (planning[p][round][t].length < joueursParTerrain) {
+          const dispo = joueursCopies.filter(j => j.slots < totalPhases && !j[`p${p}`]);
+          if (dispo.length === 0) break;
+          const j = dispo[Math.floor(Math.random() * dispo.length)];
+          planning[p][round][t].push(j.name);
+          j.slots++;
+          j[`p${p}`] = true;
+          await supabase.from("players")
+            .update({ phase: p, round: round, terrain: t + 1 })
+            .eq("id", j.id);
+        }
+      }
+    }
+  }
+
+  afficherPlanningComplet();
+}
+
+async function genererFinale() {
+  const { data: top } = await supabase
+    .from("players")
+    .select("*")
+    .order("total_points", { ascending: true })
+    .limit(5);
+
+  if (!top) return;
+
+  for (const joueur of top) {
+    await supabase.from("players")
+      .update({ phase: 5, round: "F", terrain: 1 })
+      .eq("id", joueur.id);
+  }
+
+  alert("🏁 Finale générée avec succès !");
+}
+
+async function afficherPlanningComplet() {
+  const container = document.getElementById("planningTable");
+  container.innerHTML = "<h2>Planning complet</h2>";
+
+  const { data: joueurs } = await supabase
+    .from("players")
+    .select("*")
+    .order("phase", { ascending: true });
+
+  if (!joueurs || joueurs.length === 0) {
+    container.innerHTML += "<p>Aucun joueur trouvé.</p>";
+    return;
+  }
+
+  const planning = {};
+
+  joueurs.forEach(j => {
+    const key = `Phase ${j.phase || "-"} | Round ${j.round || "-"} | Terrain ${j.terrain || "-"}`;
+    if (!planning[key]) planning[key] = [];
+    planning[key].push(j.name);
+  });
+
+  const table = document.createElement("table");
+  table.style.borderCollapse = "collapse";
+  table.style.width = "100%";
+  table.innerHTML = "<tr><th>Phase</th><th>Round</th><th>Terrain</th><th>Joueurs</th></tr>";
+
+  Object.entries(planning).forEach(([key, names]) => {
+    const [_, phase, round, terrain] = key.match(/Phase (.+) \| Round (.+) \| Terrain (.+)/);
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td style='border: 1px solid white; padding: 5px;'>${phase}</td>
+      <td style='border: 1px solid white; padding: 5px;'>${round}</td>
+      <td style='border: 1px solid white; padding: 5px;'>${terrain}</td>
+      <td style='border: 1px solid white; padding: 5px;'>${names.join(", ")}</td>`;
+    table.appendChild(row);
+  });
+
+  container.appendChild(table);
+}
+
+window.genererPlanningComplet = genererPlanningComplet;
+window.genererFinale = genererFinale;
+</script></body>
 </html>
