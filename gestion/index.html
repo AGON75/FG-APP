@@ -1,82 +1,126 @@
-
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8" />
-    <title>Gestion des Joueurs</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background: linear-gradient(to right, #1e3c72, #9a1c34);
-            color: white;
-            text-align: center;
-            padding: 20px;
-        }
-        button {
-            margin: 10px;
-            padding: 10px 20px;
-            font-size: 1rem;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gestion des Joueurs</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(to right, #0033a0, #c8102e);
+      color: white;
+      text-align: center;
+      padding: 2rem;
+    }
+    input, button {
+      margin: 1rem;
+      padding: 0.5rem 1rem;
+      font-size: 1rem;
+    }
+    table {
+      margin: 2rem auto;
+      border-collapse: collapse;
+      width: 80%;
+      background: white;
+      color: black;
+    }
+    th, td {
+      padding: 0.5rem;
+      border: 1px solid #ccc;
+    }
+    button {
+      cursor: pointer;
+    }
+  </style>
 </head>
 <body>
-    <img src="../assets/FingerGame_logo_blanc_tagline.png" alt="Logo" style="height: 80px;" />
-    <h1>Gestion des Joueurs</h1>
-    <input type="text" id="nomPrenom" placeholder="Nom et prénom" />
-    <button onclick="ajouterJoueur()">+ Ajouter un joueur</button>
-    <div id="joueursContainer"></div>
-    <br />
-    <button onclick="resetTournoi()">🔥 Réinitialiser le tournoi</button>
-    <button onclick="supprimerTousLesJoueurs()">❌ Supprimer tous les joueurs</button>
-    <button onclick="genererFinale()">🏁 Générer la finale (top 5)</button>
-    <script>
-        const supabaseUrl = 'https://ckolzmqarfizoxjgolf.t.supabase.co';
-        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...';
-        const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+  <img src="https://upload.wikimedia.org/wikipedia/fr/9/99/Finger_Game_Logo.png" alt="Logo Finger Game" style="height: 80px" />
+  <h1>Gestion des Joueurs</h1>
 
-        async function fetchJoueurs() {
-            const { data } = await supabase.from('players').select('*').order('total_points', { ascending: true });
-            const container = document.getElementById('joueursContainer');
-            container.innerHTML = '';
-            data.forEach(joueur => {
-                const div = document.createElement('div');
-                div.textContent = `${joueur.name} — ${joueur.total_points} pts — ${joueur.matches} parties — Piste ${joueur.terrain}`;
-                container.appendChild(div);
-            });
-        }
+  <input type="text" id="nom" placeholder="Nom et prénom" />
+  <button id="ajouter-btn">+ Ajouter un joueur</button>
 
-        async function ajouterJoueur() {
-            const nomPrenom = document.getElementById('nomPrenom').value;
-            if (!nomPrenom.trim()) return;
-            const numero = Math.floor(Math.random() * 120) + 1;
-            await supabase.from('players').insert([{ name: nomPrenom + ' #' + numero }]);
-            fetchJoueurs();
-        }
+  <table id="tableau-joueurs">
+    <thead>
+      <tr>
+        <th>Nom</th>
+        <th>Points</th>
+        <th>Matches</th>
+        <th>Piste</th>
+        <th>Phase</th>
+        <th>Round</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
 
-        async function resetTournoi() {
-            const { data } = await supabase.from('players').select('*');
-            for (const joueur of data) {
-                await supabase.from('players').update({ total_points: 0, matches: 0 }).eq('id', joueur.id);
-            }
-            await supabase.from('eliminations').delete().neq('id', '');
-            fetchJoueurs();
-        }
+  <button id="reset-btn">🔥 Réinitialiser le tournoi</button>
+  <button id="supprimer-btn">❌ Supprimer tous les joueurs</button>
+  <button id="finale-btn">🏁 Générer la finale (top 5)</button>
 
-        async function supprimerTousLesJoueurs() {
-            await supabase.from('players').delete().neq('id', '');
-            fetchJoueurs();
-        }
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
 
-        async function genererFinale() {
-            const { data } = await supabase.from('players').select('*').order('total_points', { ascending: true }).limit(5);
-            for (const joueur of data) {
-                await supabase.from('players').update({ phase: 5, round: 'F', terrain: 1 }).eq('id', joueur.id);
-            }
-            fetchJoueurs();
-        }
+    const supabase = createClient(
+      'https://YOUR-PROJECT-ID.supabase.co', // 🛠️ À REMPLACER
+      'YOUR-PUBLIC-ANON-KEY' // 🛠️ À REMPLACER
+    )
 
-        fetchJoueurs();
-    </script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+    async function rafraichirJoueurs() {
+      const { data: joueurs } = await supabase.from("players").select("*").order("total_points", { ascending: false })
+      const tbody = document.querySelector("#tableau-joueurs tbody")
+      tbody.innerHTML = ""
+      joueurs.forEach(joueur => {
+        const tr = document.createElement("tr")
+        tr.innerHTML = `
+          <td>${joueur.name}</td>
+          <td>${joueur.total_points}</td>
+          <td>${joueur.matches}</td>
+          <td>${joueur.terrain ?? ""}</td>
+          <td>${joueur.phase ?? ""}</td>
+          <td>${joueur.round ?? ""}</td>
+          <td><button onclick="supprimerJoueur('${joueur.id}')">❌</button></td>
+        `
+        tbody.appendChild(tr)
+      })
+    }
+
+    window.supprimerJoueur = async (id) => {
+      await supabase.from("players").delete().eq("id", id)
+      await rafraichirJoueurs()
+    }
+
+    document.getElementById("ajouter-btn").onclick = async () => {
+      const nom = document.getElementById("nom").value.trim()
+      if (nom === "") return
+      const numero = Math.floor(Math.random() * 120) + 1
+      const nomComplet = nom + " #" + numero
+      await supabase.from("players").insert([{ name: nomComplet }])
+      document.getElementById("nom").value = ""
+      await rafraichirJoueurs()
+    }
+
+    document.getElementById("reset-btn").onclick = async () => {
+      await supabase.from("players").update({ total_points: 0, matches: 0, terrain: null }).neq("id", "")
+      await supabase.from("eliminations").delete().neq("id", "")
+      await rafraichirJoueurs()
+    }
+
+    document.getElementById("supprimer-btn").onclick = async () => {
+      await supabase.from("players").delete().neq("id", "")
+      await rafraichirJoueurs()
+    }
+
+    document.getElementById("finale-btn").onclick = async () => {
+      const { data: top } = await supabase.from("players").select("*").order("total_points", { ascending: false }).limit(5)
+      for (let joueur of top) {
+        await supabase.from("players").update({ phase: 5, round: "F", terrain: 1 }).eq("id", joueur.id)
+      }
+      await rafraichirJoueurs()
+    }
+
+    rafraichirJoueurs()
+  </script>
 </body>
 </html>
