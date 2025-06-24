@@ -133,8 +133,7 @@
 async function genererPlanningComplet() {
   const terrains = 5;
   const joueursParTerrain = parseInt(document.getElementById("nb_joueurs").value);
-  const maxParRound = terrains * joueursParTerrain
-      window.genererPlanningComplet = genererPlanningComplet;
+  const maxParRound = terrains * joueursParTerrain;
 
   const { data: joueurs } = await supabase
     .from("players")
@@ -170,6 +169,50 @@ async function genererPlanningComplet() {
 
   alert("✅ Planning des 4 premières phases généré avec succès !");
 }
+
+
+async function afficherPlanningComplet() {
+  const container = document.getElementById("planningTable");
+  container.innerHTML = "<h2>Planning complet</h2>";
+
+  const { data: joueurs } = await supabase
+    .from("players")
+    .select("*")
+    .order("phase", { ascending: true });
+
+  if (!joueurs || joueurs.length === 0) {
+    container.innerHTML += "<p>Aucun joueur trouvé.</p>";
+    return;
+  }
+
+  const planning = {};
+
+  joueurs.forEach(j => {
+    const key = `Phase ${j.phase || "-"} | Round ${j.round || "-"} | Terrain ${j.terrain || "-"}`;
+    if (!planning[key]) planning[key] = [];
+    planning[key].push(j.name);
+  });
+
+  const table = document.createElement("table");
+  table.style.borderCollapse = "collapse";
+  table.style.width = "100%";
+  table.innerHTML = "<tr><th>Phase</th><th>Round</th><th>Terrain</th><th>Joueurs</th></tr>";
+
+  Object.entries(planning).forEach(([key, names]) => {
+    const [_, phase, round, terrain] = key.match(/Phase (.+) \| Round (.+) \| Terrain (.+)/);
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td style='border: 1px solid white; padding: 5px;'>${phase}</td>
+      <td style='border: 1px solid white; padding: 5px;'>${round}</td>
+      <td style='border: 1px solid white; padding: 5px;'>${terrain}</td>
+      <td style='border: 1px solid white; padding: 5px;'>${names.join(", ")}</td>`;
+    table.appendChild(row);
+  });
+
+  container.appendChild(table);
+}
+
+window.genererPlanningComplet = genererPlanningComplet;
 </script>
 </head>
 <body>
@@ -203,5 +246,5 @@ async function genererPlanningComplet() {
 <thead><tr><th>Piste</th><th>Joueur</th></tr></thead>
 <tbody id="dispatch"></tbody>
 </table>
-</body>
+<button onclick="afficherPlanningComplet()">📊 Afficher le planning complet</button><div id="planningTable" style="margin-top: 30px;"></div></body>
 </html>
