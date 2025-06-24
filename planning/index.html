@@ -213,6 +213,32 @@ async function afficherPlanningComplet() {
 }
 
 window.genererPlanningComplet = genererPlanningComplet;
+
+
+window.afficherPlanningComplet = afficherPlanningComplet;
+
+function exporterCSV() {
+  const table = document.querySelector("#planningTable table");
+  if (!table) {
+    alert("Le tableau de planning doit d'abord être affiché.");
+    return;
+  }
+
+  let csvContent = "";
+  const rows = table.querySelectorAll("tr");
+  rows.forEach(row => {
+    const cols = Array.from(row.querySelectorAll("td,th")).map(td => `"${td.innerText}"`);
+    csvContent += cols.join(",") + "\n";
+  });
+
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const link = document.createElement("a");
+  link.setAttribute("href", URL.createObjectURL(blob));
+  link.setAttribute("download", "planning_finger_game.csv");
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
 </script>
 </head>
 <body>
@@ -246,5 +272,5 @@ window.genererPlanningComplet = genererPlanningComplet;
 <thead><tr><th>Piste</th><th>Joueur</th></tr></thead>
 <tbody id="dispatch"></tbody>
 </table>
-<button onclick="afficherPlanningComplet()">📊 Afficher le planning complet</button><div id="planningTable" style="margin-top: 30px;"></div></body>
+<button onclick="afficherPlanningComplet()">📊 Afficher le planning complet</button><div id="planningTable" style="margin-top: 30px;"></div><button onclick="exporterCSV()">⬇️ Exporter le planning en CSV</button></body>
 </html>
