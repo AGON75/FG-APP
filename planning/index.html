@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Planning – Finger Game</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      background: linear-gradient(to right, #0d47a1, #b71c1c);
+      color: white;
+      font-family: 'Segoe UI', sans-serif;
+      text-align: center;
+      margin: 0;
+      padding: 20px;
+    }
+    header img {
+      width: 200px;
+      margin-top: 20px;
+    }
+    h1 {
+      margin: 10px 0;
+    }
+    select, button {
+      padding: 10px;
+      font-size: 16px;
+      margin: 10px;
+    }
+    table {
+      margin: 20px auto;
+      border-collapse: collapse;
+      width: 90%;
+      max-width: 600px;
+      background: rgba(0,0,0,0.2);
+    }
+    th, td {
+      border: 1px solid rgba(255,255,255,0.2);
+      padding: 10px;
+    }
+    th {
+      background: rgba(255,255,255,0.1);
+    }
+  </style>
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+    const supabase = createClient(
+      'https://ckolzmqarfizoxjgolft.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrb2x6bXFhcmZpem94amdvbGZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk2Nzg3NTYsImV4cCI6MjA2NTI1NDc1Nn0.ZlpERz1uznM0fn--GR9YgM2vjwe_kw-qiPF8KHJvMpI'
+    );
+
+    async function genererPhase() {
+      const phase = parseInt(document.getElementById("phase").value);
+      const round = document.getElementById("round").value;
+
+      const { data: joueurs } = await supabase
+        .from("players")
+        .select("*")
+        .order("matches", { ascending: true });
+
+      const groupes = Array.from({ length: 5 }, () => []);
+      const assignables = joueurs.slice(0, 50);
+      assignables.forEach((j, i) => {
+        const terrain = (i % 5) + 1;
+        groupes[terrain - 1].push({ ...j, terrain });
+      });
+
+      for (const groupe of groupes) {
+        for (const joueur of groupe) {
+          await supabase.from("players")
+            .update({ phase, round, terrain: joueur.terrain })
+            .eq("id", joueur.id);
+        }
+      }
+
+      afficherDispatch(phase, round);
+    }
+
+    async function afficherDispatch(phase, round) {
+      const { data } = await supabase
+        .from("players")
+        .select("name, terrain")
+        .eq("phase", phase)
+        .eq("round", round);
+
+      const repartition = {};
+      data.forEach(p => {
+        if (!repartition[p.terrain]) repartition[p.terrain] = [];
+        repartition[p.terrain].push(p.name);
+      });
+
+      const tbody = document.getElementById("dispatch");
+      tbody.innerHTML = "";
+      Object.keys(repartition).forEach(terrain => {
+        repartition[terrain].forEach((name, i) => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `<td>Piste ${terrain}</td><td>${name}</td>`;
+          tbody.appendChild(tr);
+        });
+      });
+    }
+
+    window.genererPhase = genererPhase;
+  </script>
+</head>
+<body>
+  <header>
+    <img src="../assets/FingerGame_logo_blanc_tagline.png" alt="Finger Game">
+    <h1>📅 Planning des Phases</h1>
+  </header>
+
+  <label>Phase :</label>
+  <select id="phase">
+    <option value="1">1</option><option value="2">2</option>
+    <option value="3">3</option><option value="4">4</option><option value="5">5</option>
+  </select>
+  <label>Round :</label>
+  <select id="round">
+    <option value="A">A</option>
+    <option value="B">B</option>
+  </select>
+  <button onclick="genererPhase()">🚀 Générer la phase</button>
+
+  <table>
+    <thead><tr><th>Piste</th><th>Joueur</th></tr></thead>
+    <tbody id="dispatch"></tbody>
+  </table>
+</body>
+</html>
