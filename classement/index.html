@@ -56,11 +56,26 @@
       color: #222;
       font-weight: bold;
     }
+    #export-btn {
+      margin: 20px 0 10px 0;
+      padding: 8px 20px;
+      font-size: 16px;
+      border-radius: 6px;
+      border: none;
+      background: #ffd700;
+      color: #222;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    #export-btn:hover {
+      background: #ffe066;
+    }
   </style>
 </head>
 <body>
   <img src="../assets/FingerGame_logo_blanc_tagline.png" alt="Finger Game">
   <h1>📊 Classement Général</h1>
+  <button id="export-btn"⬇️ Exporter CSV</button>
   <table>
     <thead>
       <tr>
@@ -81,6 +96,8 @@
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrb2x6bXFhcmZpem94amdvbGZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk2Nzg3NTYsImV4cCI6MjA2NTI1NDc1Nn0.ZlpERz1uznM0fn--GR9YgM2vjwe_kw-qiPF8KHJvMpI'
     )
 
+    let classementData = [];
+
     async function afficherClassement() {
       try {
         const { data, error } = await supabase
@@ -89,6 +106,8 @@
           .order("total_points", { ascending: false });
 
         if (error) throw error;
+
+        classementData = data; // Pour l'export CSV
 
         const tbody = document.getElementById("classement");
         tbody.innerHTML = "";
@@ -125,6 +144,31 @@
         document.getElementById("classement").innerHTML = `<tr><td colspan="4">Erreur de connexion. Veuillez vérifier votre réseau.</td></tr>`;
       }
     }
+
+    function exportCSV() {
+      if (!classementData.length) {
+        alert("Aucune donnée à exporter !");
+        return;
+      }
+      let csv = "Rang,Joueur,Points,Matchs\n";
+      classementData.forEach((joueur, i) => {
+        let nom = joueur.name;
+        if (i === classementData.length - 1) nom = "💩 " + nom;
+        if (i === classementData.length - 2) nom = "🫥 " + nom;
+        csv += `${i + 1},"${nom}",${joueur.total_points ?? 0},${joueur.matches ?? 0}\n`;
+      });
+      const blob = new Blob([csv], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "classement_finger_game.csv";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    document.getElementById("export-btn").onclick = exportCSV;
 
     afficherClassement();
   </script>
