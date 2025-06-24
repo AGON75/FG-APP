@@ -133,7 +133,8 @@
 async function genererPlanningComplet() {
   const terrains = 5;
   const joueursParTerrain = parseInt(document.getElementById("nb_joueurs").value);
-  const maxParRound = terrains * joueursParTerrain;
+  const maxParRound = terrains * joueursParTerrain
+      window.genererPlanningComplet = genererPlanningComplet;
 
   const { data: joueurs } = await supabase
     .from("players")
