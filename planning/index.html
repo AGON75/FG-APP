@@ -64,7 +64,8 @@
         return;
       }
 
-      const joueursParTerrain = joueurs.length <= 100 ? 10 : Math.ceil(joueurs.length / 5); // Répartition dynamique selon le nombre de joueurs
+      // Répartition dynamique selon le nombre de joueurs
+      const joueursParTerrain = joueurs.length <= 100 ? 10 : Math.ceil(joueurs.length / 5); // Ajuster selon le nombre de joueurs
       const groupes = Array.from({ length: 5 }, () => []);
 
       joueurs.forEach((j, i) => {
