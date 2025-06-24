@@ -68,35 +68,37 @@ async function genererPlanningComplet() {
   const joueursParTerrain = 10;
   const totalPhases = 4;
 
-  const { data: joueurs } = await supabase
-    .from("players")
-    .select("*")
-    .order("matches", { ascending: true });
-
+  const { data: joueurs } = await supabase.from("players").select("*");
   if (!joueurs) return;
 
-  const planning = {};
-  for (let p = 1; p <= totalPhases; p++) {
-    planning[p] = { A: [[], [], [], [], []], B: [[], [], [], [], []] };
+  const planning = [];
+  for (let phase = 1; phase <= totalPhases; phase++) {
+    for (let round of ["A", "B"]) {
+      for (let terrain = 1; terrain <= terrains; terrain++) {
+        planning.push({ phase, round, terrain, joueurs: [] });
+      }
+    }
   }
 
-  const joueursCopies = joueurs.map(j => ({ ...j, slots: 0 }));
+  const joueursMap = joueurs.map(j => ({ ...j, assignedPhases: [] }));
 
-  for (let p = 1; p <= totalPhases; p++) {
-    for (const round of ["A", "B"]) {
-      for (let t = 0; t < terrains; t++) {
-        while (planning[p][round][t].length < joueursParTerrain) {
-          const dispo = joueursCopies.filter(j => j.slots < totalPhases && !j[`p${p}`]);
-          if (dispo.length === 0) break;
-          const j = dispo[Math.floor(Math.random() * dispo.length)];
-          planning[p][round][t].push(j.name);
-          j.slots++;
-          j[`p${p}`] = true;
-          await supabase.from("players")
-            .update({ phase: p, round: round, terrain: t + 1 })
-            .eq("id", j.id);
-        }
-      }
+  for (let joueur of joueursMap) {
+    let essais = 0;
+    while (joueur.assignedPhases.length < totalPhases && essais < 1000) {
+      const phaseOptions = planning.filter(p => 
+        !joueur.assignedPhases.includes(p.phase) &&
+        p.joueurs.length < joueursParTerrain
+      );
+      if (phaseOptions.length === 0) break;
+
+      const random = phaseOptions[Math.floor(Math.random() * phaseOptions.length)];
+      random.joueurs.push(joueur);
+      joueur.assignedPhases.push(random.phase);
+      await supabase.from("players")
+        .update({ phase: random.phase, round: random.round, terrain: random.terrain })
+        .eq("id", joueur.id);
+
+      essais++;
     }
   }
 
@@ -110,14 +112,11 @@ async function genererFinale() {
     .order("total_points", { ascending: true })
     .limit(5);
 
-  if (!top) return;
-
   for (const joueur of top) {
     await supabase.from("players")
       .update({ phase: 5, round: "F", terrain: 1 })
       .eq("id", joueur.id);
   }
-
   alert("🏁 Finale générée avec succès !");
 }
 
