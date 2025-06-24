@@ -22,15 +22,25 @@
       margin: 20px 0 10px;
       font-size: 26px;
     }
-    #terrain {
-      font-size: 32px;
-      margin-top: 20px;
+    #terrain, #message {
+      font-size: 22px;
       font-weight: bold;
+      margin: 10px 0;
     }
-    #message {
-      font-size: 18px;
+    button {
+      padding: 12px 20px;
+      font-size: 16px;
+      background: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-top: 20px;
+    }
+    a {
+      color: #fff;
+      text-decoration: underline;
+      display: block;
       margin-top: 15px;
-      color: #c8ffc8;
     }
   </style>
   <script type="module">
@@ -44,61 +54,60 @@
 
     async function setup() {
       if (!playerId) {
-        const baseName = prompt("Entrez votre prénom ou pseudo");
+        const baseName = prompt("Entrez votre nom et prénom");
         if (!baseName) return;
 
-        let { data } = await supabase.from("players").select("id, name").ilike("name", `${baseName}%`);
-        if (data.length > 0) {
-          playerId = data[0].id;
-          document.getElementById("message").textContent = `🟢 Bienvenue ${data[0].name}`;
+        const { data: existing } = await supabase
+          .from("players")
+          .select("id, name")
+          .ilike("name", `${baseName}%`);
+
+        if (existing.length > 0) {
+          playerId = existing[0].id;
           localStorage.setItem("player_id", playerId);
+          document.getElementById("message").textContent = `🟢 Connecté : ${existing[0].name}`;
         } else {
           const num = Math.floor(Math.random() * 120) + 1;
           const fullName = `${baseName} #${num}`;
-          const terrain = Math.floor(Math.random() * 5) + 1;
           const { data: inserted } = await supabase
             .from("players")
-            .insert({ name: fullName, terrain, total_points: 0, matches: 0 })
+            .insert({ name: fullName })
             .select()
             .single();
 
           playerId = inserted.id;
           localStorage.setItem("player_id", playerId);
-          document.getElementById("message").textContent = `🆕 Créé : ${fullName}`;
+          document.getElementById("message").textContent = `🆕 Inscrit : ${fullName}`;
         }
       }
 
+      afficherManche();
+    }
+
+    async function afficherManche() {
       const { data } = await supabase.from("players").select("name, terrain").eq("id", playerId).single();
       if (data) {
-        document.getElementById("terrain").textContent = "🎯 Piste : " + data.terrain;
-        document.getElementById("message").textContent += ` | Joueur : ${data.name}`;
+        document.getElementById("terrain").textContent = "🎯 Piste actuelle : " + (data.terrain || "non affecté");
+        document.getElementById("message").textContent = `👤 Joueur : ${data.name}`;
       }
-
-      supabase
-        .channel("terrain-updates")
-        .on("postgres_changes", {
-          event: "UPDATE",
-          schema: "public",
-          table: "players",
-          filter: `id=eq.${playerId}`
-        }, payload => {
-          const nouveau = payload.new.terrain;
-          document.getElementById("terrain").textContent = "🎯 Piste : " + nouveau;
-          document.getElementById("message").textContent = "🚨 Ton terrain a changé !";
-        })
-        .subscribe();
     }
+
+    document.getElementById("recharger").addEventListener("click", afficherManche);
 
     setup();
   </script>
 </head>
 <body>
   <header>
-    <img src="../assets/FingerGame_logo_blanc_tagline.png" alt="Finger Game" />
+    <img src="../assets/FingerGame_logo_blanc_tagline.png" alt="Finger Game">
     <h1>Bienvenue dans le Finger Game</h1>
   </header>
 
   <div id="terrain">Chargement...</div>
   <div id="message"></div>
+
+  <button id="recharger">🔁 Afficher la prochaine manche</button>
+
+  <a href="/classement/">📊 Voir le classement</a>
 </body>
 </html>
