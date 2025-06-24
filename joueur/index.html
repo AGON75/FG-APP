@@ -1,75 +1,60 @@
 <!DOCTYPE html>
-
 <html lang="fr">
 <head>
-<meta charset="utf-8"/>
-<title>Joueur – Finger Game</title>
-<meta content="width=device-width, initial-scale=1.0" name="viewport">
-<style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Joueur - Finger Game</title>
+  <style>
     body {
-      background: linear-gradient(to right, #0d47a1, #b71c1c);
+      font-family: Arial, sans-serif;
+      background: linear-gradient(to right, #003087, #c8102e);
       color: white;
-      font-family: 'Segoe UI', sans-serif;
       text-align: center;
-      padding: 20px;
-      margin: 0;
-    }
-    header img {
-      width: 200px;
-      max-width: 90%;
-      margin-top: 20px;
-    }
-    h1 {
-      margin: 20px 0 10px;
-      font-size: 26px;
-    }
-    #terrain, #message {
-      font-size: 22px;
-      font-weight: bold;
-      margin: 10px 0;
+      padding: 30px;
     }
     button {
-      padding: 12px 20px;
+      margin: 15px;
+      padding: 10px 20px;
       font-size: 16px;
-      background: white;
+      font-weight: bold;
+      border-radius: 6px;
       border: none;
-      border-radius: 8px;
       cursor: pointer;
-      margin-top: 20px;
     }
     a {
-      color: #fff;
+      display: inline-block;
+      margin-top: 10px;
+      color: white;
       text-decoration: underline;
-      display: block;
-      margin-top: 15px;
+      font-weight: bold;
+    }
+    #etat {
+      margin-top: 30px;
+      font-size: 20px;
+      font-weight: bold;
     }
   </style>
-<script type="module">
-    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+</head>
+<body>
+  <img src="https://finger-game.s3.eu-west-3.amazonaws.com/FingerGame_logo_blanc_tagline.png" alt="Logo Finger Game" style="height: 80px;" />
+  <h1>Page Joueur</h1>
+
+  <div id="etat">Chargement...</div>
+
+  <button onclick="afficherProchaineManche()">📘 Afficher la prochaine manche</button>
+  <button onclick="changerDeJoueur()">🔄 Changer de joueur</button><br>
+  <a href="/classement.html">📊 Voir le classement</a>
+
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+
     const supabase = createClient(
       'https://ckolzmqarfizoxjgolft.supabase.co',
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrb2x6bXFhcmZpem94amdvbGZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk2Nzg3NTYsImV4cCI6MjA2NTI1NDc1Nn0.ZlpERz1uznM0fn--GR9YgM2vjwe_kw-qiPF8KHJvMpI'
-    );
+    )
 
     let playerId = localStorage.getItem("player_id");
 
-    
-    async function setup() {
-      if (!playerId) {
-        await inscrireOuConnecter();
-      } else {
-        const { data } = await supabase.from("players").select("name, terrain").eq("id", playerId).single();
-        if (data) {
-          afficher(data);
-        } else {
-          // ID invalide : on le supprime et recommence
-          localStorage.removeItem("player_id");
-          await inscrireOuConnecter();
-        }
-      }
-    }
-
-    
     async function inscrireOuConnecter() {
       const baseName = prompt("Entrez votre nom et prénom");
       if (!baseName) return;
@@ -82,24 +67,10 @@
       if (existing.length > 0) {
         playerId = existing[0].id;
         localStorage.setItem("player_id", playerId);
-        afficher(existing[0]);
+        afficher(await getPlayerById(playerId));
       } else {
-        const { data: allPlayers } = await supabase.from("players").select("name");
-        const usedNumbers = new Set();
-        allPlayers.forEach(p => {
-          const match = p.name.match(/#(\d+)/);
-          if (match) usedNumbers.add(parseInt(match[1]));
-        });
-
-        let assigned = null;
-        for (let i = 1; i <= 120; i++) {
-          if (!usedNumbers.has(i)) {
-            assigned = i;
-            break;
-          }
-        }
-
-        const fullName = `${baseName} #${assigned || Math.floor(Math.random() * 1000)}`;
+        const numero = Math.floor(Math.random() * 120) + 1;
+        const fullName = `${baseName} #${numero}`;
         const { data: inserted, error } = await supabase
           .from("players")
           .insert({ name: fullName })
@@ -113,87 +84,43 @@
           alert("Erreur lors de l'inscription.");
           console.error(error);
         }
-          .select()
-          .single();
-
-        playerId = inserted.id;
-        localStorage.setItem("player_id", playerId);
-        afficher(inserted);
       }
     }
 
-      const baseName = prompt("Entrez votre nom et prénom");
-      if (!baseName) return;
-
-      const { data: existing } = await supabase
+    async function getPlayerById(id) {
+      const { data } = await supabase
         .from("players")
-        .select("id, name")
-        .ilike("name", `${baseName}%`);
+        .select("*")
+        .eq("id", id)
+        .single();
+      return data;
+    }
 
-      if (existing.length > 0) {
-        playerId = existing[0].id;
-        localStorage.setItem("player_id", playerId);
-        afficher(existing[0]);
-      } else {
-        const num = Math.floor(Math.random() * 120) + 1;
-        const fullName = `${baseName} #${num}`;
-        const { data: inserted, error } = await supabase
-          .from("players")
-          .insert({ name: fullName })
-          .select()
-          .single();
-        if (inserted) {
-          playerId = inserted.id;
-          localStorage.setItem("player_id", playerId);
-          afficher(inserted);
-        } else {
-          alert("Erreur lors de l'inscription.");
-          console.error(error);
-        }
-          .select()
-          .single();
+    async function afficherProchaineManche() {
+      if (!playerId) return;
+      const joueur = await getPlayerById(playerId);
+      afficher(joueur);
+    }
 
-        playerId = inserted.id;
-        localStorage.setItem("player_id", playerId);
-        afficher(inserted);
+    function afficher(joueur) {
+      const etat = document.getElementById("etat");
+      if (!joueur) {
+        etat.textContent = "Aucune donnée trouvée.";
+        return;
       }
+      etat.textContent = `${joueur.name} — Piste ${joueur.terrain ?? "non attribuée"} — Phase ${joueur.phase ?? "-"}/${joueur.round ?? "-"}`;
     }
 
-    function afficher(data) {
-      document.getElementById("terrain").textContent = "🎯 Piste actuelle : " + (data.terrain || "non affecté");
-      document.getElementById("message").textContent = `👤 Joueur : ${data.name}`;
-    }
-
-    async function afficherManche() {
-      const { data } = await supabase.from("players").select("name, terrain").eq("id", playerId).single();
-      if (data) {
-        afficher(data);
-      } else {
-        document.getElementById("terrain").textContent = "Aucune manche disponible.";
-      }
-    }
-
-    document.getElementById("recharger").addEventListener("click", afficherManche);
-
-    setup();
-  
-    function changerDeJoueur() {
+    window.changerDeJoueur = function () {
       localStorage.removeItem("player_id");
       location.reload();
     }
-</script>
-</meta></head>
-<body>
-<header>
-<img alt="Finger Game" src="../assets/FingerGame_logo_blanc_tagline.png"/>
-<h1>Bienvenue dans le Finger Game</h1>
-</header>
-<div id="terrain">Chargement...</div>
-<div id="message"></div>
-<button id="recharger">🔁 Afficher la prochaine manche</button>
-<button onclick="changerDeJoueur()">🔄 Changer de joueur</button>
-<button onclick="changerDeJoueur()">🔄 Changer de joueur</button>
-<button onclick="changerDeJoueur()">🔄 Changer de joueur</button>
-<a href="/classement/">📊 Voir le classement</a>
+
+    if (!playerId) {
+      inscrireOuConnecter();
+    } else {
+      afficherProchaineManche();
+    }
+  </script>
 </body>
 </html>
