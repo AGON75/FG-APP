@@ -130,6 +130,8 @@
     window.genererFinale = genererFinale;
   
 
+
+
 async function genererPlanningComplet() {
   const terrains = 5;
   const joueursParTerrain = parseInt(document.getElementById("nb_joueurs").value);
@@ -140,105 +142,60 @@ async function genererPlanningComplet() {
     .select("*")
     .order("matches", { ascending: true });
 
-  let file = [...joueurs];
-  let phase = 1;
-
-  while (phase <= 4) {
-    for (const round of ['A', 'B']) {
-      const assignables = file.splice(0, maxParRound);
-      const groupes = Array.from({ length: terrains }, () => []);
-      let terrainIndex = 0;
-
-      assignables.forEach(j => {
-        while (groupes[terrainIndex].length >= joueursParTerrain) {
-          terrainIndex = (terrainIndex + 1) % terrains;
-        }
-        groupes[terrainIndex].push({ ...j, terrain: terrainIndex + 1 });
-      });
-
-      for (const groupe of groupes) {
-        for (const joueur of groupe) {
-          await supabase.from("players")
-            .update({ phase: phase, round: round, terrain: joueur.terrain })
-            .eq("id", joueur.id);
-        }
-      }
-    }
-    phase++;
-  }
-
-  alert("✅ Planning des 4 premières phases généré avec succès !");
-}
-
-
-async function afficherPlanningComplet() {
-  const container = document.getElementById("planningTable");
-  container.innerHTML = "<h2>Planning complet</h2>";
-
-  const { data: joueurs } = await supabase
-    .from("players")
-    .select("*")
-    .order("phase", { ascending: true });
-
   if (!joueurs || joueurs.length === 0) {
-    container.innerHTML += "<p>Aucun joueur trouvé.</p>";
+    alert("Aucun joueur trouvé.");
     return;
   }
 
+  // Initialiser tous les créneaux [phase][round][terrain] = []
   const planning = {};
+  for (let phase = 1; phase <= 4; phase++) {
+    for (const round of ['A', 'B']) {
+      for (let terrain = 1; terrain <= 5; terrain++) {
+        planning[`${phase}_${round}_${terrain}`] = [];
+      }
+    }
+  }
 
-  joueurs.forEach(j => {
-    const key = `Phase ${j.phase || "-"} | Round ${j.round || "-"} | Terrain ${j.terrain || "-"}`;
-    if (!planning[key]) planning[key] = [];
-    planning[key].push(j.name);
-  });
+  // Prévoir 4 créneaux pour chaque joueur
+  const assignments = joueurs.map(joueur => ({
+    id: joueur.id,
+    name: joueur.name,
+    assignations: []
+  }));
 
-  const table = document.createElement("table");
-  table.style.borderCollapse = "collapse";
-  table.style.width = "100%";
-  table.innerHTML = "<tr><th>Phase</th><th>Round</th><th>Terrain</th><th>Joueurs</th></tr>";
+  // Remplir en distribuant les créneaux de façon équilibrée
+  for (let i = 0; i < 4; i++) {
+    // pour chaque manche à attribuer
+    for (const joueur of assignments) {
+      const tries = Object.keys(planning).filter(k => planning[k].length < joueursParTerrain);
 
-  Object.entries(planning).forEach(([key, names]) => {
-    const [_, phase, round, terrain] = key.match(/Phase (.+) \| Round (.+) \| Terrain (.+)/);
-    const row = document.createElement("tr");
-    row.innerHTML = `
-      <td style='border: 1px solid white; padding: 5px;'>${phase}</td>
-      <td style='border: 1px solid white; padding: 5px;'>${round}</td>
-      <td style='border: 1px solid white; padding: 5px;'>${terrain}</td>
-      <td style='border: 1px solid white; padding: 5px;'>${names.join(", ")}</td>`;
-    table.appendChild(row);
-  });
+      let slotFound = false;
+      for (const slot of tries) {
+        const [p, r, t] = slot.split("_");
+        const alreadyInPhase = joueur.assignations.some(a => a.phase === p);
+        if (!alreadyInPhase) {
+          planning[slot].push(joueur.name);
+          joueur.assignations.push({ phase: p, round: r, terrain: t });
+          await supabase.from("players").update({
+            phase: parseInt(p),
+            round: r,
+            terrain: parseInt(t)
+          }).eq("id", joueur.id);
+          slotFound = true;
+          break;
+        }
+      }
+      if (!slotFound) {
+        console.warn(`⚠️ Pas de créneau trouvé pour ${joueur.name} à la manche ${i + 1}`);
+      }
+    }
+  }
 
-  container.appendChild(table);
+  alert("✅ Planning complet généré : chaque joueur participe à 4 manches.");
 }
 
 window.genererPlanningComplet = genererPlanningComplet;
-
-
-window.afficherPlanningComplet = afficherPlanningComplet;
-
-function exporterCSV() {
-  const table = document.querySelector("#planningTable table");
-  if (!table) {
-    alert("Le tableau de planning doit d'abord être affiché.");
-    return;
-  }
-
-  let csvContent = "";
-  const rows = table.querySelectorAll("tr");
-  rows.forEach(row => {
-    const cols = Array.from(row.querySelectorAll("td,th")).map(td => `"${td.innerText}"`);
-    csvContent += cols.join(",") + "\n";
-  });
-
-  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-  const link = document.createElement("a");
-  link.setAttribute("href", URL.createObjectURL(blob));
-  link.setAttribute("download", "planning_finger_game.csv");
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-}
 </script>
 </head>
 <body>
