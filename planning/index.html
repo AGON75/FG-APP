@@ -55,7 +55,6 @@
         return;
       }
 
-      // Réinitialiser les affectations de la phase en cours
       await supabase.from("players")
         .update({ phase: null, round: null, terrain: null })
         .in("id", joueurs.map(j => j.id));
@@ -64,26 +63,22 @@
       let terrains = [1, 2, 3, 4, 5];
       let rounds = ["A"];
 
-      // Cas 1 : Moins de 10 joueurs -> un seul terrain, un seul round
       if (joueurs.length <= joueursParSlot) {
         terrains = [1];
         rounds = ["A"];
-      }
-      // Cas 2 : 11 à 50 joueurs -> 5 terrains, un seul round
-      else if (joueurs.length <= 50) {
+      } else if (joueurs.length <= 50) {
         terrains = [1, 2, 3, 4, 5];
         rounds = ["A"];
-      }
-      // Cas 3 : plus de 50 joueurs -> 5 terrains, deux rounds
-      else {
+      } else if (joueurs.length <= 100) {
         terrains = [1, 2, 3, 4, 5];
         rounds = ["A", "B"];
+      } else {
+        terrains = [1, 2, 3, 4, 5];
+        rounds = ["A", "B", "C"];
       }
 
-      // Mélanger les joueurs pour l'équité
       const shuffled = joueurs.slice().sort(() => Math.random() - 0.5);
 
-      // Créer les slots (round/terrain)
       let slots = [];
       for (const round of rounds) {
         for (const terrain of terrains) {
@@ -93,15 +88,11 @@
 
       let idx = 0;
       for (const joueur of shuffled) {
-        // Trouver le prochain slot non plein
         while (idx < slots.length && slots[idx].joueurs.length >= joueursParSlot) {
           idx++;
         }
-        if (idx >= slots.length) break; // Plus de place
-
+        if (idx >= slots.length) break;
         slots[idx].joueurs.push(joueur);
-
-        // Enregistrer l'affectation dans Supabase
         await supabase.from("players")
           .update({ phase, round: slots[idx].round, terrain: slots[idx].terrain })
           .eq("id", joueur.id);
@@ -110,7 +101,6 @@
       afficherPlanning();
     }
 
-    // Générer la finale avec les 5 meilleurs joueurs
     async function genererFinale() {
       await supabase.from("players").update({ phase: null, round: null, terrain: null });
       await new Promise(resolve => setTimeout(resolve, 300));
@@ -132,14 +122,12 @@
       afficherPlanning();
     }
 
-    // Afficher le planning groupé
     async function afficherPlanning() {
       const { data } = await supabase.from("players").select("name, terrain, phase, round").order("phase, round, terrain");
 
       const grouped = {};
       for (const joueur of data) {
         if (!joueur.phase) continue;
-        // Affichage spécial pour la finale
         const key = joueur.phase == 99
           ? "🏁 Finale"
           : `Phase ${joueur.phase} – Round ${joueur.round} – Piste ${joueur.terrain}`;
