@@ -48,7 +48,6 @@
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrb2x6bXFhcmZpem94amdvbGZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk2Nzg3NTYsImV4cCI6MjA2NTI1NDc1Nn0.ZlpERz1uznM0fn--GR9YgM2vjwe_kw-qiPF8KHJvMpI'
     );
 
-    // Générer une phase pour tous les joueurs inscrits
     async function genererPhase(phase = 1) {
       const { data: joueurs } = await supabase.from("players").select("*");
       if (!joueurs || joueurs.length < 1) {
@@ -61,10 +60,25 @@
         .update({ phase: null, round: null, terrain: null })
         .in("id", joueurs.map(j => j.id));
 
-      const terrains = [1, 2, 3, 4, 5];
-      // Un seul round si ≤ 50 joueurs, sinon deux rounds
-      const rounds = joueurs.length <= 50 ? ["A"] : ["A", "B"];
       const joueursParSlot = 10;
+      let terrains = [1, 2, 3, 4, 5];
+      let rounds = ["A"];
+
+      // Cas 1 : Moins de 10 joueurs -> un seul terrain, un seul round
+      if (joueurs.length <= joueursParSlot) {
+        terrains = [1];
+        rounds = ["A"];
+      }
+      // Cas 2 : 11 à 50 joueurs -> 5 terrains, un seul round
+      else if (joueurs.length <= 50) {
+        terrains = [1, 2, 3, 4, 5];
+        rounds = ["A"];
+      }
+      // Cas 3 : plus de 50 joueurs -> 5 terrains, deux rounds
+      else {
+        terrains = [1, 2, 3, 4, 5];
+        rounds = ["A", "B"];
+      }
 
       // Mélanger les joueurs pour l'équité
       const shuffled = joueurs.slice().sort(() => Math.random() - 0.5);
@@ -98,12 +112,8 @@
 
     // Générer la finale avec les 5 meilleurs joueurs
     async function genererFinale() {
-      // Réinitialiser tous les joueurs pour n'afficher que la finale
       await supabase.from("players").update({ phase: null, round: null, terrain: null });
-
-      // Attendre un court instant pour s'assurer que la base est bien à jour
       await new Promise(resolve => setTimeout(resolve, 300));
-
       const { data } = await supabase
         .from("players")
         .select("*")
@@ -152,14 +162,12 @@
       }
     }
 
-    // Réinitialiser le planning
     async function resetPlanning() {
       await supabase.from("players").update({ phase: null, round: null, terrain: null });
       const tbody = document.getElementById("dispatch");
       tbody.innerHTML = "";
     }
 
-    // Exposer les fonctions globalement
     window.genererPhase = genererPhase;
     window.genererFinale = genererFinale;
     window.resetPlanning = resetPlanning;
