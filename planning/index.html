@@ -83,7 +83,7 @@
         }
       }
 
-      afficherDispatch();
+      afficherDispatch(); // Afficher la répartition après génération
     }
 
     async function afficherDispatch() {
@@ -94,6 +94,7 @@
 
       const repartition = {};
 
+      // Organiser les joueurs par phase, round et terrain
       data.forEach(p => {
         if (!repartition[p.phase]) repartition[p.phase] = {};
         if (!repartition[p.phase][p.round]) repartition[p.phase][p.round] = {};
@@ -104,6 +105,7 @@
 
       const tbody = document.getElementById("dispatch");
       tbody.innerHTML = "";
+
       // Affichage des phases, rounds et terrains
       Object.keys(repartition).forEach(phase => {
         Object.keys(repartition[phase]).forEach(round => {
@@ -134,7 +136,7 @@
       }
 
       alert("🏁 Finale générée avec les 5 meilleurs joueurs !");
-      afficherDispatch();
+      afficherDispatch(); // Afficher la répartition finale
     }
 
     window.genererPlanningComplet = genererPlanningComplet;
@@ -175,5 +177,7 @@
     <tbody id="dispatch"></tbody>
   </table>
 </body>
+</html>
+
 </html>
 
