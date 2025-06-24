@@ -41,6 +41,21 @@
       color: #222;
       font-weight: bold;
     }
+    .ligne-finale {
+      background: #fff;
+      color: #b71c1c;
+      font-weight: bold;
+    }
+    .emoji-caca {
+      background: #4e342e;
+      color: #fff;
+      font-weight: bold;
+    }
+    .emoji-nul {
+      background: #bdbdbd;
+      color: #222;
+      font-weight: bold;
+    }
   </style>
 </head>
 <body>
@@ -79,11 +94,28 @@
         tbody.innerHTML = "";
 
         data.forEach((joueur, i) => {
+          // Ligne de qualification finale après la 5e place (après l'index 4)
+          if (i === 5) {
+            const trFinale = document.createElement("tr");
+            trFinale.className = "ligne-finale";
+            trFinale.innerHTML = `<td colspan="4">⬇️ Non qualifiés pour la finale ⬇️</td>`;
+            tbody.appendChild(trFinale);
+          }
+
           const tr = document.createElement("tr");
           if (joueur.phase == 99) tr.classList.add("finaliste");
+
+          // Dernier = emoji caca, avant-dernier = emoji nul
+          if (i === data.length - 1) tr.classList.add("emoji-caca");
+          if (i === data.length - 2) tr.classList.add("emoji-nul");
+
+          let nom = joueur.name;
+          if (i === data.length - 1) nom = "💩 " + nom;
+          if (i === data.length - 2) nom = "🫥 " + nom; // emoji "nul"
+
           tr.innerHTML = `
             <td>${i + 1}</td>
-            <td>${joueur.name}</td>
+            <td>${nom}</td>
             <td>${joueur.total_points ?? 0}</td>
             <td>${joueur.matches ?? 0}</td>
           `;
