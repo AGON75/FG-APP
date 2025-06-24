@@ -52,6 +52,7 @@
 
     let playerId = localStorage.getItem("player_id");
 
+    
     async function setup() {
       if (!playerId) {
         await inscrireOuConnecter();
@@ -166,6 +167,7 @@
   <div id="message"></div>
 
   <button id="recharger">🔁 Afficher la prochaine manche</button>
+  <button onclick="changerDeJoueur()">🔄 Changer de joueur</button>
 
   <a href="/classement/">📊 Voir le classement</a>
 </body>
