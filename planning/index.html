@@ -115,7 +115,7 @@
       afficherPlanning();
     }
 
-    // Générer la finale avec les 5 meilleurs joueurs
+    // Générer la finale avec les 5 meilleurs joueurs (phase = 99)
     async function genererFinale() {
       await supabase.from("players").update({ phase: null, round: null, terrain: null });
       await new Promise(resolve => setTimeout(resolve, 300));
@@ -137,7 +137,7 @@
       afficherPlanning();
     }
 
-    // Finale manuelle : sélectionne les finalistes par UUID et leur attribue "FINALISTE"
+    // Finale manuelle : phase = "finale" (string)
     async function finaleManuelle() {
       const ids = prompt("Entrez les UUID des joueurs finalistes, séparés par des virgules :\n(exemple : uuid1,uuid2,uuid3,uuid4,uuid5)");
       if (!ids) return;
@@ -147,7 +147,7 @@
 
       for (const id of idList) {
         await supabase.from("players").update({
-          phase: 99,
+          phase: "finale",
           round: 'F',
           terrain: 1,
           total_points: "FINALISTE"
@@ -166,10 +166,12 @@
       const grouped = {};
       for (const joueur of data) {
         if (!joueur.phase) continue;
-        // Affichage spécial pour la finale
-        const key = joueur.phase == 99
-          ? "🏁 Finale"
-          : `Phase ${joueur.phase} – Round ${joueur.round} – Piste ${joueur.terrain}`;
+        // Affichage spécial pour la finale manuelle
+        const key = joueur.phase === "finale"
+          ? "🏁 Finale manuelle"
+          : (joueur.phase == 99
+              ? "🏁 Finale"
+              : `Phase ${joueur.phase} – Round ${joueur.round} – Piste ${joueur.terrain}`);
         if (!grouped[key]) grouped[key] = [];
         grouped[key].push(joueur.name);
       }
@@ -216,3 +218,5 @@
     <thead><tr><th>Joueur</th><th>Détails</th></tr></thead>
     <tbody id="dispatch"></tbody>
   </table>
+</body>
+</html>
