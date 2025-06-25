@@ -65,9 +65,12 @@
       10:[40, 35, 30, 25, 20, 15, 10, 5, 0, -5]
     };
 
-    // Modifié : détecte la finale classique OU la finale manuelle
+    // Finale classique ou manuelle
     function isFinale() {
-      return (currentPhase === 99 || currentPhase === "finale") && currentRound === "F";
+      return (
+        (currentPhase === 99 && currentRound === "F") ||
+        (currentPhase === "finale" && currentRound === "FM")
+      );
     }
 
     async function chargerJoueurs() {
@@ -78,7 +81,6 @@
 
       let query = supabase.from("players").select("*").eq("round", currentRound).eq("terrain", currentTerrain);
 
-      // Modifié : gère phase string ("finale") ou nombre
       if (currentPhase === "finale") {
         query = query.eq("phase", "finale");
       } else {
@@ -116,13 +118,11 @@
 
     function toggleElimination(id) {
       if (isFinale()) {
-        // Pour la finale, chaque joueur doit être éliminé 2 fois
         const count = eliminatedOrder.filter(pid => pid === id).length;
         if (count < 2) {
           eliminatedOrder.push(id);
         }
       } else {
-        // Pour les autres phases, élimination classique
         const index = eliminatedOrder.indexOf(id);
         if (index > -1) {
           eliminatedOrder.splice(index, 1);
@@ -135,7 +135,6 @@
 
     async function validerManche() {
       if (isFinale()) {
-        // Pour la finale, il doit rester un seul joueur avec moins de 2 éliminations
         const counts = {};
         players.forEach(p => counts[p.id] = 0);
         eliminatedOrder.forEach(id => counts[id]++);
@@ -144,7 +143,6 @@
           alert("⚠ Il doit rester un seul joueur avec moins de 2 éliminations.");
           return;
         }
-        // Ajouter la dernière élimination pour le vainqueur
         eliminatedOrder.push(stillIn[0][0]);
       } else {
         if (eliminatedOrder.length !== players.length - 1) {
@@ -190,12 +188,14 @@
         t.innerHTML += `<option value="${i}">Piste ${i}</option>`;
         p.innerHTML += `<option value="${i}">Phase ${i}</option>`;
       }
-      // Ajout de la finale (phase 99)
-      p.innerHTML += `<option value="99">Finale</option>`;
+      // Ajout de la demi-finale (phase 99)
+      p.innerHTML += `<option value="99">Demi-finale</option>`;
       // Ajout de la finale manuelle (phase "finale")
       p.innerHTML += `<option value="finale">Finale manuelle</option>`;
       // Ajout du round C
       r.innerHTML += `<option value="C">C</option>`;
+      // Ajout du round FM pour la finale manuelle
+      r.innerHTML += `<option value="FM">FM</option>`;
     };
 
     window.chargerJoueurs = chargerJoueurs;
@@ -215,7 +215,7 @@
     <option value="A">A</option>
     <option value="B">B</option>
     <option value="F">F</option>
-    <!-- Le round C sera ajouté dynamiquement au chargement -->
+    <!-- Le round C et FM seront ajoutés dynamiquement -->
   </select>
   <label>Piste :</label>
   <select id="terrain"></select>
@@ -224,6 +224,4 @@
   <div id="joueurs" style="margin-top: 20px;"></div>
   <p id="ordre"></p>
 
-  <button onclick="validerManche()">✅ Valider la manche</button>
-</body>
-</html>
+  <button onclick="validerManche()">✅ Valider la
