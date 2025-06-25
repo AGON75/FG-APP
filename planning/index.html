@@ -134,7 +134,6 @@
 
     // Générer la demi-finale avec les 5 meilleurs joueurs (phase 99, round "Demi Finale", terrain 1)
     async function genererDemiFinale() {
-      // Réinitialise tous les joueurs sauf ceux déjà en finale manuelle
       await supabase.from("players")
         .update({ phase: null, round: null, terrain: null })
         .neq("phase", "finale");
@@ -142,9 +141,7 @@
       const { data, error } = await supabase
         .from("players")
         .select("*")
-        .neq("phase", "finale")
-        .order("total_points", { ascending: false });
-
+        .neq("phase", "finale");
       if (error) {
         alert("Erreur lors de la récupération des joueurs : " + error.message);
         return;
@@ -153,7 +150,14 @@
         alert("Aucun joueur disponible pour la demi-finale !");
         return;
       }
-      const demiFinalistes = data.slice(0, 5);
+      // Filtrer uniquement les joueurs avec un total_points numérique
+      const eligibles = data.filter(p => !isNaN(parseInt(p.total_points, 10)));
+      eligibles.sort((a, b) => parseInt(b.total_points, 10) - parseInt(a.total_points, 10));
+      const demiFinalistes = eligibles.slice(0, 5);
+      if (demiFinalistes.length < 5) {
+        alert("Pas assez de joueurs avec des points numériques pour générer la demi-finale !");
+        return;
+      }
       for (const joueur of demiFinalistes) {
         await supabase.from("players").update({
           phase: 99,
@@ -276,4 +280,3 @@
   </table>
 </body>
 </html>
-
