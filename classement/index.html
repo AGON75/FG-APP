@@ -104,8 +104,8 @@
       if (a.phase === "finale" && b.phase !== "finale") return -1;
       if (b.phase === "finale" && a.phase !== "finale") return 1;
       // Puis par points décroissants (hors cas spéciaux)
-      const pa = isNaN(parseInt(a.total_points)) ? -Infinity : parseInt(a.total_points);
-      const pb = isNaN(parseInt(b.total_points)) ? -Infinity : parseInt(b.total_points);
+      const pa = isNaN(parseInt(a.total_points, 10)) ? -Infinity : parseInt(a.total_points, 10);
+      const pb = isNaN(parseInt(b.total_points, 10)) ? -Infinity : parseInt(b.total_points, 10);
       return pb - pa;
     }
 
@@ -113,8 +113,7 @@
       try {
         const { data, error } = await supabase
           .from("players")
-          .select("name, total_points, matches, phase")
-          .order("total_points", { ascending: false });
+          .select("name, total_points, matches, phase");
 
         if (error) throw error;
 
@@ -155,7 +154,7 @@
             <td>${i + 1}</td>
             <td>${nom}</td>
             <td>${joueur.total_points ?? 0}</td>
-            <td>${joueur.matches ?? 0}</td>
+            <td>${parseInt(joueur.matches, 10) || 0}</td>
           `;
           tbody.appendChild(tr);
         });
