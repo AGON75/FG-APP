@@ -92,29 +92,13 @@
 
       // Réinitialiser les affectations de la phase en cours
       await supabase.from("players")
-        .update({ phase: null, round: null, terrain: null })
+        .update({ phase: null, round: null, terrain: null, total_points: null })
         .in("id", joueurs.map(j => j.id));
 
+      const terrains = [1, 2, 3, 4, 5];
+      // Un seul round si ≤ 50 joueurs, sinon deux rounds
+      const rounds = joueurs.length <= 50 ? ["A"] : ["A", "B"];
       const joueursParSlot = 10;
-      let terrains = [1, 2, 3, 4, 5];
-      let rounds = ["A"];
-
-      if (joueurs.length <= joueursParSlot) {
-        terrains = [1];
-        rounds = ["A"];
-      }
-      else if (joueurs.length <= 50) {
-        terrains = [1, 2, 3, 4, 5];
-        rounds = ["A"];
-      }
-      else if (joueurs.length <= 100) {
-        terrains = [1, 2, 3, 4, 5];
-        rounds = ["A", "B"];
-      }
-      else {
-        terrains = [1, 2, 3, 4, 5];
-        rounds = ["A", "B", "C"];
-      }
 
       // Mélanger les joueurs pour l'équité
       const shuffled = joueurs.slice().sort(() => Math.random() - 0.5);
@@ -150,14 +134,19 @@
     async function genererDemiFinale() {
       // Réinitialiser tous les joueurs sauf ceux déjà en finale manuelle
       await supabase.from("players")
-        .update({ phase: null, round: null, terrain: null })
-        .not("phase", "in", ["finale"]);
+        .update({ phase: null, round: null, terrain: null, total_points: null })
+        .neq("phase", "finale");
       await new Promise(resolve => setTimeout(resolve, 300));
       const { data } = await supabase
         .from("players")
         .select("*")
-        .not("phase", "in", ["finale"])
+        .neq("phase", "finale")
         .order("total_points", { ascending: false });
+
+      if (!data) {
+        alert("Erreur lors de la récupération des joueurs.");
+        return;
+      }
 
       const demiFinalistes = data.slice(0, 5);
 
@@ -208,12 +197,14 @@
         finalistes.push(joueur);
       }
 
+      // Réinitialiser tous les joueurs
       await supabase.from("players").update({ phase: null, round: null, terrain: null, total_points: null }).neq("id", "");
 
+      // Mettre à jour les finalistes pour la plateforme d'arbitrage
       for (const joueur of finalistes) {
         await supabase.from("players").update({
           phase: "finale",
-          round: 'FINALE DU TOURNOI',
+          round: 'Finale du Tournoi',
           terrain: 1,
           total_points: "FINALISTE"
         }).eq("id", joueur.id);
@@ -288,3 +279,6 @@
   <table>
     <thead><tr><th>Joueur</th><th>Détails</th></tr></thead>
     <tbody id="dispatch"></tbody>
+  </table>
+</body>
+</html>
