@@ -88,8 +88,9 @@
         alert("Aucun joueur inscrit !");
         return;
       }
+      // NE PAS remettre total_points à null ici !
       await supabase.from("players")
-        .update({ phase: null, round: null, terrain: null, total_points: null })
+        .update({ phase: null, round: null, terrain: null })
         .in("id", joueurs.map(j => j.id));
 
       const joueursParSlot = 10;
@@ -202,7 +203,7 @@
         finalistes.push(joueur);
       }
       // Réinitialiser tous les joueurs
-      await supabase.from("players").update({ phase: null, round: null, terrain: null, total_points: null }).neq("id", "");
+      await supabase.from("players").update({ phase: null, round: null, terrain: null }).neq("id", "");
       // Pour la plateforme d'arbitrage : phase "finale", round "FM", terrain 1, total_points "FINALISTE"
       for (const joueur of finalistes) {
         await supabase.from("players").update({
@@ -249,7 +250,7 @@
     }
 
     async function resetPlanning() {
-      await supabase.from("players").update({ phase: null, round: null, terrain: null, total_points: null });
+      await supabase.from("players").update({ phase: null, round: null, terrain: null });
       const tbody = document.getElementById("dispatch");
       tbody.innerHTML = "";
     }
