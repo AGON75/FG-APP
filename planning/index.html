@@ -88,15 +88,13 @@
         alert("Aucun joueur inscrit !");
         return;
       }
-
       await supabase.from("players")
-        .update({ phase: null, round: null, terrain: null })
+        .update({ phase: null, round: null, terrain: null, total_points: null })
         .in("id", joueurs.map(j => j.id));
 
       const joueursParSlot = 10;
       let terrains = [1, 2, 3, 4, 5];
       let rounds = ["A"];
-
       if (joueurs.length <= joueursParSlot) {
         terrains = [1];
         rounds = ["A"];
@@ -113,30 +111,24 @@
         terrains = [1, 2, 3, 4, 5];
         rounds = ["A", "B", "C"];
       }
-
       const shuffled = joueurs.slice().sort(() => Math.random() - 0.5);
-
       let slots = [];
       for (const round of rounds) {
         for (const terrain of terrains) {
           slots.push({ round, terrain, joueurs: [] });
         }
       }
-
       let idx = 0;
       for (const joueur of shuffled) {
         while (idx < slots.length && slots[idx].joueurs.length >= joueursParSlot) {
           idx++;
         }
         if (idx >= slots.length) break;
-
         slots[idx].joueurs.push(joueur);
-
         await supabase.from("players")
           .update({ phase, round: slots[idx].round, terrain: slots[idx].terrain })
           .eq("id", joueur.id);
       }
-
       afficherPlanning();
     }
 
@@ -151,14 +143,11 @@
         .select("*")
         .neq("phase", "finale")
         .order("total_points", { ascending: false });
-
       if (!data) {
         alert("Erreur lors de la récupération des joueurs.");
         return;
       }
-
       const demiFinalistes = data.slice(0, 5);
-
       for (const joueur of demiFinalistes) {
         await supabase.from("players").update({
           phase: 99,
@@ -166,7 +155,6 @@
           terrain: 1
         }).eq("id", joueur.id);
       }
-
       alert("🏁 Demi-finale générée avec les 5 meilleurs joueurs !");
       afficherPlanning();
     }
@@ -178,14 +166,12 @@
         alert("Aucun joueur inscrit !");
         return;
       }
-
       let nb = prompt("Combien de joueurs en finale ? (2 à 5)");
       nb = parseInt(nb);
       if (isNaN(nb) || nb < 2 || nb > 5) {
         alert("Nombre invalide.");
         return;
       }
-
       let finalistes = [];
       for (let i = 1; i <= nb; i++) {
         let nom = prompt(`Nom du finaliste #${i} (auto-complétion possible) :\n${allPlayers.map(p=>p.name).join(', ')}`);
@@ -205,10 +191,8 @@
         }
         finalistes.push(joueur);
       }
-
       // Réinitialiser tous les joueurs
       await supabase.from("players").update({ phase: null, round: null, terrain: null, total_points: null }).neq("id", "");
-
       // Pour la plateforme d'arbitrage : phase "finale", round "FM", terrain 1, total_points "FINALISTE"
       for (const joueur of finalistes) {
         await supabase.from("players").update({
@@ -218,7 +202,6 @@
           total_points: "FINALISTE"
         }).eq("id", joueur.id);
       }
-
       alert("Finale manuelle enregistrée !");
       afficherPlanning();
     }
@@ -226,7 +209,6 @@
 
     async function afficherPlanning() {
       const { data } = await supabase.from("players").select("name, terrain, phase, round, total_points").order("phase, round, terrain");
-
       const grouped = {};
       for (const joueur of data) {
         if (!joueur.phase) continue;
@@ -241,10 +223,8 @@
         if (!grouped[key]) grouped[key] = [];
         grouped[key].push(joueur);
       }
-
       const tbody = document.getElementById("dispatch");
       tbody.innerHTML = "";
-
       for (const bloc in grouped) {
         const header = document.createElement("tr");
         header.className = "phase-header";
