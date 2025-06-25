@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Règles du jeu – Finger Game</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      background: linear-gradient(to right, #0d47a1, #b71c1c);
+      color: white;
+      font-family: 'Segoe UI', sans-serif;
+      padding: 30px;
+      text-align: center;
+      margin: 0;
+    }
+    header img {
+      width: 200px;
+      margin-top: 20px;
+      max-width: 90%;
+    }
+    h1 {
+      margin: 20px 0 10px 0;
+    }
+    .regles {
+      background: rgba(0,0,0,0.2);
+      border-radius: 10px;
+      padding: 30px 20px;
+      margin: 30px auto;
+      max-width: 700px;
+      text-align: left;
+      font-size: 1.15em;
+    }
+    a {
+      color: #ffd700;
+      text-decoration: none;
+      font-weight: bold;
+      display: inline-block;
+      margin-top: 30px;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <img src="../assets/FingerGame_logo_blanc_tagline.png" alt="Finger Game" />
+    <h1>📜 Règles du jeu</h1>
+  </header>
+  <div class="regles">
+    <p>CHAMPS à REMPLIR</p>
+  </div>
+  <a href="../joueur/index.html">⬅️ Retour à l'accueil joueur</a>
+</body>
+</html>
