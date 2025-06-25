@@ -88,7 +88,6 @@
         alert("Aucun joueur inscrit !");
         return;
       }
-      // NE PAS remettre total_points à null ici !
       await supabase.from("players")
         .update({ phase: null, round: null, terrain: null })
         .in("id", joueurs.map(j => j.id));
@@ -133,7 +132,7 @@
       afficherPlanning();
     }
 
-    // Générer la demi-finale avec les 5 meilleurs joueurs (phase 99, round "Demi Finale", terrain 1)
+    // Version simplifiée : sélectionne les 5 premiers du classement
     async function genererDemiFinale() {
       await supabase.from("players")
         .update({ phase: null, round: null, terrain: null })
@@ -151,12 +150,19 @@
         alert("Aucun joueur disponible pour la demi-finale !");
         return;
       }
-      // Filtrer uniquement les joueurs avec un total_points numérique
-      const eligibles = data.filter(p => !isNaN(parseInt(p.total_points, 10)));
-      eligibles.sort((a, b) => parseInt(b.total_points, 10) - parseInt(a.total_points, 10));
-      const demiFinalistes = eligibles.slice(0, 5);
+      // Tri identique au classement
+      data.sort((a, b) => {
+        if (a.total_points === "VAINQUEUR" && b.total_points !== "VAINQUEUR") return -1;
+        if (b.total_points === "VAINQUEUR" && a.total_points !== "VAINQUEUR") return 1;
+        if (a.phase === "finale" && b.phase !== "finale") return -1;
+        if (b.phase === "finale" && a.phase !== "finale") return 1;
+        const pa = isNaN(parseInt(a.total_points, 10)) ? -Infinity : parseInt(a.total_points, 10);
+        const pb = isNaN(parseInt(b.total_points, 10)) ? -Infinity : parseInt(b.total_points, 10);
+        return pb - pa;
+      });
+      const demiFinalistes = data.slice(0, 5);
       if (demiFinalistes.length < 5) {
-        alert("Pas assez de joueurs avec des points numériques pour générer la demi-finale !");
+        alert("Pas assez de joueurs pour générer la demi-finale !");
         return;
       }
       for (const joueur of demiFinalistes) {
@@ -166,11 +172,10 @@
           terrain: 1
         }).eq("id", joueur.id);
       }
-      alert("🏁 Demi-finale générée avec les 5 meilleurs joueurs !");
+      alert("🏁 Demi-finale générée avec les 5 premiers du classement !");
       afficherPlanning();
     }
 
-    // Finale manuelle : sélection manuelle des finalistes
     async function finaleManuelle() {
       const { data: allPlayers } = await supabase.from("players").select("id, name");
       if (!allPlayers || allPlayers.length === 0) {
@@ -202,9 +207,7 @@
         }
         finalistes.push(joueur);
       }
-      // Réinitialiser tous les joueurs
       await supabase.from("players").update({ phase: null, round: null, terrain: null }).neq("id", "");
-      // Pour la plateforme d'arbitrage : phase "finale", round "FM", terrain 1, total_points "FINALISTE"
       for (const joueur of finalistes) {
         await supabase.from("players").update({
           phase: "finale",
