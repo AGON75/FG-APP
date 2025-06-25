@@ -135,6 +135,7 @@
 
     async function validerManche() {
       if (isFinale()) {
+        // Pour la finale, il doit rester un seul joueur avec moins de 2 éliminations
         const counts = {};
         players.forEach(p => counts[p.id] = 0);
         eliminatedOrder.forEach(id => counts[id]++);
@@ -143,6 +144,7 @@
           alert("⚠ Il doit rester un seul joueur avec moins de 2 éliminations.");
           return;
         }
+        // Ajouter la dernière élimination pour le vainqueur
         eliminatedOrder.push(stillIn[0][0]);
       } else {
         if (eliminatedOrder.length !== players.length - 1) {
@@ -167,8 +169,13 @@
 
         const { data } = await supabase.from("players").select("*").eq("id", playerId).single();
         if (data) {
+          // Ne pas ajouter de points si le joueur est FINALISTE (finale manuelle)
+          let newPoints = data.total_points;
+          if (data.total_points !== "FINALISTE") {
+            newPoints = (parseInt(data.total_points) || 0) + points;
+          }
           await supabase.from("players").update({
-            total_points: data.total_points + points,
+            total_points: newPoints,
             matches: data.matches + 1
           }).eq("id", playerId);
         }
@@ -194,7 +201,7 @@
       p.innerHTML += `<option value="finale">Finale manuelle</option>`;
       // Ajout du round C
       r.innerHTML += `<option value="C">C</option>`;
-      // Ajout du round FM pour la finale manuelle (affiché "Finale du Tournoi")
+      // Ajout du round F et FM avec labels explicites
       r.innerHTML += `<option value="F">Demi Finale</option>`;
       r.innerHTML += `<option value="FM">Finale du Tournoi</option>`;
     };
