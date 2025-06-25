@@ -170,7 +170,7 @@ La Fédération Française de Finger Games
         const partieNum = (joueur.matches ?? 0) + 1;
         let info = "";
         if (joueur.round === "A") info = " (Démarrage dans 3 min)";
-        if (joueur.round === "B") info = " (Démarrage après le round A, dans environ 10 min)";
+        if (joueur.round === "B") info = " (Démarrage après le round A, environ 10 min)";
         etat.textContent = `${joueur.name} — Piste ${joueur.terrain ?? "non attribuée"} — Partie ${partieNum}/${joueur.round ?? "-"}${info}`;
       }
     }
