@@ -263,6 +263,49 @@
     window.finaleManuelle = finaleManuelle;
     window.resetPlanning = resetPlanning;
     window.onload = afficherPlanning;
+    async function demiFinaleManuelle() {
+      const { data: allPlayers } = await supabase.from("players").select("id, name");
+      if (!allPlayers || allPlayers.length === 0) {
+        alert("Aucun joueur inscrit !");
+        return;
+      }
+      let nb = prompt("Combien de joueurs en demi-finale ? (2 à 10)");
+      nb = parseInt(nb);
+      if (isNaN(nb) || nb < 2 || nb > 10) {
+        alert("Nombre invalide.");
+        return;
+      }
+      let finalistes = [];
+      for (let i = 1; i <= nb; i++) {
+        let nom = prompt(`Nom du demi-finaliste #${i} (auto-complétion possible) :\n${allPlayers.map(p=>p.name).join(', ')}`);
+        if (!nom) {
+          alert("Nom requis.");
+          return;
+        }
+        let joueur = allPlayers.find(p => p.name.toLowerCase() === nom.toLowerCase())
+                  || allPlayers.find(p => p.name.toLowerCase().startsWith(nom.toLowerCase()));
+        if (!joueur) {
+          alert("Aucun joueur trouvé pour : " + nom);
+          return;
+        }
+        if (finalistes.find(f => f.id === joueur.id)) {
+          alert("Ce joueur est déjà sélectionné !");
+          return;
+        }
+        finalistes.push(joueur);
+      }
+      for (const joueur of finalistes) {
+        await supabase.from("players").update({
+          phase: 99,
+          round: 'F',
+          terrain: 1
+        }).eq("id", joueur.id);
+      }
+      alert("Demi-finale manuelle enregistrée !");
+      afficherPlanning();
+    }
+    window.demiFinaleManuelle = demiFinaleManuelle;
+
   </script>
 </head>
 <body>
@@ -272,6 +315,7 @@
   </header>
 
   <div class="btn-bar">
+    <button onclick="demiFinaleManuelle()">⚙️ Demi-finale manuelle</button>
     <button onclick="genererPhase()">🚀 Générer la phase</button>
     <button onclick="genererDemiFinale()">🏁 Générer la demi-finale</button>
     <button onclick="finaleManuelle()">🏆 Finale manuelle</button>
@@ -282,5 +326,7 @@
     <thead><tr><th>Joueur</th><th>Détails</th></tr></thead>
     <tbody id="dispatch"></tbody>
   </table>
+</body>
+</html>
 </body>
 </html>
