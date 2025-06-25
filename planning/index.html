@@ -92,7 +92,7 @@
 
       // Réinitialiser les affectations de la phase en cours
       await supabase.from("players")
-        .update({ phase: null, round: null, terrain: null, total_points: null })
+        .update({ phase: null, round: null, terrain: null })
         .in("id", joueurs.map(j => j.id));
 
       const terrains = [1, 2, 3, 4, 5];
@@ -134,7 +134,7 @@
     async function genererDemiFinale() {
       // Réinitialiser tous les joueurs sauf ceux déjà en finale manuelle
       await supabase.from("players")
-        .update({ phase: null, round: null, terrain: null, total_points: null })
+        .update({ phase: null, round: null, terrain: null })
         .neq("phase", "finale");
       await new Promise(resolve => setTimeout(resolve, 300));
       const { data } = await supabase
@@ -200,7 +200,7 @@
       // Réinitialiser tous les joueurs
       await supabase.from("players").update({ phase: null, round: null, terrain: null, total_points: null }).neq("id", "");
 
-      // Mettre à jour les finalistes pour la plateforme d'arbitrage
+      // Pour la plateforme d'arbitrage : phase "finale", round "Finale du Tournoi", terrain 1, total_points "FINALISTE"
       for (const joueur of finalistes) {
         await supabase.from("players").update({
           phase: "finale",
