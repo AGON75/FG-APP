@@ -194,8 +194,9 @@
       p.innerHTML += `<option value="finale">Finale manuelle</option>`;
       // Ajout du round C
       r.innerHTML += `<option value="C">C</option>`;
-      // Ajout du round FM pour la finale manuelle
-      r.innerHTML += `<option value="FM">FM</option>`;
+      // Ajout du round FM pour la finale manuelle (affiché "Finale du Tournoi")
+      r.innerHTML += `<option value="F">Demi Finale</option>`;
+      r.innerHTML += `<option value="FM">Finale du Tournoi</option>`;
     };
 
     window.chargerJoueurs = chargerJoueurs;
@@ -214,8 +215,7 @@
   <select id="round">
     <option value="A">A</option>
     <option value="B">B</option>
-    <option value="F">F</option>
-    <!-- Le round C et FM seront ajoutés dynamiquement -->
+    <!-- Les autres rounds sont ajoutés dynamiquement -->
   </select>
   <label>Piste :</label>
   <select id="terrain"></select>
@@ -224,4 +224,6 @@
   <div id="joueurs" style="margin-top: 20px;"></div>
   <p id="ordre"></p>
 
-  <button onclick="validerManche()">✅ Valider la Partie
+  <button onclick="validerManche()">✅ Valider la manche</button>
+</body>
+</html>
