@@ -56,6 +56,20 @@
     .edit-btn:hover {
       background: #ffe066;
     }
+    .export-btn {
+      margin: 10px 5px;
+      padding: 8px 20px;
+      font-size: 16px;
+      border-radius: 6px;
+      border: none;
+      background: #ffd700;
+      color: #222;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .export-btn:hover {
+      background: #ffe066;
+    }
   </style>
   <script type="module">
     import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
@@ -64,10 +78,13 @@
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrb2x6bXFhcmZpem94amdvbGZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk2Nzg3NTYsImV4cCI6MjA2NTI1NDc1Nn0.ZlpERz1uznM0fn--GR9YgM2vjwe_kw-qiPF8KHJvMpI'
     );
 
+    let joueursData = [];
+
     async function chargerJoueurs() {
       try {
         const { data, error } = await supabase.from("players").select("*").order("name");
         if (error) throw error;
+        joueursData = data; // Pour l'export CSV joueurs
         const tbody = document.getElementById("liste");
         tbody.innerHTML = "";
         data.forEach(j => {
@@ -139,28 +156,6 @@
       }
     }
 
-    async function genererFinale() {
-      try {
-        const { data, error } = await supabase
-          .from("players")
-          .select("*")
-          .order("total_points", { ascending: false })
-          .limit(5);
-        if (error) throw error;
-        for (const joueur of data) {
-          await supabase.from("players").update({
-            phase: 99,
-            round: 'F',
-            terrain: 1
-          }).eq("id", joueur.id);
-        }
-        alert("Finale générée (top 5 joueurs) !");
-        chargerJoueurs();
-      } catch (e) {
-        alert("Erreur lors de la génération de la finale.");
-      }
-    }
-
     async function modifierPoints(id, pointsActuels) {
       const nv = prompt("Nouveau total de points :", pointsActuels);
       if (nv === null) return;
@@ -174,14 +169,79 @@
       }
     }
 
+    // Export CSV - Classement
+    async function exportClassementCSV() {
+      const { data, error } = await supabase
+        .from("players")
+        .select("name, total_points, matches, phase")
+        .order("total_points", { ascending: false });
+      if (error || !data) {
+        alert("Erreur lors de l'export du classement.");
+        return;
+      }
+      let csv = "Rang,Joueur,Points,Matchs\n";
+      data.forEach((joueur, i) => {
+        let nom = joueur.name;
+        if (i === data.length - 1) nom = "💩 " + nom;
+        if (i === data.length - 2) nom = "🫥 " + nom;
+        csv += `${i + 1},"${nom}",${joueur.total_points ?? 0},${joueur.matches ?? 0}\n`;
+      });
+      downloadCSV(csv, "classement_finger_game.csv");
+    }
+
+    // Export CSV - Liste joueurs
+    function exportJoueursCSV() {
+      if (!joueursData.length) {
+        alert("Aucune donnée à exporter !");
+        return;
+      }
+      let csv = "Nom,Points,Matches,Piste,Phase,Round\n";
+      joueursData.forEach(j => {
+        csv += `"${j.name}",${j.total_points ?? 0},${j.matches ?? 0},${j.terrain ?? ""},${j.phase ?? ""},${j.round ?? ""}\n`;
+      });
+      downloadCSV(csv, "liste_joueurs_finger_game.csv");
+    }
+
+    // Export CSV - Planning
+    async function exportPlanningCSV() {
+      const { data, error } = await supabase
+        .from("players")
+        .select("name, terrain, phase, round")
+        .order("phase, round, terrain");
+      if (error || !data) {
+        alert("Erreur lors de l'export du planning.");
+        return;
+      }
+      let csv = "Nom,Piste,Phase,Round\n";
+      data.forEach(j => {
+        csv += `"${j.name}",${j.terrain ?? ""},${j.phase ?? ""},${j.round ?? ""}\n`;
+      });
+      downloadCSV(csv, "planning_finger_game.csv");
+    }
+
+    // Fonction utilitaire pour télécharger un CSV
+    function downloadCSV(csv, filename) {
+      const blob = new Blob([csv], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
     window.onload = chargerJoueurs;
     window.ajouterJoueur = ajouterJoueur;
     window.supprimerJoueur = supprimerJoueur;
     window.resetTournoi = resetTournoi;
     window.supprimerTousJoueurs = supprimerTousJoueurs;
-    window.genererFinale = genererFinale;
     window.chargerJoueurs = chargerJoueurs;
     window.modifierPoints = modifierPoints;
+    window.exportClassementCSV = exportClassementCSV;
+    window.exportJoueursCSV = exportJoueursCSV;
+    window.exportPlanningCSV = exportPlanningCSV;
   </script>
 </head>
 <body>
@@ -198,6 +258,12 @@
     <span id="compteur"></span>
   </section>
 
+  <section>
+    <button class="export-btn" onclick="exportClassementCSV()">⬇️ Exporter le classement CSV</button>
+    <button class="export-btn" onclick="exportJoueursCSV()">⬇️ Exporter la liste joueurs CSV</button>
+    <button class="export-btn" onclick="exportPlanningCSV()">⬇️ Exporter le planning CSV</button>
+  </section>
+
   <table>
     <thead>
       <tr><th>Nom</th><th>Points</th><th>Matches</th><th>Piste</th><th>Phase</th><th>Round</th><th>❌</th></tr>
@@ -208,4 +274,6 @@
   <section>
     <button onclick="resetTournoi()">🧽 Réinitialiser le tournoi</button>
     <button onclick="supprimerTousJoueurs()">🔥 Supprimer tous les joueurs</button>
-    <button onclick="genererFinale()">🏁 Générer la finale (top 5)</button>
+  </section>
+</body>
+</html>
