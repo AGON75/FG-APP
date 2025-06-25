@@ -82,7 +82,6 @@
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrb2x6bXFhcmZpem94amdvbGZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk2Nzg3NTYsImV4cCI6MjA2NTI1NDc1Nn0.ZlpERz1uznM0fn--GR9YgM2vjwe_kw-qiPF8KHJvMpI'
     );
 
-    // Générer une phase pour tous les joueurs inscrits
     async function genererPhase(phase = 1) {
       const { data: joueurs } = await supabase.from("players").select("*");
       if (!joueurs || joueurs.length < 1) {
@@ -90,20 +89,33 @@
         return;
       }
 
-      // Réinitialiser les affectations de la phase en cours
       await supabase.from("players")
         .update({ phase: null, round: null, terrain: null })
         .in("id", joueurs.map(j => j.id));
 
-      const terrains = [1, 2, 3, 4, 5];
-      // Un seul round si ≤ 50 joueurs, sinon deux rounds
-      const rounds = joueurs.length <= 50 ? ["A"] : ["A", "B"];
       const joueursParSlot = 10;
+      let terrains = [1, 2, 3, 4, 5];
+      let rounds = ["A"];
 
-      // Mélanger les joueurs pour l'équité
+      if (joueurs.length <= joueursParSlot) {
+        terrains = [1];
+        rounds = ["A"];
+      }
+      else if (joueurs.length <= 50) {
+        terrains = [1, 2, 3, 4, 5];
+        rounds = ["A"];
+      }
+      else if (joueurs.length <= 100) {
+        terrains = [1, 2, 3, 4, 5];
+        rounds = ["A", "B"];
+      }
+      else {
+        terrains = [1, 2, 3, 4, 5];
+        rounds = ["A", "B", "C"];
+      }
+
       const shuffled = joueurs.slice().sort(() => Math.random() - 0.5);
 
-      // Créer les slots (round/terrain)
       let slots = [];
       for (const round of rounds) {
         for (const terrain of terrains) {
@@ -113,15 +125,13 @@
 
       let idx = 0;
       for (const joueur of shuffled) {
-        // Trouver le prochain slot non plein
         while (idx < slots.length && slots[idx].joueurs.length >= joueursParSlot) {
           idx++;
         }
-        if (idx >= slots.length) break; // Plus de place
+        if (idx >= slots.length) break;
 
         slots[idx].joueurs.push(joueur);
 
-        // Enregistrer l'affectation dans Supabase
         await supabase.from("players")
           .update({ phase, round: slots[idx].round, terrain: slots[idx].terrain })
           .eq("id", joueur.id);
@@ -132,7 +142,6 @@
 
     // Générer la demi-finale avec les 5 meilleurs joueurs (phase 99, round "Demi Finale", terrain 1)
     async function genererDemiFinale() {
-      // Réinitialiser tous les joueurs sauf ceux déjà en finale manuelle
       await supabase.from("players")
         .update({ phase: null, round: null, terrain: null })
         .neq("phase", "finale");
@@ -200,11 +209,11 @@
       // Réinitialiser tous les joueurs
       await supabase.from("players").update({ phase: null, round: null, terrain: null, total_points: null }).neq("id", "");
 
-      // Pour la plateforme d'arbitrage : phase "finale", round "Finale du Tournoi", terrain 1, total_points "FINALISTE"
+      // Pour la plateforme d'arbitrage : phase "finale", round "FM", terrain 1, total_points "FINALISTE"
       for (const joueur of finalistes) {
         await supabase.from("players").update({
           phase: "finale",
-          round: 'Finale du Tournoi',
+          round: 'FM',
           terrain: 1,
           total_points: "FINALISTE"
         }).eq("id", joueur.id);
@@ -215,7 +224,6 @@
     }
     window.finaleManuelle = finaleManuelle;
 
-    // Afficher le planning groupé
     async function afficherPlanning() {
       const { data } = await supabase.from("players").select("name, terrain, phase, round, total_points").order("phase, round, terrain");
 
@@ -280,5 +288,7 @@
     <thead><tr><th>Joueur</th><th>Détails</th></tr></thead>
     <tbody id="dispatch"></tbody>
   </table>
+</body>
+</html>
 </body>
 </html>
