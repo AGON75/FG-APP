@@ -123,18 +123,16 @@
       }
     }
 
-    async function isVainqueurFinale(joueur) {
-      // On vérifie s'il est le seul joueur en finale (phase 99) avec le max de points
+    // Vérifie si ce joueur est le premier éliminé en finale (phase 99, rank 1)
+    async function estVainqueur(joueur) {
       const { data, error } = await supabase
-        .from("players")
-        .select("id")
-        .eq("phase", 99);
-
-      if (error || !data) return false;
-      // Si un seul joueur en finale, c'est le vainqueur
-      if (data.length === 1 && data[0].id === joueur.id) return true;
-      // Sinon, on peut aussi vérifier s'il a le plus de points parmi les finalistes
-      return false;
+        .from("eliminations")
+        .select("*")
+        .eq("player_id", joueur.id)
+        .eq("phase", 99)
+        .eq("rank", 1)
+        .maybeSingle();
+      return !!data;
     }
 
     async function afficher(joueur) {
@@ -147,8 +145,7 @@
       }
       if (joueur.phase == 99) {
         etat.textContent = `${joueur.name} — 🏁 Finale — Piste ${joueur.terrain ?? "-"}`;
-        // Vérifie si ce joueur est le vainqueur de la finale
-        if (await isVainqueurFinale(joueur)) {
+        if (await estVainqueur(joueur)) {
           console.log(`
 🎉 FINGER GAME – PARIS ENTERTAINMENT COMPANY 2025 🎉
 
