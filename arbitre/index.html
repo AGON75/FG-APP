@@ -166,10 +166,11 @@
 
         const { data } = await supabase.from("players").select("*").eq("id", playerId).single();
         if (data) {
-          // Ne pas ajouter de points si le joueur est FINALISTE (finale manuelle)
+          // Ne pas ajouter de points si le joueur est FINALISTE ou VAINQUEUR
           let newPoints = data.total_points;
-          if (data.total_points !== "FINALISTE") {
-            newPoints = (parseInt(data.total_points, 10) || 0) + points;
+          if (data.total_points !== "FINALISTE" && data.total_points !== "VAINQUEUR") {
+            const base = isNaN(parseInt(data.total_points, 10)) ? 0 : parseInt(data.total_points, 10);
+            newPoints = base + points;
           }
           await supabase.from("players").update({
             total_points: newPoints,
