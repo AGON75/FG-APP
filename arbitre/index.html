@@ -2,21 +2,20 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <title>Arbitre - Finger Game</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Arbitre – Finger Game</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     body {
-      font-family: 'Segoe UI', sans-serif;
       background: linear-gradient(to right, #0d47a1, #b71c1c);
       color: white;
+      font-family: 'Segoe UI', sans-serif;
       text-align: center;
       margin: 0;
-      padding: 30px;
+      padding: 20px;
     }
     header img {
       width: 200px;
       margin-top: 20px;
-      max-width: 90%;
     }
     h1 {
       margin: 10px 0;
@@ -36,20 +35,6 @@
     th {
       background: rgba(255,255,255,0.1);
     }
-    button {
-      padding: 10px;
-      font-size: 16px;
-      margin: 10px;
-      border-radius: 6px;
-      border: none;
-      cursor: pointer;
-      background: #444;
-      color: white;
-      transition: background 0.2s;
-    }
-    button:hover {
-      background: #b71c1c;
-    }
   </style>
   <script type="module">
     import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
@@ -58,25 +43,23 @@
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrb2x6bXFhcmZpem94amdvbGZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk2Nzg3NTYsImV4cCI6MjA2NTI1NDc1Nn0.ZlpERz1uznM0fn--GR9YgM2vjwe_kw-qiPF8KHJvMpI'
     );
 
-    // Afficher le dispatch des joueurs par phase/round/terrain
     async function afficherArbitrage() {
-      const { data } = await supabase
-        .from("players")
-        .select("id, name, terrain, phase, round, total_points")
-        .order("phase, round, terrain");
+      const { data } = await supabase.from("players").select("name, terrain, phase, round, total_points").order("phase, round, terrain");
 
       const grouped = {};
       for (const joueur of data) {
         if (!joueur.phase) continue;
-        // Affichage spécial pour la finale manuelle
-        const key = joueur.phase == 99
+        // Catégories spéciales pour les finales
+        const key = joueur.phase === "finale"
           ? "🏁 Finale manuelle"
-          : `Phase ${joueur.phase} – Round ${joueur.round} – Piste ${joueur.terrain}`;
+          : (joueur.phase == 99
+              ? "🏁 Finale"
+              : `Phase ${joueur.phase} – Round ${joueur.round} – Piste ${joueur.terrain}`);
         if (!grouped[key]) grouped[key] = [];
         grouped[key].push(joueur);
       }
 
-      const tbody = document.getElementById("dispatch");
+      const tbody = document.getElementById("arbitre-table");
       tbody.innerHTML = "";
 
       for (const bloc in grouped) {
@@ -84,4 +67,37 @@
         header.innerHTML = `<th colspan="4">${bloc}</th>`;
         tbody.appendChild(header);
         for (const joueur of grouped[bloc]) {
-          const tr = document.createElement("tr
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${joueur.name}</td>
+            <td>${joueur.terrain ?? "-"}</td>
+            <td>${joueur.round ?? "-"}</td>
+            <td>${joueur.total_points ?? "-"}</td>
+          `;
+          tbody.appendChild(tr);
+        }
+      }
+    }
+
+    window.onload = afficherArbitrage;
+  </script>
+</head>
+<body>
+  <header>
+    <img src="../assets/FingerGame_logo_blanc_tagline.png" alt="Finger Game">
+    <h1>🧑‍⚖️ Arbitrage</h1>
+  </header>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Joueur</th>
+        <th>Piste</th>
+        <th>Round</th>
+        <th>Points</th>
+      </tr>
+    </thead>
+    <tbody id="arbitre-table"></tbody>
+  </table>
+</body>
+</html>
