@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <title>Planning – Finger Game</title>
+  <title>Arbitre – Finger Game</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     body {
@@ -10,15 +10,17 @@
       color: white;
       font-family: 'Segoe UI', sans-serif;
       text-align: center;
-      margin: 0;
       padding: 20px;
+      margin: 0;
     }
     header img {
       width: 200px;
+      max-width: 90%;
       margin-top: 20px;
     }
     h1 {
-      margin: 10px 0;
+      margin-top: 10px;
+      margin-bottom: 30px;
     }
     .btn-bar {
       display: flex;
@@ -27,10 +29,10 @@
       flex-wrap: wrap;
       margin-bottom: 30px;
     }
-    button {
-      padding: 14px 28px;
-      font-size: 18px;
-      margin: 10px 0;
+    select, button {
+      font-size: 16px;
+      padding: 10px 18px;
+      margin: 10px 5px;
       border-radius: 8px;
       border: none;
       background: #fff;
@@ -45,226 +47,227 @@
       color: #0d47a1;
       outline: none;
     }
-    table {
-      margin: 20px auto;
-      border-collapse: collapse;
-      width: 95%;
-      max-width: 1200px;
-      background: rgba(0,0,0,0.2);
-    }
-    th, td {
-      border: 1px solid rgba(255,255,255,0.2);
-      padding: 12px;
-      text-align: center;
-      font-size: 18px;
-    }
-    th {
-      background: rgba(255,255,255,0.1);
-      font-size: 20px;
-    }
-    .finaliste {
+    label {
       font-weight: bold;
-      color: gold;
+      margin: 0 5px;
     }
-    .phase-header {
-      background: #fff;
+    .player-button {
+      display: inline-block;
+      margin: 6px;
+      padding: 10px 16px;
+      border-radius: 6px;
+      border: none;
+      background: #444;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+      font-weight: bold;
+      min-width: 120px;
+      transition: background 0.2s;
+    }
+    .player-button:hover {
+      background: #ffd700;
       color: #0d47a1;
-      font-size: 20px;
+    }
+    .eliminated {
+      background-color: #b71c1c !important;
+      text-decoration: line-through;
+      color: #fff !important;
+    }
+    #joueurs {
+      margin-top: 20px;
+      margin-bottom: 10px;
+    }
+    #ordre {
+      font-size: 18px;
       font-weight: bold;
-      letter-spacing: 1px;
+      margin-bottom: 20px;
     }
   </style>
   <script type="module">
-    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
     const supabase = createClient(
       'https://ckolzmqarfizoxjgolft.supabase.co',
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrb2x6bXFhcmZpem94amdvbGZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk2Nzg3NTYsImV4cCI6MjA2NTI1NDc1Nn0.ZlpERz1uznM0fn--GR9YgM2vjwe_kw-qiPF8KHJvMpI'
     );
 
-    async function genererPhase(phase = 1) {
-      const { data: joueurs } = await supabase.from("players").select("*");
-      if (!joueurs || joueurs.length < 1) {
-        alert("Aucun joueur inscrit !");
-        return;
-      }
+    let players = [];
+    let eliminatedOrder = [];
+    let currentPhase = 1;
+    let currentRound = "A";
+    let currentTerrain = 1;
 
-      await supabase.from("players")
-        .update({ phase: null, round: null, terrain: null })
-        .in("id", joueurs.map(j => j.id));
+    const baremes = {
+      4: [20, 10, 0, -5],
+      5: [25, 20, 10, 0, -5],
+      6: [30, 25, 15, 5, 0, -5],
+      7: [30, 25, 20, 15, 10, 0, -5],
+      8: [30, 25, 20, 15, 10, 5, 0, -5],
+      9: [35, 30, 25, 20, 15, 10, 5, 0, -5],
+      10:[40, 35, 30, 25, 20, 15, 10, 5, 0, -5]
+    };
 
-      const joueursParSlot = 10;
-      let terrains = [1, 2, 3, 4, 5];
-      let rounds = ["A"];
-
-      if (joueurs.length <= joueursParSlot) {
-        terrains = [1];
-        rounds = ["A"];
-      }
-      else if (joueurs.length <= 50) {
-        terrains = [1, 2, 3, 4, 5];
-        rounds = ["A"];
-      }
-      else if (joueurs.length <= 100) {
-        terrains = [1, 2, 3, 4, 5];
-        rounds = ["A", "B"];
-      }
-      else {
-        terrains = [1, 2, 3, 4, 5];
-        rounds = ["A", "B", "C"];
-      }
-
-      const shuffled = joueurs.slice().sort(() => Math.random() - 0.5);
-
-      let slots = [];
-      for (const round of rounds) {
-        for (const terrain of terrains) {
-          slots.push({ round, terrain, joueurs: [] });
-        }
-      }
-
-      let idx = 0;
-      for (const joueur of shuffled) {
-        while (idx < slots.length && slots[idx].joueurs.length >= joueursParSlot) {
-          idx++;
-        }
-        if (idx >= slots.length) break;
-        slots[idx].joueurs.push(joueur);
-        await supabase.from("players")
-          .update({ phase, round: slots[idx].round, terrain: slots[idx].terrain })
-          .eq("id", joueur.id);
-      }
-
-      afficherPlanning();
+    // Finale classique ou manuelle
+    function isFinale() {
+      return (
+        (currentPhase === 99 && currentRound === "F") ||
+        (currentPhase === "finale" && currentRound === "FM")
+      );
     }
 
-    // Générer la demi-finale : 5 premiers du classement (hors déjà en finale manuelle)
-    async function genererDemiFinale() {
-      // On ne touche pas aux joueurs déjà en finale manuelle
-      await supabase.from("players")
-        .update({ phase: null, round: null, terrain: null })
-        .not("phase", "in", ["finale"]);
-      await new Promise(resolve => setTimeout(resolve, 300));
-      const { data } = await supabase
-        .from("players")
-        .select("*")
-        .not("phase", "in", ["finale"])
-        .order("total_points", { ascending: false });
+    async function chargerJoueurs() {
+      const phaseValue = document.getElementById("phase").value;
+      currentPhase = isNaN(phaseValue) ? phaseValue : parseInt(phaseValue);
+      currentRound = document.getElementById("round").value;
+      currentTerrain = parseInt(document.getElementById("terrain").value);
 
-      // Prend les 5 premiers non finalistes
-      const demiFinalistes = data.slice(0, 5);
+      let query = supabase.from("players").select("*").eq("round", currentRound).eq("terrain", currentTerrain);
 
-      for (const joueur of demiFinalistes) {
-        await supabase.from("players").update({
-          phase: 99,
-          round: 'F',
-          terrain: 1
-        }).eq("id", joueur.id);
+      if (currentPhase === "finale") {
+        query = query.eq("phase", "finale");
+      } else {
+        query = query.eq("phase", currentPhase);
       }
 
-      alert("🏁 Demi-finale générée avec les 5 meilleurs joueurs !");
-      afficherPlanning();
+      const { data } = await query.order("name");
+
+      players = data;
+      eliminatedOrder = [];
+      renderPlayers();
     }
 
-    // Finale manuelle : choix du nombre et des noms des finalistes
-    async function finaleManuelle() {
-      const { data: allPlayers } = await supabase.from("players").select("id, name");
-      if (!allPlayers || allPlayers.length === 0) {
-        alert("Aucun joueur inscrit !");
-        return;
+    function renderPlayers() {
+      const zone = document.getElementById("joueurs");
+      zone.innerHTML = "";
+      players.forEach(p => {
+        const btn = document.createElement("button");
+        btn.textContent = p.name;
+        btn.className = "player-button";
+        let elim = eliminatedOrder.filter(id => id === p.id).length;
+        if (elim > 0) {
+          btn.classList.add("eliminated");
+          btn.textContent += isFinale() ? ` (${elim}/2)` : ` (#${elim})`;
+        }
+        btn.onclick = () => toggleElimination(p.id);
+        zone.appendChild(btn);
+      });
+      if (isFinale()) {
+        document.getElementById("ordre").textContent = `${eliminatedOrder.length} éliminations / ${players.length * 2} nécessaires`;
+      } else {
+        document.getElementById("ordre").textContent = `${eliminatedOrder.length} / ${players.length} éliminés`;
       }
+    }
 
-      let nb = prompt("Combien de joueurs en finale ? (2 à 5)");
-      nb = parseInt(nb);
-      if (isNaN(nb) || nb < 2 || nb > 5) {
-        alert("Nombre invalide.");
-        return;
+    function toggleElimination(id) {
+      if (isFinale()) {
+        const count = eliminatedOrder.filter(pid => pid === id).length;
+        if (count < 2) {
+          eliminatedOrder.push(id);
+        }
+      } else {
+        const index = eliminatedOrder.indexOf(id);
+        if (index > -1) {
+          eliminatedOrder.splice(index, 1);
+        } else {
+          eliminatedOrder.push(id);
+        }
       }
+      renderPlayers();
+    }
 
-      let finalistes = [];
-      for (let i = 1; i <= nb; i++) {
-        let nom = prompt(`Nom du finaliste #${i} (auto-complétion possible) :\n${allPlayers.map(p=>p.name).join(', ')}`);
-        if (!nom) {
-          alert("Nom requis.");
+    async function validerManche() {
+      if (isFinale()) {
+        const counts = {};
+        players.forEach(p => counts[p.id] = 0);
+        eliminatedOrder.forEach(id => counts[id]++);
+        const stillIn = Object.entries(counts).filter(([id, c]) => c < 2);
+        if (stillIn.length !== 1) {
+          alert("⚠ Il doit rester un seul joueur avec moins de 2 éliminations.");
           return;
         }
-        let joueur = allPlayers.find(p => p.name.toLowerCase() === nom.toLowerCase())
-                  || allPlayers.find(p => p.name.toLowerCase().startsWith(nom.toLowerCase()));
-        if (!joueur) {
-          alert("Aucun joueur trouvé pour : " + nom);
+        eliminatedOrder.push(stillIn[0][0]);
+      } else {
+        if (eliminatedOrder.length !== players.length - 1) {
+          alert("⚠ Il doit rester un seul joueur non éliminé.");
           return;
         }
-        if (finalistes.find(f => f.id === joueur.id)) {
-          alert("Ce joueur est déjà sélectionné !");
-          return;
-        }
-        finalistes.push(joueur);
+        const winner = players.find(p => !eliminatedOrder.includes(p.id));
+        if (winner) eliminatedOrder.push(winner.id);
       }
 
-      await supabase.from("players").update({ phase: null, round: null, terrain: null, total_points: null }).neq("id", "");
+      const barème = baremes[players.length] || baremes[8];
 
-      for (const joueur of finalistes) {
-        await supabase.from("players").update({
-          phase: "finale",
-          round: 'FM',
-          terrain: 1,
-          total_points: "FINALISTE"
-        }).eq("id", joueur.id);
-      }
+      for (let i = 0; i < eliminatedOrder.length; i++) {
+        const playerId = eliminatedOrder[i];
+        const points = barème[i] !== undefined ? barème[i] : 0;
 
-      alert("Finale manuelle enregistrée !");
-      afficherPlanning();
-    }
-    window.finaleManuelle = finaleManuelle;
+        await supabase.from("eliminations").insert({
+          player_id: playerId,
+          terrain: currentTerrain,
+          rank: i + 1
+        });
 
-    async function afficherPlanning() {
-      const { data } = await supabase.from("players").select("name, terrain, phase, round, total_points").order("total_points", { ascending: false });
-
-      const grouped = {};
-      for (const joueur of data) {
-        if (!joueur.phase) continue;
-        const key = joueur.phase === "finale"
-          ? "🏆 Finale manuelle"
-          : (joueur.phase == 99
-              ? "🏁 Demi-finale"
-              : `Phase ${joueur.phase} – Round ${joueur.round} – Piste ${joueur.terrain}`);
-        if (!grouped[key]) grouped[key] = [];
-        grouped[key].push(joueur);
-      }
-
-      const tbody = document.getElementById("dispatch");
-      tbody.innerHTML = "";
-
-      for (const bloc in grouped) {
-        const header = document.createElement("tr");
-        header.className = "phase-header";
-        header.innerHTML = `<th colspan="2">${bloc}</th>`;
-        tbody.appendChild(header);
-        for (const joueur of grouped[bloc]) {
-          const tr = document.createElement("tr");
-          tr.innerHTML = `<td${joueur.total_points === "FINALISTE" ? ' class="finaliste"' : ''}>${joueur.name}</td><td>${joueur.total_points ?? ""}</td>`;
-          tbody.appendChild(tr);
+        const { data } = await supabase.from("players").select("*").eq("id", playerId).single();
+        if (data) {
+          await supabase.from("players").update({
+            total_points: data.total_points + points,
+            matches: data.matches + 1
+          }).eq("id", playerId);
         }
       }
+
+      alert("✅ Manche enregistrée !");
+      players = [];
+      eliminatedOrder = [];
+      renderPlayers();
     }
 
-    async function resetPlanning() {
-      await supabase.from("players").update({ phase: null, round: null, terrain: null, total_points: null });
-      const tbody = document.getElementById("dispatch");
-      tbody.innerHTML = "";
-    }
+    window.onload = () => {
+      const t = document.getElementById("terrain");
+      const p = document.getElementById("phase");
+      const r = document.getElementById("round");
+      for (let i = 1; i <= 5; i++) {
+        t.innerHTML += `<option value="${i}">Piste ${i}</option>`;
+        p.innerHTML += `<option value="${i}">Phase ${i}</option>`;
+      }
+      // Ajout de la demi-finale (phase 99)
+      p.innerHTML += `<option value="99">Demi-finale</option>`;
+      // Ajout de la finale manuelle (phase "finale")
+      p.innerHTML += `<option value="finale">Finale manuelle</option>`;
+      // Ajout du round C
+      r.innerHTML += `<option value="C">C</option>`;
+      // Ajout du round FM pour la finale manuelle (affiché "Finale du Tournoi")
+      r.innerHTML += `<option value="F">Demi Finale</option>`;
+      r.innerHTML += `<option value="FM">Finale du Tournoi</option>`;
+    };
 
-    window.genererPhase = genererPhase;
-    window.genererDemiFinale = genererDemiFinale;
-    window.resetPlanning = resetPlanning;
-    window.onload = afficherPlanning;
+    window.chargerJoueurs = chargerJoueurs;
+    window.validerManche = validerManche;
   </script>
 </head>
 <body>
   <header>
-    <img src="../assets/FingerGame_logo_blanc_tagline.png" alt="Finger Game">
-    <h1>📅 Planning des Phases</h1>
+    <img src="../assets/FingerGame_logo_blanc_tagline.png" alt="Finger Game" />
+    <h1>🎯 Arbitrage – Finger Game</h1>
   </header>
 
   <div class="btn-bar">
+    <label>Phase :</label>
+    <select id="phase"></select>
+    <label>Round :</label>
+    <select id="round">
+      <option value="A">A</option>
+      <option value="B">B</option>
+      <!-- Les autres rounds sont ajoutés dynamiquement -->
+    </select>
+    <label>Piste :</label>
+    <select id="terrain"></select>
+    <button onclick="chargerJoueurs()">Charger les joueurs</button>
+  </div>
+
+  <div id="joueurs"></div>
+  <p id="ordre"></p>
+
+  <button onclick="validerManche()">✅ Valider la
     <button onclick="genererPhase()">🚀 Générer la phase</button>
     <button onclick="genererDemiFinale()">🏁 Générer la demi-finale</button>
