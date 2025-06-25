@@ -16,9 +16,10 @@
     header img {
       width: 200px;
       margin-top: 20px;
+      max-width: 90%;
     }
     h1 {
-      margin: 10px 0;
+      margin: 10px 0 30px 0;
     }
     .btn-bar {
       display: flex;
@@ -28,7 +29,7 @@
       margin-bottom: 30px;
     }
     button {
-      padding: 14px 28px;
+      padding: 12px 24px;
       font-size: 18px;
       margin: 10px 0;
       border-radius: 8px;
@@ -37,7 +38,7 @@
       color: #222;
       font-weight: bold;
       cursor: pointer;
-      transition: box-shadow 0.2s;
+      transition: box-shadow 0.2s, background 0.2s, color 0.2s;
       box-shadow: 0 2px 8px rgba(0,0,0,0.08);
     }
     button:hover, button:focus {
@@ -62,16 +63,16 @@
       background: rgba(255,255,255,0.1);
       font-size: 20px;
     }
-    .finaliste {
-      font-weight: bold;
-      color: gold;
-    }
     .phase-header {
       background: #fff;
       color: #0d47a1;
       font-size: 20px;
       font-weight: bold;
       letter-spacing: 1px;
+    }
+    .finaliste {
+      font-weight: bold;
+      color: gold;
     }
   </style>
   <script type="module">
@@ -81,6 +82,7 @@
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrb2x6bXFhcmZpem94amdvbGZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk2Nzg3NTYsImV4cCI6MjA2NTI1NDc1Nn0.ZlpERz1uznM0fn--GR9YgM2vjwe_kw-qiPF8KHJvMpI'
     );
 
+    // Générer une phase pour tous les joueurs inscrits
     async function genererPhase(phase = 1) {
       const { data: joueurs } = await supabase.from("players").select("*");
       if (!joueurs || joueurs.length < 1) {
@@ -114,8 +116,10 @@
         rounds = ["A", "B", "C"];
       }
 
+      // Mélanger les joueurs pour l'équité
       const shuffled = joueurs.slice().sort(() => Math.random() - 0.5);
 
+      // Créer les slots (round/terrain)
       let slots = [];
       for (const round of rounds) {
         for (const terrain of terrains) {
@@ -125,12 +129,15 @@
 
       let idx = 0;
       for (const joueur of shuffled) {
+        // Trouver le prochain slot non plein
         while (idx < slots.length && slots[idx].joueurs.length >= joueursParSlot) {
           idx++;
         }
-        if (idx >= slots.length) break;
+        if (idx >= slots.length) break; // Plus de place
+
         slots[idx].joueurs.push(joueur);
 
+        // Enregistrer l'affectation dans Supabase
         await supabase.from("players")
           .update({ phase, round: slots[idx].round, terrain: slots[idx].terrain })
           .eq("id", joueur.id);
@@ -139,9 +146,9 @@
       afficherPlanning();
     }
 
-    // Générer la demi-finale : 5 premiers du classement (points max)
+    // Générer la demi-finale avec les 5 meilleurs joueurs (phase 99, round "Demi Finale", terrain 1)
     async function genererDemiFinale() {
-      // Réinitialise phase/round/terrain pour tous sauf finale manuelle
+      // Réinitialiser tous les joueurs sauf ceux déjà en finale manuelle
       await supabase.from("players")
         .update({ phase: null, round: null, terrain: null })
         .not("phase", "in", ["finale"]);
@@ -217,6 +224,7 @@
     }
     window.finaleManuelle = finaleManuelle;
 
+    // Afficher le planning groupé
     async function afficherPlanning() {
       const { data } = await supabase.from("players").select("name, terrain, phase, round, total_points").order("phase, round, terrain");
 
@@ -224,9 +232,13 @@
       for (const joueur of data) {
         if (!joueur.phase) continue;
         let key = "";
-        if (joueur.phase === "finale") key = "🏆 Finale manuelle";
-        else if (joueur.phase == 99) key = "🏁 Demi-finale";
-        else key = `Phase ${joueur.phase} – Round ${joueur.round} – Piste ${joueur.terrain}`;
+        if (joueur.phase === "finale") {
+          key = "🏆 Finale manuelle";
+        } else if (joueur.phase == 99) {
+          key = "🏁 Demi-finale";
+        } else {
+          key = `Phase ${joueur.phase} – Round ${joueur.round} – Piste ${joueur.terrain}`;
+        }
         if (!grouped[key]) grouped[key] = [];
         grouped[key].push(joueur);
       }
@@ -255,6 +267,7 @@
 
     window.genererPhase = genererPhase;
     window.genererDemiFinale = genererDemiFinale;
+    window.finaleManuelle = finaleManuelle;
     window.resetPlanning = resetPlanning;
     window.onload = afficherPlanning;
   </script>
@@ -275,6 +288,3 @@
   <table>
     <thead><tr><th>Joueur</th><th>Détails</th></tr></thead>
     <tbody id="dispatch"></tbody>
-  </table>
-</body>
-</html>
