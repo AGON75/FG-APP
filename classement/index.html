@@ -36,14 +36,29 @@
     th {
       background: rgba(255,255,255,0.1);
     }
+    .demi-finaliste {
+      background: #cd7f32 !important; /* bronze */
+      color: #fff;
+      font-weight: bold;
+    }
     .finaliste {
-      background: #ffd700;
+      background: #c0c0c0 !important; /* silver */
+      color: #222;
+      font-weight: bold;
+    }
+    .vainqueur {
+      background: #ffd700 !important; /* gold */
       color: #222;
       font-weight: bold;
     }
     .ligne-finale {
       background: #fff;
       color: #b71c1c;
+      font-weight: bold;
+    }
+    .ligne-demi {
+      background: #fff;
+      color: #0d47a1;
       font-weight: bold;
     }
     .emoji-caca {
@@ -81,6 +96,19 @@
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrb2x6bXFhcmZpem94amdvbGZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk2Nzg3NTYsImV4cCI6MjA2NTI1NDc1Nn0.ZlpERz1uznM0fn--GR9YgM2vjwe_kw-qiPF8KHJvMpI'
     )
 
+    function classementSort(a, b) {
+      // Gold d'abord
+      if (a.total_points === "VAINQUEUR" && b.total_points !== "VAINQUEUR") return -1;
+      if (b.total_points === "VAINQUEUR" && a.total_points !== "VAINQUEUR") return 1;
+      // Silver ensuite
+      if (a.phase === "finale" && b.phase !== "finale") return -1;
+      if (b.phase === "finale" && a.phase !== "finale") return 1;
+      // Puis par points décroissants (hors cas spéciaux)
+      const pa = isNaN(parseInt(a.total_points)) ? -Infinity : parseInt(a.total_points);
+      const pb = isNaN(parseInt(b.total_points)) ? -Infinity : parseInt(b.total_points);
+      return pb - pa;
+    }
+
     async function afficherClassement() {
       try {
         const { data, error } = await supabase
@@ -90,28 +118,38 @@
 
         if (error) throw error;
 
+        // Tri spécial : vainqueur > finalistes > autres par points
+        const sorted = [...data].sort(classementSort);
+
         const tbody = document.getElementById("classement");
         tbody.innerHTML = "";
 
-        data.forEach((joueur, i) => {
-          // Ligne de qualification finale après la 5e place (après l'index 4)
+        // Ligne "Non qualifiés pour la Demi finale" après la 5e place
+        sorted.forEach((joueur, i) => {
           if (i === 5) {
-            const trFinale = document.createElement("tr");
-            trFinale.className = "ligne-finale";
-            trFinale.innerHTML = `<td colspan="4">⬇️ Non qualifiés pour la finale ⬇️</td>`;
-            tbody.appendChild(trFinale);
+            const trDemi = document.createElement("tr");
+            trDemi.className = "ligne-demi";
+            trDemi.innerHTML = `<td colspan="4">⬇️ Non qualifiés pour la Demi finale ⬇️</td>`;
+            tbody.appendChild(trDemi);
           }
 
           const tr = document.createElement("tr");
-          if (joueur.phase == 99) tr.classList.add("finaliste");
+          // Surlignage selon le statut
+          if (joueur.total_points === "VAINQUEUR") {
+            tr.classList.add("vainqueur");
+          } else if (joueur.phase === "finale") {
+            tr.classList.add("finaliste");
+          } else if (joueur.phase == 99 && i < 5) {
+            tr.classList.add("demi-finaliste");
+          }
 
           // Dernier = emoji caca, avant-dernier = emoji nul
-          if (i === data.length - 1) tr.classList.add("emoji-caca");
-          if (i === data.length - 2) tr.classList.add("emoji-nul");
+          if (i === sorted.length - 1) tr.classList.add("emoji-caca");
+          if (i === sorted.length - 2) tr.classList.add("emoji-nul");
 
           let nom = joueur.name;
-          if (i === data.length - 1) nom = "💩 " + nom;
-          if (i === data.length - 2) nom = "🫥 " + nom; // emoji "nul"
+          if (i === sorted.length - 1) nom = "💩 " + nom;
+          if (i === sorted.length - 2) nom = "🫥 " + nom;
 
           tr.innerHTML = `
             <td>${i + 1}</td>
