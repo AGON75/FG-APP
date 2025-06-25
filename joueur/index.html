@@ -58,6 +58,7 @@
   <button onclick="location.reload()">📘 Afficher la prochaine manche</button>
   <button onclick="changerDeJoueur()">🔄 Changer de joueur</button><br>
   <a href="../classement/index.html">📊 Voir le classement</a>
+  <a href="../regles/index.html">📜 Règles du jeu</a>
 
   <script type="module">
     import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
@@ -132,11 +133,33 @@
       }
       if (joueur.phase == 99) {
         etat.textContent = `${joueur.name} — 🏁 Finale — Piste ${joueur.terrain ?? "-"}`;
+        // Affichage du message console pour le vainqueur (adapte la condition si besoin)
+        if ((joueur.matches ?? 0) >= 2) {
+          console.log(`
+🎉 FINGER GAME – PARIS ENTERTAINMENT COMPANY 2025 🎉
+
+🏆 GRAND VAINQUEUR 🏆
+
+Nous avons assisté à une compétition acharnée, rythmée par la précision, le sang-froid et l’élimination sans pitié.
+Parmi des dizaines de challengers déterminés, un nom s’est hissé tout en haut. --> ${joueur.name}
+
+✨ Félicitations au vainqueur du Finger Game 2025 ✨ --> ${joueur.name}
+
+🎖️ ${joueur.name} – digne représentant de la stratégie, de la vitesse… et du panache.
+
+Tu as su “relever le phalange” mieux que quiconque.
+Ton nom est désormais gravé dans l’histoire du Finger Game. --> ${joueur.name}
+
+🔥 Respect éternel.
+
+La Fédération Française de Finger Games
+          `);
+        }
       } else {
         const partieNum = (joueur.matches ?? 0) + 1;
         let info = "";
         if (joueur.round === "A") info = " (Démarrage dans 3 min)";
-        if (joueur.round === "B") info = " (Démarrage après le round A, environ 10 min)";
+        if (joueur.round === "B") info = " (Démarrage après le round A, dans environ 10 min)";
         etat.textContent = `${joueur.name} — Piste ${joueur.terrain ?? "non attribuée"} — Partie ${partieNum}/${joueur.round ?? "-"}${info}`;
       }
     }
@@ -153,5 +176,4 @@
     }
   </script>
 </body>
-  <a href="../regles/index.html" class="regles-btn">📜 Règles du jeu</a>
 </html>
