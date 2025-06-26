@@ -48,37 +48,6 @@
       font-size: 20px;
       font-weight: bold;
     }
-    #tableau-joueurs {
-      margin-top: 30px;
-      display: flex;
-      justify-content: center;
-    }
-    table {
-      border-collapse: collapse;
-      width: 90%;
-      max-width: 600px;
-      background: white;
-      color: black;
-    }
-    th, td {
-      padding: 10px;
-      border: 1px solid #ccc;
-    }
-    th {
-      background: #eee;
-    }
-    #form-nom {
-      margin-top: 20px;
-    }
-    #input-nom {
-      background: black;
-      color: white;
-      font-size: 16px;
-      padding: 10px;
-      border: none;
-      border-radius: 5px;
-      width: 250px;
-    }
   </style>
 </head>
 <body>
@@ -91,13 +60,6 @@
   <a href="../classement/index.html">📊 Voir le classement</a>
   <a href="../regles/index.html">📜 Règles du jeu</a>
 
-  <div id="form-nom" style="display:none;">
-    <input type="text" id="input-nom" placeholder="Nom Prénom"/>
-    <button onclick="validerNom()">Valider</button>
-  </div>
-
-  <div id="tableau-joueurs"></div>
-
   <script type="module">
     import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
 
@@ -109,12 +71,9 @@
     let playerId = localStorage.getItem("player_id");
 
     async function inscrireOuConnecter() {
-      document.getElementById("form-nom").style.display = "block";
-    }
-
-    async function validerNom() {
-      const baseName = document.getElementById("input-nom").value.trim();
+      const baseName = prompt("Entrez votre nom et prénom");
       if (!baseName) return;
+
       try {
         const { data: existing, error: errorExist } = await supabase
           .from("players")
@@ -144,20 +103,36 @@
             console.error(error);
           }
         }
-        document.getElementById("form-nom").style.display = "none";
       } catch (e) {
         document.getElementById("etat").textContent = "Erreur de connexion. Veuillez vérifier votre réseau.";
       }
     }
 
     async function getPlayerById(id) {
+      try {
+        const { data, error } = await supabase
+          .from("players")
+          .select("*")
+          .eq("id", id)
+          .single();
+        if (error) throw error;
+        return data;
+      } catch (e) {
+        document.getElementById("etat").textContent = "Erreur de connexion. Veuillez vérifier votre réseau.";
+        return null;
+      }
+    }
+
+    // Vérifie si ce joueur est le premier éliminé en finale (phase 99, rank 1)
+    async function estVainqueur(joueur) {
       const { data, error } = await supabase
-        .from("players")
-        .select("*")
-        .eq("id", id)
-        .single();
-      if (error) throw error;
-      return data;
+        .from("eliminations")
+        .select("id")
+        .eq("player_id", joueur.id)
+        .eq("phase", 99)
+        .eq("rank", 1)
+        .maybeSingle();
+      return !!data;
     }
 
     async function afficher(joueur) {
@@ -170,32 +145,34 @@
       }
       if (joueur.phase == 99) {
         etat.textContent = `${joueur.name} — 🏁 Finale — Piste ${joueur.terrain ?? "-"}`;
+        if (await estVainqueur(joueur)) {
+          console.log(`
+🎉 FINGER GAME – PARIS ENTERTAINMENT COMPANY 2025 🎉
+
+🏆 GRAND VAINQUEUR 🏆
+
+Nous avons assisté à une compétition acharnée, rythmée par la précision, le sang-froid et l’élimination sans pitié.
+Parmi des dizaines de challengers déterminés, un nom s’est hissé tout en haut. --> ${joueur.name}
+
+✨ Félicitations au vainqueur du Finger Game 2025 ✨ --> ${joueur.name}
+
+🎖️ ${joueur.name} – digne représentant de la stratégie, de la vitesse… et du panache.
+
+Tu as su “relever le phalange” mieux que quiconque.
+Ton nom est désormais gravé dans l’histoire du Finger Game. --> ${joueur.name}
+
+🔥 Respect éternel.
+
+La Fédération Française de Finger Games
+          `);
+        }
       } else {
         const partieNum = (joueur.matches ?? 0) + 1;
-        let info = joueur.round === "A" ? " (Démarrage dans 3 min)" :
-                   joueur.round === "B" ? " (Démarrage après le round A, dans environ 10 min)" : "";
+        let info = "";
+        if (joueur.round === "A") info = " (Démarrage dans 3 min)";
+        if (joueur.round === "B") info = " (Démarrage après le round A, dans environ 10 min)";
         etat.textContent = `${joueur.name} — Piste ${joueur.terrain ?? "non attribuée"} — Partie ${partieNum}/${joueur.round ?? "-"}${info}`;
-        afficherTableauJoueurs(joueur.phase, joueur.round);
       }
-    }
-
-    async function afficherTableauJoueurs(phase, round) {
-      const container = document.getElementById("tableau-joueurs");
-      const { data, error } = await supabase
-        .from("players")
-        .select("name, terrain")
-        .eq("phase", phase)
-        .eq("round", round)
-        .order("terrain", { ascending: true });
-
-      if (error || !data) return;
-
-      let html = `<table><tr><th>Nom</th><th>Piste</th></tr>`;
-      for (const joueur of data) {
-        html += `<tr><td>${joueur.name}</td><td>${joueur.terrain ?? "-"}</td></tr>`;
-      }
-      html += `</table>`;
-      container.innerHTML = html;
     }
 
     window.changerDeJoueur = function () {
@@ -209,8 +186,5 @@
       getPlayerById(playerId).then(joueur => afficher(joueur));
     }
   </script>
-</body>
-</html>
-
 </body>
 </html>
