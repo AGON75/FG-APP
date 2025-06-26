@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AGON – Accès Finger Game</title>
+  <style>
+    body {
+      background: linear-gradient(to right, #0d47a1, #b71c1c);
+      color: white;
+      font-family: 'Segoe UI', sans-serif;
+      text-align: center;
+      margin: 0;
+      padding: 30px;
+    }
+    img {
+      width: 200px;
+      max-width: 90%;
+      margin-bottom: 20px;
+    }
+    h1 {
+      margin-bottom: 30px;
+    }
+    .link-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      align-items: center;
+      margin-top: 30px;
+    }
+    a {
+      display: inline-block;
+      padding: 15px 30px;
+      font-size: 18px;
+      font-weight: bold;
+      background: #fff;
+      color: #0d47a1;
+      text-decoration: none;
+      border-radius: 8px;
+      transition: background 0.2s, color 0.2s;
+    }
+    a:hover {
+      background: #ffd700;
+      color: #b71c1c;
+    }
+  </style>
+</head>
+<body>
+  <img src="../assets/FingerGame_logo_blanc_tagline.png" alt="Finger Game">
+  <h1>🎮 AGON – Accès rapide à l'application Finger Game</h1>
+  <div class="link-grid">
+    <a href="https://fingergame-app.vercel.app/joueur">👆 Page Joueur</a>
+    <a href="https://fingergame-app.vercel.app/classement">📊 Classement</a>
+    <a href="https://fingergame-app.vercel.app/arbitre/">🧑‍⚖️ Arbitre</a>
+    <a href="https://fingergame-app.vercel.app/gestion">⚙️ Gestion des joueurs</a>
+    <a href="https://fingergame-app.vercel.app/planning">📅 Planning</a>
+  </div>
+</body>
+</html>
