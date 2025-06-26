@@ -132,7 +132,7 @@
       afficherPlanning();
     }
 
-    // MODIFICATION : Générer la demi-finale avec choix du nombre de joueurs et répartition sur 10/joueur/terrain
+    // Correction : répartition sur plusieurs terrains (10 max/terrain)
     async function genererDemiFinale() {
       const { data, error } = await supabase
         .from("players")
@@ -165,15 +165,13 @@
       const demiFinalistes = data.slice(0, nb);
       // Répartition sur terrains (10 par terrain max)
       let terrain = 1;
-      let count = 0;
-      for (const joueur of demiFinalistes) {
+      for (let i = 0; i < demiFinalistes.length; i++) {
         await supabase.from("players").update({
           phase: 99,
-          round: 'Demi Finale',
+          round: '🏁 Demi Finale',
           terrain: terrain
-        }).eq("id", joueur.id);
-        count++;
-        if (count % 10 === 0) terrain++;
+        }).eq("id", demiFinalistes[i].id);
+        if ((i + 1) % 10 === 0) terrain++;
       }
       alert("🏁 Demi-finale générée avec les " + nb + " premiers du classement !");
       afficherPlanning();
@@ -224,7 +222,7 @@
     }
     window.finaleManuelle = finaleManuelle;
 
-    // MODIFICATION : Affichage "🏁 Demi Finale" au lieu de "🏁 Finale" pour la demi-finale manuelle
+    // Correction : round "🏁 Demi Finale" pour la demi-finale manuelle
     async function demiFinaleManuelle() {
       const { data: allPlayers } = await supabase.from("players").select("id, name");
       if (!allPlayers || allPlayers.length === 0) {
@@ -258,15 +256,13 @@
       }
       // Répartition sur terrains (10 par terrain max)
       let terrain = 1;
-      let count = 0;
-      for (const joueur of finalistes) {
+      for (let i = 0; i < finalistes.length; i++) {
         await supabase.from("players").update({
           phase: 99,
           round: '🏁 Demi Finale',
           terrain: terrain
-        }).eq("id", joueur.id);
-        count++;
-        if (count % 10 === 0) terrain++;
+        }).eq("id", finalistes[i].id);
+        if ((i + 1) % 10 === 0) terrain++;
       }
       alert("Demi-finale manuelle enregistrée !");
       afficherPlanning();
@@ -336,5 +332,7 @@
     <thead><tr><th>Joueur</th><th>Détails</th></tr></thead>
     <tbody id="dispatch"></tbody>
   </table>
+</body>
+</html>
 </body>
 </html>
