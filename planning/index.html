@@ -132,7 +132,7 @@
       afficherPlanning();
     }
 
-    // Correction : Répartition sur plusieurs pistes (10 joueurs max par piste) et round "🏁 Demi Finale"
+    // Correction : Répartition sur plusieurs pistes (10 joueurs max par piste) pour la demi-finale auto
     async function genererDemiFinale() {
       const { data, error } = await supabase
         .from("players")
@@ -163,15 +163,26 @@
         return pb - pa;
       });
       const demiFinalistes = data.slice(0, nb);
-      // Répartition sur terrains (10 par terrain max)
-      let terrain = 1;
-      for (let i = 0; i < demiFinalistes.length; i++) {
+
+      // Répartition sur pistes (10 joueurs max par piste, round unique "🏁 Demi Finale")
+      const joueursParSlot = 10;
+      let slots = [];
+      let nbTerrains = Math.ceil(nb / joueursParSlot);
+      for (let terrain = 1; terrain <= nbTerrains; terrain++) {
+        slots.push({ terrain, joueurs: [] });
+      }
+      let idx = 0;
+      for (const joueur of demiFinalistes) {
+        while (idx < slots.length && slots[idx].joueurs.length >= joueursParSlot) {
+          idx++;
+        }
+        if (idx >= slots.length) break;
+        slots[idx].joueurs.push(joueur);
         await supabase.from("players").update({
           phase: 99,
           round: '🏁 Demi Finale',
-          terrain: terrain
-        }).eq("id", demiFinalistes[i].id);
-        if ((i + 1) % 10 === 0) terrain++;
+          terrain: slots[idx].terrain
+        }).eq("id", joueur.id);
       }
       alert("🏁 Demi-finale générée avec les " + nb + " premiers du classement !");
       afficherPlanning();
@@ -276,9 +287,9 @@
       for (const joueur of data) {
         if (!joueur.phase) continue;
         let key = "";
-        if (joueur.round === "🏁 Grande Finale" || joueur.phase === "finale") {
+        if (joueur.phase === "finale") {
           key = "🏁 Grande Finale";
-        } else if (joueur.round === "🏁 Demi Finale" || joueur.phase == 99) {
+        } else if (joueur.phase == 99 || joueur.round === "🏁 Demi Finale") {
           key = "🏁 Demi Finale";
         } else {
           key = `Phase ${joueur.phase} – Round ${joueur.round} – Piste ${joueur.terrain}`;
