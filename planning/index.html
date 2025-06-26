@@ -132,7 +132,7 @@
       afficherPlanning();
     }
 
-    // Correction : Répartition sur plusieurs pistes (10 joueurs max par piste)
+    // Correction : Répartition sur plusieurs pistes (10 joueurs max par piste) et round "🏁 Demi Finale"
     async function genererDemiFinale() {
       const { data, error } = await supabase
         .from("players")
@@ -276,9 +276,9 @@
       for (const joueur of data) {
         if (!joueur.phase) continue;
         let key = "";
-        if (joueur.phase === "finale") {
+        if (joueur.round === "🏁 Grande Finale" || joueur.phase === "finale") {
           key = "🏁 Grande Finale";
-        } else if (joueur.phase == 99) {
+        } else if (joueur.round === "🏁 Demi Finale" || joueur.phase == 99) {
           key = "🏁 Demi Finale";
         } else {
           key = `Phase ${joueur.phase} – Round ${joueur.round} – Piste ${joueur.terrain}`;
@@ -333,7 +333,5 @@
     <thead><tr><th>Joueur</th><th>Détails</th></tr></thead>
     <tbody id="dispatch"></tbody>
   </table>
-</body>
-</html>
 </body>
 </html>
