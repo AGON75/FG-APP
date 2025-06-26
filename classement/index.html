@@ -113,16 +113,17 @@
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrb2x6bXFhcmZpem94amdvbGZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk2Nzg3NTYsImV4cCI6MjA2NTI1NDc1Nn0.ZlpERz1uznM0fn--GR9YgM2vjwe_kw-qiPF8KHJvMpI'
     )
 
-    let nbDemiFinale = 5; // Par défaut
+    // --- PERSISTANCE LOCALSTORAGE ---
+    let nbDemiFinale = 5;
+    if (localStorage.getItem("nbDemiFinale")) {
+      nbDemiFinale = parseInt(localStorage.getItem("nbDemiFinale"), 10) || 5;
+    }
 
     function classementSort(a, b) {
-      // Gold d'abord
       if (a.total_points === "VAINQUEUR" && b.total_points !== "VAINQUEUR") return -1;
       if (b.total_points === "VAINQUEUR" && a.total_points !== "VAINQUEUR") return 1;
-      // Silver ensuite
       if (a.phase === "finale" && b.phase !== "finale") return -1;
       if (b.phase === "finale" && a.phase !== "finale") return 1;
-      // Puis par points décroissants (hors cas spéciaux)
       const pa = isNaN(parseInt(a.total_points, 10)) ? -Infinity : parseInt(a.total_points, 10);
       const pb = isNaN(parseInt(b.total_points, 10)) ? -Infinity : parseInt(b.total_points, 10);
       return pb - pa;
@@ -136,7 +137,6 @@
 
         if (error) throw error;
 
-        // Tri spécial : vainqueur > finalistes > autres par points
         const sorted = [...data].sort(classementSort);
 
         const tbody = document.getElementById("classement");
@@ -151,7 +151,6 @@
           }
 
           const tr = document.createElement("tr");
-          // Surlignage selon le statut
           if (joueur.total_points === "VAINQUEUR") {
             tr.classList.add("vainqueur");
           } else if (joueur.phase === "finale") {
@@ -160,7 +159,6 @@
             tr.classList.add("demi-finaliste");
           }
 
-          // Dernier = emoji caca, avant-dernier = emoji nul
           if (i === sorted.length - 1) tr.classList.add("emoji-caca");
           if (i === sorted.length - 2) tr.classList.add("emoji-nul");
 
@@ -183,7 +181,6 @@
 
     // --- ADMIN BUTTON LOGIC ---
     const adminBtn = document.getElementById("admin-btn");
-    // Affiche le bouton si admin (prompt simple)
     window.addEventListener("keydown", (e) => {
       if (e.ctrlKey && e.altKey && e.key === "a") {
         adminBtn.style.display = "";
@@ -203,6 +200,7 @@
         return;
       }
       nbDemiFinale = nb;
+      localStorage.setItem("nbDemiFinale", nbDemiFinale); // Persistance
       afficherClassement();
     };
 
