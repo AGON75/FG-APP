@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Index – Finger Game</title>
+  <style>
+    body {
+      background: linear-gradient(to right, #0d47a1, #b71c1c);
+      color: white;
+      font-family: 'Segoe UI', sans-serif;
+      text-align: center;
+      margin: 0;
+      padding: 50px 20px;
+    }
+    h1 {
+      font-size: 2.5em;
+      margin-bottom: 40px;
+    }
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+    li {
+      margin: 20px 0;
+    }
+    a {
+      font-size: 1.5em;
+      color: white;
+      text-decoration: none;
+      font-weight: bold;
+      padding: 15px 30px;
+      border: 2px solid white;
+      border-radius: 10px;
+      display: inline-block;
+      transition: all 0.3s;
+    }
+    a:hover {
+      background: white;
+      color: #b71c1c;
+    }
+  </style>
+</head>
+<body>
+  <h1>🎮 Finger Game – Pages disponibles</h1>
+  <ul>
+    <li><a href="https://fingergame-app.vercel.app/joueur">👤 Page Joueur</a></li>
+    <li><a href="https://fingergame-app.vercel.app/classement">📊 Classement</a></li>
+    <li><a href="https://fingergame-app.vercel.app/arbitre/">🧑‍⚖️ Arbitre</a></li>
+    <li><a href="https://fingergame-app.vercel.app/gestion">🛠️ Gestion</a></li>
+    <li><a href="https://fingergame-app.vercel.app/planning">📅 Planning</a></li>
+  </ul>
+</body>
+</html>
