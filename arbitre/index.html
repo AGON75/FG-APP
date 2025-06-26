@@ -41,6 +41,26 @@
       background-color: #b71c1c !important;
       text-decoration: line-through;
     }
+    .score-btn {
+      margin-left: 6px;
+      font-size: 13px;
+      padding: 2px 7px;
+      border-radius: 4px;
+      border: none;
+      cursor: pointer;
+      background: #ffd700;
+      color: #222;
+      font-weight: bold;
+      vertical-align: middle;
+    }
+    .score-btn.minus {
+      background: #b71c1c;
+      color: #fff;
+    }
+    .score-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
   </style>
   <script type="module">
     import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
@@ -67,8 +87,8 @@
 
     function isFinale() {
       return (
-        (currentPhase === 99 && currentRound === "F") ||
-        (currentPhase === "finale" && currentRound === "FM")
+        (currentPhase === 99 && (currentRound === "F" || currentRound === "🏁 Demi Finale")) ||
+        (currentPhase === "finale" && (currentRound === "FM" || currentRound === "🏁 Grande Finale"))
       );
     }
 
@@ -78,16 +98,27 @@
       currentRound = document.getElementById("round").value;
       currentTerrain = parseInt(document.getElementById("terrain").value);
 
-      let query = supabase.from("players").select("*").eq("round", currentRound).eq("terrain", currentTerrain);
+      let query = supabase.from("players").select("*").eq("terrain", currentTerrain);
 
-      if (currentPhase === "finale") {
-        query = query.eq("phase", "finale");
+      // ✅ Prise en compte des rounds spéciaux pour les phases spéciales
+      if (
+        (currentPhase === 99 && (currentRound === "🏁 Demi Finale" || currentRound === "F")) ||
+        (currentPhase === 99 && currentRound === "Demi Finale")
+      ) {
+        query = query.eq("phase", 99).eq("round", "🏁 Demi Finale");
+      } else if (
+        (currentPhase === "finale" && (currentRound === "🏁 Grande Finale" || currentRound === "FM"))
+      ) {
+        query = query.eq("phase", "finale").eq("round", "🏁 Grande Finale");
       } else {
-        query = query.eq("phase", currentPhase);
+        if (currentPhase === "finale") {
+          query = query.eq("phase", "finale").eq("round", currentRound);
+        } else {
+          query = query.eq("phase", currentPhase).eq("round", currentRound);
+        }
       }
 
       const { data } = await query.order("name");
-
       players = data;
       eliminatedOrder = [];
       renderPlayers();
@@ -106,7 +137,40 @@
           btn.textContent += isFinale() ? ` (${elim}/2)` : ` (#${elim})`;
         }
         btn.onclick = () => toggleElimination(p.id);
-        zone.appendChild(btn);
+
+        // ➕ Ajout boutons +10 / -5
+        const plusBtn = document.createElement("button");
+        plusBtn.textContent = "+10";
+        plusBtn.className = "score-btn";
+        plusBtn.title = "Ajouter 10 points";
+        plusBtn.onclick = async (e) => {
+          e.stopPropagation();
+          if (p.total_points === "FINALISTE" || p.total_points === "VAINQUEUR") return;
+          let base = isNaN(parseInt(p.total_points, 10)) ? 0 : parseInt(p.total_points, 10);
+          await supabase.from("players").update({ total_points: base + 10 }).eq("id", p.id);
+          await chargerJoueurs();
+        };
+        if (p.total_points === "FINALISTE" || p.total_points === "VAINQUEUR") plusBtn.disabled = true;
+
+        const minusBtn = document.createElement("button");
+        minusBtn.textContent = "-5";
+        minusBtn.className = "score-btn minus";
+        minusBtn.title = "Retirer 5 points";
+        minusBtn.onclick = async (e) => {
+          e.stopPropagation();
+          if (p.total_points === "FINALISTE" || p.total_points === "VAINQUEUR") return;
+          let base = isNaN(parseInt(p.total_points, 10)) ? 0 : parseInt(p.total_points, 10);
+          await supabase.from("players").update({ total_points: base - 5 }).eq("id", p.id);
+          await chargerJoueurs();
+        };
+        if (p.total_points === "FINALISTE" || p.total_points === "VAINQUEUR") minusBtn.disabled = true;
+
+        const wrapper = document.createElement("span");
+        wrapper.appendChild(btn);
+        wrapper.appendChild(plusBtn);
+        wrapper.appendChild(minusBtn);
+
+        zone.appendChild(wrapper);
       });
       if (isFinale()) {
         document.getElementById("ordre").textContent = `${eliminatedOrder.length} éliminations / ${players.length * 2} nécessaires`;
@@ -133,6 +197,9 @@
     }
 
     async function validerManche() {
+      // 🛑 Confirmation avant validation
+      if (!confirm("Êtes-vous sûr de vouloir valider cette manche ? Cette action est irréversible.")) return;
+
       if (isFinale()) {
         const counts = {};
         players.forEach(p => counts[p.id] = 0);
@@ -198,6 +265,9 @@
       r.innerHTML += `<option value="C">C</option>`;
       r.innerHTML += `<option value="F">Demi Finale</option>`;
       r.innerHTML += `<option value="FM">Finale du Tournoi</option>`;
+      // Ajout des rounds spéciaux pour sélection rapide
+      r.innerHTML += `<option value="🏁 Demi Finale">🏁 Demi Finale</option>`;
+      r.innerHTML += `<option value="🏁 Grande Finale">🏁 Grande Finale</option>`;
     };
 
     window.chargerJoueurs = chargerJoueurs;
@@ -225,5 +295,3 @@
   <p id="ordre"></p>
 
   <button onclick="validerManche()">✅ Valider la manche</button>
-</body>
-</html>
