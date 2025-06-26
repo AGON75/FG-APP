@@ -132,12 +132,8 @@
       afficherPlanning();
     }
 
-    // Version simplifiée : sélectionne les 5 premiers du classement
+    // MODIFICATION : Générer la demi-finale avec choix du nombre de joueurs et répartition sur 10/joueur/terrain
     async function genererDemiFinale() {
-      await supabase.from("players")
-        .update({ phase: null, round: null, terrain: null })
-        .neq("phase", "finale");
-      await new Promise(resolve => setTimeout(resolve, 300));
       const { data, error } = await supabase
         .from("players")
         .select("*")
@@ -150,6 +146,12 @@
         alert("Aucun joueur disponible pour la demi-finale !");
         return;
       }
+      let nb = prompt("Combien de joueurs en demi-finale ? (2 à " + data.length + ")");
+      nb = parseInt(nb);
+      if (isNaN(nb) || nb < 2 || nb > data.length) {
+        alert("Nombre invalide.");
+        return;
+      }
       // Tri identique au classement
       data.sort((a, b) => {
         if (a.total_points === "VAINQUEUR" && b.total_points !== "VAINQUEUR") return -1;
@@ -160,19 +162,20 @@
         const pb = isNaN(parseInt(b.total_points, 10)) ? -Infinity : parseInt(b.total_points, 10);
         return pb - pa;
       });
-      const demiFinalistes = data.slice(0, 5);
-      if (demiFinalistes.length < 5) {
-        alert("Pas assez de joueurs pour générer la demi-finale !");
-        return;
-      }
+      const demiFinalistes = data.slice(0, nb);
+      // Répartition sur terrains (10 par terrain max)
+      let terrain = 1;
+      let count = 0;
       for (const joueur of demiFinalistes) {
         await supabase.from("players").update({
           phase: 99,
           round: 'Demi Finale',
-          terrain: 1
+          terrain: terrain
         }).eq("id", joueur.id);
+        count++;
+        if (count % 10 === 0) terrain++;
       }
-      alert("🏁 Demi-finale générée avec les 5 premiers du classement !");
+      alert("🏁 Demi-finale générée avec les " + nb + " premiers du classement !");
       afficherPlanning();
     }
 
@@ -211,7 +214,7 @@
       for (const joueur of finalistes) {
         await supabase.from("players").update({
           phase: "finale",
-          round: 'FM',
+          round: '🏁 Grande Finale',
           terrain: 1,
           total_points: "FINALISTE"
         }).eq("id", joueur.id);
@@ -221,6 +224,55 @@
     }
     window.finaleManuelle = finaleManuelle;
 
+    // MODIFICATION : Affichage "🏁 Demi Finale" au lieu de "🏁 Finale" pour la demi-finale manuelle
+    async function demiFinaleManuelle() {
+      const { data: allPlayers } = await supabase.from("players").select("id, name");
+      if (!allPlayers || allPlayers.length === 0) {
+        alert("Aucun joueur inscrit !");
+        return;
+      }
+      let nb = prompt("Combien de joueurs en demi-finale ? (2 à 10)");
+      nb = parseInt(nb);
+      if (isNaN(nb) || nb < 2 || nb > 10) {
+        alert("Nombre invalide.");
+        return;
+      }
+      let finalistes = [];
+      for (let i = 1; i <= nb; i++) {
+        let nom = prompt(`Nom du demi-finaliste #${i} (auto-complétion possible) :\n${allPlayers.map(p=>p.name).join(', ')}`);
+        if (!nom) {
+          alert("Nom requis.");
+          return;
+        }
+        let joueur = allPlayers.find(p => p.name.toLowerCase() === nom.toLowerCase())
+                  || allPlayers.find(p => p.name.toLowerCase().startsWith(nom.toLowerCase()));
+        if (!joueur) {
+          alert("Aucun joueur trouvé pour : " + nom);
+          return;
+        }
+        if (finalistes.find(f => f.id === joueur.id)) {
+          alert("Ce joueur est déjà sélectionné !");
+          return;
+        }
+        finalistes.push(joueur);
+      }
+      // Répartition sur terrains (10 par terrain max)
+      let terrain = 1;
+      let count = 0;
+      for (const joueur of finalistes) {
+        await supabase.from("players").update({
+          phase: 99,
+          round: '🏁 Demi Finale',
+          terrain: terrain
+        }).eq("id", joueur.id);
+        count++;
+        if (count % 10 === 0) terrain++;
+      }
+      alert("Demi-finale manuelle enregistrée !");
+      afficherPlanning();
+    }
+    window.demiFinaleManuelle = demiFinaleManuelle;
+
     async function afficherPlanning() {
       const { data } = await supabase.from("players").select("name, terrain, phase, round, total_points").order("phase, round, terrain");
       const grouped = {};
@@ -228,9 +280,9 @@
         if (!joueur.phase) continue;
         let key = "";
         if (joueur.phase === "finale") {
-          key = "🏆 Finale manuelle";
+          key = "🏁 Grande Finale";
         } else if (joueur.phase == 99) {
-          key = "🏁 Demi-finale";
+          key = "🏁 Demi Finale";
         } else {
           key = `Phase ${joueur.phase} – Round ${joueur.round} – Piste ${joueur.terrain}`;
         }
@@ -263,49 +315,7 @@
     window.finaleManuelle = finaleManuelle;
     window.resetPlanning = resetPlanning;
     window.onload = afficherPlanning;
-    async function demiFinaleManuelle() {
-      const { data: allPlayers } = await supabase.from("players").select("id, name");
-      if (!allPlayers || allPlayers.length === 0) {
-        alert("Aucun joueur inscrit !");
-        return;
-      }
-      let nb = prompt("Combien de joueurs en demi-finale ? (2 à 10)");
-      nb = parseInt(nb);
-      if (isNaN(nb) || nb < 2 || nb > 10) {
-        alert("Nombre invalide.");
-        return;
-      }
-      let finalistes = [];
-      for (let i = 1; i <= nb; i++) {
-        let nom = prompt(`Nom du demi-finaliste #${i} (auto-complétion possible) :\n${allPlayers.map(p=>p.name).join(', ')}`);
-        if (!nom) {
-          alert("Nom requis.");
-          return;
-        }
-        let joueur = allPlayers.find(p => p.name.toLowerCase() === nom.toLowerCase())
-                  || allPlayers.find(p => p.name.toLowerCase().startsWith(nom.toLowerCase()));
-        if (!joueur) {
-          alert("Aucun joueur trouvé pour : " + nom);
-          return;
-        }
-        if (finalistes.find(f => f.id === joueur.id)) {
-          alert("Ce joueur est déjà sélectionné !");
-          return;
-        }
-        finalistes.push(joueur);
-      }
-      for (const joueur of finalistes) {
-        await supabase.from("players").update({
-          phase: 99,
-          round: 'F',
-          terrain: 1
-        }).eq("id", joueur.id);
-      }
-      alert("Demi-finale manuelle enregistrée !");
-      afficherPlanning();
-    }
     window.demiFinaleManuelle = demiFinaleManuelle;
-
   </script>
 </head>
 <body>
@@ -326,7 +336,5 @@
     <thead><tr><th>Joueur</th><th>Détails</th></tr></thead>
     <tbody id="dispatch"></tbody>
   </table>
-</body>
-</html>
 </body>
 </html>
