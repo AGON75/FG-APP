@@ -132,7 +132,7 @@
       afficherPlanning();
     }
 
-    // Correction : répartition sur plusieurs terrains (10 max/terrain)
+    // Correction : Répartition sur plusieurs pistes (10 joueurs max par piste)
     async function genererDemiFinale() {
       const { data, error } = await supabase
         .from("players")
@@ -222,7 +222,7 @@
     }
     window.finaleManuelle = finaleManuelle;
 
-    // Correction : round "🏁 Demi Finale" pour la demi-finale manuelle
+    // Correction : Demi-finale manuelle avec affichage "🏁 Demi Finale"
     async function demiFinaleManuelle() {
       const { data: allPlayers } = await supabase.from("players").select("id, name");
       if (!allPlayers || allPlayers.length === 0) {
@@ -269,6 +269,7 @@
     }
     window.demiFinaleManuelle = demiFinaleManuelle;
 
+    // Correction : affichage "🏁 Demi Finale" et "🏁 Grande Finale" côté joueur
     async function afficherPlanning() {
       const { data } = await supabase.from("players").select("name, terrain, phase, round, total_points").order("phase, round, terrain");
       const grouped = {};
