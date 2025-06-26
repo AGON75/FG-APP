@@ -71,11 +71,28 @@
       color: #222;
       font-weight: bold;
     }
+    #admin-btn {
+      margin: 20px 0 10px 0;
+      padding: 8px 18px;
+      font-size: 16px;
+      border-radius: 8px;
+      border: none;
+      background: #ffd700;
+      color: #0d47a1;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+    }
+    #admin-btn:hover {
+      background: #fff;
+      color: #b71c1c;
+    }
   </style>
 </head>
 <body>
   <img src="../assets/FingerGame_logo_blanc_tagline.png" alt="Finger Game">
   <h1>📊 Classement Général</h1>
+  <button id="admin-btn" style="display:none;">Sélection NB en demi-finale</button>
   <table>
     <thead>
       <tr>
@@ -95,6 +112,8 @@
       'https://ckolzmqarfizoxjgolft.supabase.co',
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrb2x6bXFhcmZpem94amdvbGZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk2Nzg3NTYsImV4cCI6MjA2NTI1NDc1Nn0.ZlpERz1uznM0fn--GR9YgM2vjwe_kw-qiPF8KHJvMpI'
     )
+
+    let nbDemiFinale = 5; // Par défaut
 
     function classementSort(a, b) {
       // Gold d'abord
@@ -123,9 +142,8 @@
         const tbody = document.getElementById("classement");
         tbody.innerHTML = "";
 
-        // Ligne "Non qualifiés pour la Demi finale" après la 5e place
         sorted.forEach((joueur, i) => {
-          if (i === 5) {
+          if (i === nbDemiFinale) {
             const trDemi = document.createElement("tr");
             trDemi.className = "ligne-demi";
             trDemi.innerHTML = `<td colspan="4">⬇️ Non qualifiés pour la Demi finale ⬇️</td>`;
@@ -138,7 +156,7 @@
             tr.classList.add("vainqueur");
           } else if (joueur.phase === "finale") {
             tr.classList.add("finaliste");
-          } else if (joueur.phase == 99 && i < 5) {
+          } else if (joueur.phase == 99 && i < nbDemiFinale) {
             tr.classList.add("demi-finaliste");
           }
 
@@ -162,6 +180,31 @@
         document.getElementById("classement").innerHTML = `<tr><td colspan="4">Erreur de connexion. Veuillez vérifier votre réseau.</td></tr>`;
       }
     }
+
+    // --- ADMIN BUTTON LOGIC ---
+    const adminBtn = document.getElementById("admin-btn");
+    // Affiche le bouton si admin (prompt simple)
+    window.addEventListener("keydown", (e) => {
+      if (e.ctrlKey && e.altKey && e.key === "a") {
+        adminBtn.style.display = "";
+      }
+    });
+
+    adminBtn.onclick = () => {
+      const code = prompt("Code admin ?");
+      if (code !== "FG2024") {
+        alert("Code incorrect.");
+        return;
+      }
+      let nb = prompt("Après combien de joueurs doit-on afficher le bandeau 'Non qualifiés pour la Demi finale' ?");
+      nb = parseInt(nb);
+      if (isNaN(nb) || nb < 1) {
+        alert("Nombre invalide.");
+        return;
+      }
+      nbDemiFinale = nb;
+      afficherClassement();
+    };
 
     afficherClassement();
   </script>
