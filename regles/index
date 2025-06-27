@@ -48,7 +48,55 @@
     <h1>📜 Règles du jeu</h1>
   </header>
   <div class="regles">
-    <p>CHAMPS à REMPLIR</p>
+    <p>COMMENT PARTICIPER ?
+Inscris-toi en renseignant ton nom et prénom sur la page joueur pour intégrer le tournoi.
+Une fois le tournoi lancé et l’annonce du speaker faite, clique sur “Afficher la prochaine manche” : ton numéro de piste et ton round (A ou B) s’afficheront.
+
+Chaque manche se joue en deux rounds :
+• Round A : démarre juste après l’annonce du speaker
+• Round B : environ 10 minutes plus tard
+
+RÈGLES DU FINGER GAME
+Finger Game, c’est un jeu de réflexe, de rythme et de bluff. Le but ? Être le premier à sortir, sans se faire éliminer. Mais attention : tout repose sur le tempo, l’annonce, et la synchronisation. Et surtout… éviter les fautes !
+
+LE PRINCIPE
+À chaque manche, tente de deviner le nombre de doigts sur la piste :
+1. Un joueur lance le rythme : “1.. 2.. CHIFFRE CHOISI”
+2. Sur le dernier temps, tous les joueurs choisissent : doigt levé ou doigt posé
+3. Le joueur qui a lancé le rythme annonce un chiffre : le nombre de doigts qu’il pense voir levés
+
+👉 S’il devine juste : il sort, il a gagné la manche
+👉 S’il se trompe : il reste, et le tour passe au joueur suivant
+💥 Le dernier en jeu... perd
+
+⚠️ LES FAUTES DE JEU
+🟥 HORS JEU : Retirer son doigt avant ou après le rythme. Commencer à compter alors que ce n’est pas son tour.
+🟥 PI : Annoncer un nombre impossible
+🟥 NOIRE, NOIRE, DEUX CROCHES NOIRES : Ne pas respecter le rythme
+🟥 STEVIE WONDER : Annoncer un chiffre et faire l’inverse
+🟥 JOHN MAC : Interdit de parler à l’arbitre
+🟥 BAFOUILLE : Annonce incompréhensible
+
+👀 À SAVOIR
+• Classement inversé : plus tu sors tôt, plus tu gagnes de points
+• L’arbitre veille : respecte son silence et ses signes
+
+FAIR PLAY
+Merci de vous serrer le petit doigt avant chaque partie 🙏
+
+PLANNING DU TOURNOI
+15h00 à 15h20 — Inscriptions & familiarisation
+15h25 à 15h45 — Manche 1
+15h50 à 16h10 — Manche 2
+16h10 à 16h30 — Manche 3
+16h35 à 16h55 — Manche 4
+17h00 à 17h10 — Demi-finale (20 joueurs)
+17h15 à 17h30 — Grande finale (5 joueurs)
+
+LE FORMAT DU TOURNOI
+Le Finger Game Paris Entertainment Company se joue en 4 manches qualificatives, suivies d’une demi-finale à 20 joueurs, puis d’une grande finale à 5 !
+À la clé : une Nintendo Switch et un respect éternel
+</p>
   </div>
   <a href="../joueur/index.html">⬅️ Retour à l'accueil joueur</a>
 </body>
