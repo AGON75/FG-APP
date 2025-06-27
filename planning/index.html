@@ -106,18 +106,7 @@
       return isNaN(val) ? 5 : val;
     }
 
-    // Nouvelle logique pour répartir les joueurs sur rounds et pistes
-    function calculerRounds(joueursCount, joueursParSlot, nbTerrains) {
-      const joueursParRound = joueursParSlot * nbTerrains;
-      const nbRounds = Math.ceil(joueursCount / joueursParRound);
-      // Génère les rounds : "A", "B", "C", "D", ...
-      const rounds = [];
-      for (let i = 0; i < nbRounds; i++) {
-        rounds.push(String.fromCharCode(65 + i)); // 65 = "A"
-      }
-      return rounds;
-    }
-
+    // Nouvelle logique pour générer les phases avec rounds dynamiques
     async function genererPhase() {
       const { data: joueurs } = await supabase.from("players").select("*");
       if (!joueurs || joueurs.length < 1) {
@@ -141,19 +130,17 @@
 
       for (let phase = 1; phase <= nbPhases; phase++) {
         let joueursPhase = phaseJoueurs[phase-1];
-        const nbJoueursPhase = joueursPhase.length;
-        const terrains = Array.from({length: nbTerrains}, (_, i) => i + 1);
-        const rounds = calculerRounds(nbJoueursPhase, joueursParSlot, nbTerrains);
-
-        // Création des slots (round, terrain)
+        const totalSlots = nbTerrains * joueursParSlot;
+        // Calcul du nombre de rounds nécessaires pour faire jouer tout le monde
+        const nbRounds = Math.ceil(joueursPhase.length / totalSlots);
+        // Génère les labels de round dynamiquement : "A", "B", "C", ...
+        const rounds = Array.from({length: nbRounds}, (_, i) => String.fromCharCode(65 + i));
         let slots = [];
         for (const round of rounds) {
-          for (const terrain of terrains) {
+          for (let terrain = 1; terrain <= nbTerrains; terrain++) {
             slots.push({ round, terrain, joueurs: [] });
           }
         }
-
-        // Répartition des joueurs dans les slots
         let idx = 0;
         for (const joueur of joueursPhase) {
           while (idx < slots.length && slots[idx].joueurs.length >= joueursParSlot) {
@@ -384,5 +371,3 @@
   </table>
 </body>
 </html>
-</html>
-
