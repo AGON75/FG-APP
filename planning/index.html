@@ -74,7 +74,7 @@
       font-weight: bold;
       color: gold;
     }
-    #joueursParSlotInput, #terrainsInput {
+    #joueursParSlotInput, #nbTerrainsInput {
       font-size: 18px;
       width: 60px;
       border-radius: 6px;
@@ -83,7 +83,7 @@
       margin-left: 8px;
       margin-right: 8px;
     }
-    label[for="joueursParSlotInput"], label[for="terrainsInput"] {
+    label[for="joueursParSlotInput"], label[for="nbTerrainsInput"] {
       font-size: 18px;
       font-weight: bold;
       margin-right: 4px;
@@ -101,9 +101,8 @@
       const val = parseInt(document.getElementById("joueursParSlotInput").value, 10);
       return isNaN(val) ? 10 : val;
     }
-
     function getNbTerrains() {
-      const val = parseInt(document.getElementById("terrainsInput").value, 10);
+      const val = parseInt(document.getElementById("nbTerrainsInput").value, 10);
       return isNaN(val) ? 5 : val;
     }
 
@@ -196,7 +195,8 @@
       const joueursParSlot = getJoueursParSlot();
       const nbTerrains = getNbTerrains();
       let slots = [];
-      let nbTerrainsEffectif = Math.min(nbTerrains, Math.ceil(nb / joueursParSlot));
+      let nbTerrainsEffectif = Math.ceil(nb / joueursParSlot);
+      nbTerrainsEffectif = Math.min(nbTerrainsEffectif, nbTerrains);
       for (let terrain = 1; terrain <= nbTerrainsEffectif; terrain++) {
         slots.push({ terrain, joueurs: [] });
       }
@@ -293,8 +293,6 @@
         }
         finalistes.push(joueur);
       }
-      const joueursParSlot = getJoueursParSlot();
-      const nbTerrains = getNbTerrains();
       let terrain = 1;
       for (let i = 0; i < finalistes.length; i++) {
         await supabase.from("players").update({
@@ -302,7 +300,7 @@
           round: '🏁 Demi Finale',
           terrain: terrain
         }).eq("id", finalistes[i].id);
-        if ((i + 1) % joueursParSlot === 0) terrain = terrain < nbTerrains ? terrain + 1 : 1;
+        if ((i + 1) % getJoueursParSlot() === 0) terrain++;
       }
       alert("Demi-finale manuelle enregistrée !");
       afficherPlanning();
@@ -364,8 +362,8 @@
   <div class="btn-bar">
     <label for="joueursParSlotInput">Joueurs/piste :</label>
     <input id="joueursParSlotInput" type="number" min="2" max="20" value="10">
-    <label for="terrainsInput">Terrains :</label>
-    <input id="terrainsInput" type="number" min="1" max="20" value="5">
+    <label for="nbTerrainsInput">Nombre de pistes :</label>
+    <input id="nbTerrainsInput" type="number" min="1" max="20" value="5">
     <button onclick="demiFinaleManuelle()">⚙️ Demi-finale manuelle</button>
     <button onclick="genererPhase()">🚀 Générer la phase</button>
     <button onclick="genererDemiFinale()">🏁 Générer la demi-finale</button>
@@ -378,5 +376,6 @@
     <tbody id="dispatch"></tbody>
   </table>
 </body>
+</html>
 </html>
 
