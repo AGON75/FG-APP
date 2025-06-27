@@ -76,6 +76,17 @@
       border: none;
       border-radius: 4px;
     }
+    #prochaines-manches {
+      margin-top: 30px;
+      font-size: 18px;
+      text-align: left;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+      background: rgba(255,255,255,0.07);
+      border-radius: 8px;
+      padding: 10px 20px;
+    }
   </style>
 </head>
 <body>
@@ -89,6 +100,7 @@
   <a href="../regles/index.html">📜 Règles du jeu</a>
 
   <table id="terrain-table" style="display:none"></table>
+  <div id="prochaines-manches"></div>
 
   <dialog id="nameDialog">
     <form method="dialog">
@@ -113,34 +125,36 @@
       const input = document.getElementById("nameInput");
       dialog.showModal();
       dialog.addEventListener("close", async () => {
-        const baseName = input.value;
+        const baseName = input.value.trim();
         if (!baseName) return;
 
         try {
+          // Génération numéro unique
           const { data: existing } = await supabase
             .from("players")
             .select("id, name")
-            .ilike("name", `${baseName}%`);
+            .ilike("name", `${baseName} #%`);
 
-          if (existing.length > 0) {
-            playerId = existing[0].id;
+          let numero = 1;
+          if (existing && existing.length > 0) {
+            const nums = existing.map(e => {
+              const m = e.name.match(/#(\d+)$/);
+              return m ? parseInt(m[1], 10) : null;
+            }).filter(n => n !== null);
+            while (nums.includes(numero)) numero++;
+          }
+          const fullName = `${baseName} #${numero}`;
+          const { data: inserted } = await supabase
+            .from("players")
+            .insert({ name: fullName })
+            .select()
+            .single();
+          if (inserted) {
+            playerId = inserted.id;
             localStorage.setItem("player_id", playerId);
-            afficher(await getPlayerById(playerId));
+            afficher(inserted);
           } else {
-            const numero = Math.floor(Math.random() * 120) + 1;
-            const fullName = `${baseName} #${numero}`;
-            const { data: inserted } = await supabase
-              .from("players")
-              .insert({ name: fullName })
-              .select()
-              .single();
-            if (inserted) {
-              playerId = inserted.id;
-              localStorage.setItem("player_id", playerId);
-              afficher(inserted);
-            } else {
-              alert("Erreur lors de l'inscription.");
-            }
+            alert("Erreur lors de l'inscription.");
           }
         } catch (e) {
           document.getElementById("etat").textContent = "Erreur de connexion. Veuillez vérifier votre réseau.";
@@ -188,6 +202,7 @@
 
         if (joueur.terrain) afficherTableauTerrain(joueur.terrain);
       }
+      afficherProchainesManches(joueur);
     }
 
     async function afficherTableauTerrain(terrain) {
@@ -204,6 +219,25 @@
       table.style.display = "table";
     }
 
+    async function afficherProchainesManches(joueur) {
+      const { data } = await supabase
+        .from("players")
+        .select("phase, round, terrain")
+        .eq("name", joueur.name)
+        .order("phase, round");
+      const div = document.getElementById("prochaines-manches");
+      if (data && data.length > 0) {
+        let html = "<h2>Prochaines manches</h2><ul>";
+        data.forEach(m =>
+          html += `<li>Phase ${m.phase} — Round ${m.round} — Piste ${m.terrain ?? "-"}</li>`
+        );
+        html += "</ul>";
+        div.innerHTML = html;
+      } else {
+        div.innerHTML = "";
+      }
+    }
+
     window.changerDeJoueur = function () {
       localStorage.removeItem("player_id");
       location.reload();
@@ -214,7 +248,11 @@
     } else {
       getPlayerById(playerId).then(joueur => afficher(joueur));
     }
+
+    // Mise à jour automatique
+    setInterval(() => {
+      if (playerId) getPlayerById(playerId).then(joueur => afficher(joueur));
+    }, 10000);
   </script>
 </body>
 </html>
-
