@@ -106,7 +106,7 @@
       return isNaN(val) ? 5 : val;
     }
 
-    // Nouvelle logique pour générer les phases avec rounds dynamiques
+    // Nouvelle logique pour générer les phases/rounds/pistes
     async function genererPhase() {
       const { data: joueurs } = await supabase.from("players").select("*");
       if (!joueurs || joueurs.length < 1) {
@@ -122,25 +122,28 @@
       const nbPhases = 4;
       let shuffled = joueurs.slice().sort(() => Math.random() - 0.5);
 
-      // Répartition équitable sur phases 1 à 4
-      let phaseJoueurs = Array.from({length: nbPhases}, () => []);
-      shuffled.forEach((j, i) => {
-        phaseJoueurs[i % nbPhases].push(j);
-      });
-
+      // Pour chaque phase, on répartit tous les joueurs sur les rounds et pistes
       for (let phase = 1; phase <= nbPhases; phase++) {
-        let joueursPhase = phaseJoueurs[phase-1];
-        const totalSlots = nbTerrains * joueursParSlot;
-        // Calcul du nombre de rounds nécessaires pour faire jouer tout le monde
-        const nbRounds = Math.ceil(joueursPhase.length / totalSlots);
-        // Génère les labels de round dynamiquement : "A", "B", "C", ...
-        const rounds = Array.from({length: nbRounds}, (_, i) => String.fromCharCode(65 + i));
+        // Découpe les joueurs pour cette phase
+        // On veut que chaque joueur joue chaque phase, donc on reprend tout le monde à chaque phase
+        let joueursPhase = shuffled.slice();
+
+        // Calcul du nombre de slots nécessaires pour cette phase
+        const nbSlots = Math.ceil(joueursPhase.length / joueursParSlot);
+        const nbRounds = Math.ceil(nbSlots / nbTerrains);
+
+        // Génère les rounds (A, B, C, D, ...)
+        const roundLabels = Array.from({length: nbRounds}, (_, i) => String.fromCharCode(65 + i)); // ['A','B','C',...]
+
+        // Création des slots (round, terrain)
         let slots = [];
-        for (const round of rounds) {
-          for (let terrain = 1; terrain <= nbTerrains; terrain++) {
-            slots.push({ round, terrain, joueurs: [] });
+        for (let r = 0; r < nbRounds; r++) {
+          for (let t = 1; t <= nbTerrains; t++) {
+            slots.push({ round: roundLabels[r], terrain: t, joueurs: [] });
           }
         }
+
+        // Répartition des joueurs dans les slots
         let idx = 0;
         for (const joueur of joueursPhase) {
           while (idx < slots.length && slots[idx].joueurs.length >= joueursParSlot) {
@@ -148,9 +151,15 @@
           }
           if (idx >= slots.length) break;
           slots[idx].joueurs.push(joueur);
-          await supabase.from("players")
-            .update({ phase, round: slots[idx].round, terrain: slots[idx].terrain })
-            .eq("id", joueur.id);
+        }
+
+        // Mise à jour en base pour chaque joueur de la phase
+        for (const slot of slots) {
+          for (const joueur of slot.joueurs) {
+            await supabase.from("players")
+              .update({ phase, round: slot.round, terrain: slot.terrain })
+              .eq("id", joueur.id);
+          }
         }
       }
       afficherPlanning();
