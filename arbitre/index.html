@@ -138,7 +138,7 @@
         }
         btn.onclick = () => toggleElimination(p.id);
 
-        // ➕ Ajout boutons +10 / -5
+        // ➕ Ajout boutons +10 / -5 avec confirmation
         const plusBtn = document.createElement("button");
         plusBtn.textContent = "+10";
         plusBtn.className = "score-btn";
@@ -146,6 +146,7 @@
         plusBtn.onclick = async (e) => {
           e.stopPropagation();
           if (p.total_points === "FINALISTE" || p.total_points === "VAINQUEUR") return;
+          if (!confirm("Confirmer l’ajout/retrait de points ?")) return;
           let base = isNaN(parseInt(p.total_points, 10)) ? 0 : parseInt(p.total_points, 10);
           await supabase.from("players").update({ total_points: base + 10 }).eq("id", p.id);
           await chargerJoueurs();
@@ -159,6 +160,7 @@
         minusBtn.onclick = async (e) => {
           e.stopPropagation();
           if (p.total_points === "FINALISTE" || p.total_points === "VAINQUEUR") return;
+          if (!confirm("Confirmer l’ajout/retrait de points ?")) return;
           let base = isNaN(parseInt(p.total_points, 10)) ? 0 : parseInt(p.total_points, 10);
           await supabase.from("players").update({ total_points: base - 5 }).eq("id", p.id);
           await chargerJoueurs();
@@ -295,3 +297,5 @@
   <p id="ordre"></p>
 
   <button onclick="validerManche()">✅ Valider la manche</button>
+</body>
+</html>
