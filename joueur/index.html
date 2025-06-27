@@ -134,32 +134,45 @@
         if (!baseName) return;
 
         try {
-          // Génération numéro unique
+          // Recherche d'un joueur existant (même nom/prénom, sans tenir compte du numéro)
           const { data: existing } = await supabase
             .from("players")
             .select("id, name")
             .ilike("name", `${baseName} #%`);
 
-          let numero = 1;
+          let joueurTrouve = null;
           if (existing && existing.length > 0) {
-            const nums = existing.map(e => {
-              const m = e.name.match(/#(\d+)$/);
-              return m ? parseInt(m[1], 10) : null;
-            }).filter(n => n !== null);
-            while (nums.includes(numero)) numero++;
+            // Prend le premier joueur existant (ou propose la liste si tu veux)
+            joueurTrouve = existing[0];
           }
-          const fullName = `${baseName} #${numero}`;
-          const { data: inserted } = await supabase
-            .from("players")
-            .insert({ name: fullName })
-            .select()
-            .single();
-          if (inserted) {
-            playerId = inserted.id;
+
+          if (joueurTrouve) {
+            playerId = joueurTrouve.id;
             localStorage.setItem("player_id", playerId);
-            afficher(inserted);
+            afficher(joueurTrouve);
           } else {
-            alert("Erreur lors de l'inscription.");
+            // Génération numéro unique
+            let numero = 1;
+            if (existing && existing.length > 0) {
+              const nums = existing.map(e => {
+                const m = e.name.match(/#(\d+)$/);
+                return m ? parseInt(m[1], 10) : null;
+              }).filter(n => n !== null);
+              while (nums.includes(numero)) numero++;
+            }
+            const fullName = `${baseName} #${numero}`;
+            const { data: inserted } = await supabase
+              .from("players")
+              .insert({ name: fullName })
+              .select()
+              .single();
+            if (inserted) {
+              playerId = inserted.id;
+              localStorage.setItem("player_id", playerId);
+              afficher(inserted);
+            } else {
+              alert("Erreur lors de l'inscription.");
+            }
           }
         } catch (e) {
           document.getElementById("etat").textContent = "Erreur de connexion. Veuillez vérifier votre réseau.";
@@ -269,3 +282,5 @@
       if (playerId) getPlayerById(playerId).then(joueur => afficher(joueur));
     }, 10000);
   </script>
+</body>
+</html>
