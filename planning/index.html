@@ -74,6 +74,21 @@
       font-weight: bold;
       color: gold;
     }
+    #joueursParSlotInput {
+      font-size: 18px;
+      width: 60px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      padding: 6px;
+      margin-left: 8px;
+      margin-right: 8px;
+    }
+    label[for="joueursParSlotInput"] {
+      font-size: 18px;
+      font-weight: bold;
+      margin-right: 4px;
+      color: #fff;
+    }
   </style>
   <script type="module">
     import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
@@ -82,7 +97,12 @@
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrb2x6bXFhcmZpem94amdvbGZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk2Nzg3NTYsImV4cCI6MjA2NTI1NDc1Nn0.ZlpERz1uznM0fn--GR9YgM2vjwe_kw-qiPF8KHJvMpI'
     );
 
-    async function genererPhase(phase = 1) {
+    function getJoueursParSlot() {
+      const val = parseInt(document.getElementById("joueursParSlotInput").value, 10);
+      return isNaN(val) ? 10 : val;
+    }
+
+    async function genererPhase() {
       const { data: joueurs } = await supabase.from("players").select("*");
       if (!joueurs || joueurs.length < 1) {
         alert("Aucun joueur inscrit !");
@@ -92,47 +112,54 @@
         .update({ phase: null, round: null, terrain: null })
         .in("id", joueurs.map(j => j.id));
 
-      const joueursParSlot = 10;
-      let terrains = [1, 2, 3, 4, 5];
-      let rounds = ["A"];
-      if (joueurs.length <= joueursParSlot) {
-        terrains = [1];
-        rounds = ["A"];
-      }
-      else if (joueurs.length <= 50) {
-        terrains = [1, 2, 3, 4, 5];
-        rounds = ["A"];
-      }
-      else if (joueurs.length <= 100) {
-        terrains = [1, 2, 3, 4, 5];
-        rounds = ["A", "B"];
-      }
-      else {
-        terrains = [1, 2, 3, 4, 5];
-        rounds = ["A", "B", "C"];
-      }
-      const shuffled = joueurs.slice().sort(() => Math.random() - 0.5);
-      let slots = [];
-      for (const round of rounds) {
-        for (const terrain of terrains) {
-          slots.push({ round, terrain, joueurs: [] });
+      const joueursParSlot = getJoueursParSlot();
+      const nbPhases = 4;
+      let shuffled = joueurs.slice().sort(() => Math.random() - 0.5);
+
+      // Répartition équitable sur phases 1 à 4
+      let phaseJoueurs = Array.from({length: nbPhases}, () => []);
+      shuffled.forEach((j, i) => {
+        phaseJoueurs[i % nbPhases].push(j);
+      });
+
+      for (let phase = 1; phase <= nbPhases; phase++) {
+        let joueursPhase = phaseJoueurs[phase-1];
+        let terrains = [1, 2, 3, 4, 5];
+        let rounds = ["A"];
+        if (joueursPhase.length <= joueursParSlot) {
+          terrains = [1];
+          rounds = ["A"];
+        } else if (joueursPhase.length <= 50) {
+          terrains = [1, 2, 3, 4, 5];
+          rounds = ["A"];
+        } else if (joueursPhase.length <= 100) {
+          terrains = [1, 2, 3, 4, 5];
+          rounds = ["A", "B"];
+        } else {
+          terrains = [1, 2, 3, 4, 5];
+          rounds = ["A", "B", "C"];
         }
-      }
-      let idx = 0;
-      for (const joueur of shuffled) {
-        while (idx < slots.length && slots[idx].joueurs.length >= joueursParSlot) {
-          idx++;
+        let slots = [];
+        for (const round of rounds) {
+          for (const terrain of terrains) {
+            slots.push({ round, terrain, joueurs: [] });
+          }
         }
-        if (idx >= slots.length) break;
-        slots[idx].joueurs.push(joueur);
-        await supabase.from("players")
-          .update({ phase, round: slots[idx].round, terrain: slots[idx].terrain })
-          .eq("id", joueur.id);
+        let idx = 0;
+        for (const joueur of joueursPhase) {
+          while (idx < slots.length && slots[idx].joueurs.length >= joueursParSlot) {
+            idx++;
+          }
+          if (idx >= slots.length) break;
+          slots[idx].joueurs.push(joueur);
+          await supabase.from("players")
+            .update({ phase, round: slots[idx].round, terrain: slots[idx].terrain })
+            .eq("id", joueur.id);
+        }
       }
       afficherPlanning();
     }
 
-    // Correction : Répartition sur plusieurs pistes (10 joueurs max par piste) pour la demi-finale auto
     async function genererDemiFinale() {
       const { data, error } = await supabase
         .from("players")
@@ -152,7 +179,6 @@
         alert("Nombre invalide.");
         return;
       }
-      // Tri identique au classement
       data.sort((a, b) => {
         if (a.total_points === "VAINQUEUR" && b.total_points !== "VAINQUEUR") return -1;
         if (b.total_points === "VAINQUEUR" && a.total_points !== "VAINQUEUR") return 1;
@@ -164,8 +190,7 @@
       });
       const demiFinalistes = data.slice(0, nb);
 
-      // Répartition sur pistes (10 joueurs max par piste, round unique "🏁 Demi Finale")
-      const joueursParSlot = 10;
+      const joueursParSlot = getJoueursParSlot();
       let slots = [];
       let nbTerrains = Math.ceil(nb / joueursParSlot);
       for (let terrain = 1; terrain <= nbTerrains; terrain++) {
@@ -233,7 +258,6 @@
     }
     window.finaleManuelle = finaleManuelle;
 
-    // Correction : Demi-finale manuelle avec affichage "🏁 Demi Finale"
     async function demiFinaleManuelle() {
       const { data: allPlayers } = await supabase.from("players").select("id, name");
       if (!allPlayers || allPlayers.length === 0) {
@@ -265,7 +289,6 @@
         }
         finalistes.push(joueur);
       }
-      // Répartition sur terrains (10 par terrain max)
       let terrain = 1;
       for (let i = 0; i < finalistes.length; i++) {
         await supabase.from("players").update({
@@ -273,14 +296,13 @@
           round: '🏁 Demi Finale',
           terrain: terrain
         }).eq("id", finalistes[i].id);
-        if ((i + 1) % 10 === 0) terrain++;
+        if ((i + 1) % getJoueursParSlot() === 0) terrain++;
       }
       alert("Demi-finale manuelle enregistrée !");
       afficherPlanning();
     }
     window.demiFinaleManuelle = demiFinaleManuelle;
 
-    // Correction : affichage "🏁 Demi Finale" et "🏁 Grande Finale" côté joueur
     async function afficherPlanning() {
       const { data } = await supabase.from("players").select("name, terrain, phase, round, total_points").order("phase, round, terrain");
       const grouped = {};
@@ -333,6 +355,8 @@
   </header>
 
   <div class="btn-bar">
+    <label for="joueursParSlotInput">Joueurs/piste :</label>
+    <input id="joueursParSlotInput" type="number" min="2" max="20" value="10">
     <button onclick="demiFinaleManuelle()">⚙️ Demi-finale manuelle</button>
     <button onclick="genererPhase()">🚀 Générer la phase</button>
     <button onclick="genererDemiFinale()">🏁 Générer la demi-finale</button>
@@ -342,7 +366,4 @@
 
   <table>
     <thead><tr><th>Joueur</th><th>Détails</th></tr></thead>
-    <tbody id="dispatch"></tbody>
-  </table>
-</body>
-</html>
+    <tbody id=
