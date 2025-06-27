@@ -124,6 +124,38 @@
       renderPlayers();
     }
 
+    window.ajouterJoueurArbitre = async function() {
+      const nom = document.getElementById("ajoutNom").value.trim();
+      if (!nom) return alert("Nom requis");
+      // Génère un numéro unique comme pour l'inscription
+      const { data: existing } = await supabase.from("players").select("id, name").ilike("name", `${nom} #%`);
+      let numero = 1;
+      if (existing && existing.length > 0) {
+        const nums = existing.map(e => {
+          const m = e.name.match(/#(\d+)$/);
+          return m ? parseInt(m[1], 10) : null;
+        }).filter(n => n !== null);
+        while (nums.includes(numero)) numero++;
+      }
+      const fullName = `${nom} #${numero}`;
+      let joueur;
+      const { data: found } = await supabase.from("players").select("*").eq("name", fullName);
+      if (found && found.length > 0) {
+        joueur = found[0];
+      } else {
+        const { data: inserted } = await supabase.from("players").insert({ name: fullName }).select().single();
+        joueur = inserted;
+      }
+      // Affecte à la phase/round/terrain courants
+      await supabase.from("players").update({
+        phase: currentPhase,
+        round: currentRound,
+        terrain: currentTerrain
+      }).eq("id", joueur.id);
+      document.getElementById("ajoutNom").value = "";
+      chargerJoueurs();
+    }
+
     function renderPlayers() {
       const zone = document.getElementById("joueurs");
       zone.innerHTML = "";
@@ -167,10 +199,22 @@
         };
         if (p.total_points === "FINALISTE" || p.total_points === "VAINQUEUR") minusBtn.disabled = true;
 
+        // Ajout bouton ❌ pour retirer le joueur de la manche
+        const removeBtn = document.createElement("button");
+        removeBtn.textContent = "❌";
+        removeBtn.className = "score-btn minus";
+        removeBtn.title = "Retirer ce joueur de cette manche";
+        removeBtn.onclick = async (e) => {
+          e.stopPropagation();
+          await supabase.from("players").update({ phase: null, round: null, terrain: null }).eq("id", p.id);
+          await chargerJoueurs();
+        };
+
         const wrapper = document.createElement("span");
         wrapper.appendChild(btn);
         wrapper.appendChild(plusBtn);
         wrapper.appendChild(minusBtn);
+        wrapper.appendChild(removeBtn);
 
         zone.appendChild(wrapper);
       });
@@ -282,6 +326,11 @@
     <h1>🎯 Arbitrage – Finger Game</h1>
   </header>
 
+  <div style="margin-bottom:10px;">
+    <input id="ajoutNom" placeholder="Nom et prénom" style="padding:6px;">
+    <button onclick="ajouterJoueurArbitre()">Ajouter ce joueur à la manche</button>
+  </div>
+
   <label>Phase :</label>
   <select id="phase"></select>
   <label>Round :</label>
@@ -296,6 +345,4 @@
   <div id="joueurs" style="margin-top: 20px;"></div>
   <p id="ordre"></p>
 
-  <button onclick="validerManche()">✅ Valider la manche</button>
-</body>
-</html>
+  <button
