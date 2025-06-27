@@ -1,68 +1,110 @@
-<div class="regles">
-  <h2>📝 Comment participer&nbsp;?</h2>
-  <ul>
-    <li>Inscris-toi en renseignant ton nom et prénom sur la page joueur pour intégrer le tournoi.</li>
-    <li>Une fois le tournoi lancé et l’annonce du speaker faite, clique sur <strong>“Afficher la prochaine manche”</strong> : ton numéro de piste et ton round (A ou B) s’afficheront.</li>
-  </ul>
-  <h3>Déroulement d'une manche</h3>
-  <ul>
-    <li><strong>Round A</strong> : démarre juste après l’annonce du speaker</li>
-    <li><strong>Round B</strong> : environ 10 minutes plus tard</li>
-  </ul>
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Règles du jeu – Finger Game</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      background: linear-gradient(to right, #0d47a1, #b71c1c);
+      color: white;
+      font-family: 'Segoe UI', sans-serif;
+      padding: 30px;
+      text-align: center;
+      margin: 0;
+    }
+    header img {
+      width: 200px;
+      margin-top: 20px;
+      max-width: 90%;
+    }
+    h1 {
+      margin: 20px 0 10px 0;
+    }
+    .regles {
+      background: rgba(0,0,0,0.2);
+      border-radius: 10px;
+      padding: 30px 20px;
+      margin: 30px auto;
+      max-width: 700px;
+      text-align: left;
+      font-size: 1.15em;
+    }
+    a {
+      color: #ffd700;
+      text-decoration: none;
+      font-weight: bold;
+      display: inline-block;
+      margin-top: 30px;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <img src="../assets/FingerGame_logo_blanc_tagline.png" alt="Finger Game" />
+    <h1>📜 Règles du jeu</h1>
+  </header>
+  <div class="regles">
+    <p><strong>COMMENT PARTICIPER ?</strong><br>
+Inscris-toi en renseignant ton nom et prénom sur la page joueur pour intégrer le tournoi.<br>
+Une fois le tournoi lancé et l’annonce du speaker faite, clique sur “Afficher la prochaine manche” : ton numéro de piste et ton round (A ou B) s’afficheront.
+</p>
 
-  <h2>🎮 Règles du Finger Game</h2>
-  <p>
-    Finger Game, c’est un jeu de réflexe, de rythme et de bluff.<br>
-    <strong>Le but&nbsp;?</strong> Être le premier à sortir, sans se faire éliminer.<br>
-    Mais attention : tout repose sur le tempo, l’annonce, la synchronisation… et surtout&nbsp;: éviter les fautes&nbsp;!
-  </p>
+<p><strong>Chaque manche se joue en deux rounds :</strong><br>
+• Round A : démarre juste après l’annonce du speaker<br>
+• Round B : environ 10 minutes plus tard</p>
 
-  <h3>Le principe</h3>
-  <ol>
-    <li>Un joueur lance le rythme : <strong>“1.. 2.. CHIFFRE CHOISI”</strong></li>
-    <li>Sur le dernier temps, tous les joueurs choisissent : doigt levé ou doigt posé</li>
-    <li>Le joueur qui a lancé le rythme annonce un chiffre : le nombre de doigts qu’il pense voir levés</li>
-  </ol>
-  <div style="margin: 10px 0 20px 0;">
-    👉 <strong>S’il devine juste</strong> : il sort, il a gagné la manche<br>
-    👉 <strong>S’il se trompe</strong> : il reste, et le tour passe au joueur suivant<br>
-    💥 <strong>Le dernier en jeu... perd</strong>
+<p><strong>RÈGLES DU FINGER GAME</strong><br>
+Finger Game, c’est un jeu de réflexe, de rythme et de bluff. Le but ? Être le premier à sortir, sans se faire éliminer. Mais attention : tout repose sur le tempo, l’annonce, et la synchronisation. Et surtout… éviter les fautes !
+</p>
+
+<p><strong>LE PRINCIPE</strong><br>
+À chaque manche, tente de deviner le nombre de doigts sur la piste :
+<ol>
+  <li>Un joueur lance le rythme : “1.. 2.. CHIFFRE CHOISI”</li>
+  <li>Sur le dernier temps, tous les joueurs choisissent : doigt levé ou doigt posé</li>
+  <li>Le joueur qui a lancé le rythme annonce un chiffre : le nombre de doigts qu’il pense voir levés</li>
+</ol>
+👉 S’il devine juste : il sort, il a gagné la manche<br>
+👉 S’il se trompe : il reste, et le tour passe au joueur suivant<br>
+💥 Le dernier en jeu... perd
+</p>
+
+<p><strong>⚠️ LES FAUTES DE JEU</strong><br>
+🟥 HORS JEU : Retirer son doigt avant ou après le rythme. Commencer à compter alors que ce n’est pas son tour.<br>
+🟥 PI : Annoncer un nombre impossible<br>
+🟥 NOIRE, NOIRE, DEUX CROCHES NOIRES : Ne pas respecter le rythme<br>
+🟥 STEVIE WONDER : Annoncer un chiffre et faire l’inverse<br>
+🟥 JOHN MAC : Interdit de parler à l’arbitre<br>
+🟥 BAFOUILLE : Annonce incompréhensible
+</p>
+
+<p><strong>👀 À SAVOIR</strong><br>
+• Classement inversé : plus tu sors tôt, plus tu gagnes de points<br>
+• L’arbitre veille : respecte son silence et ses signes
+</p>
+
+<p><strong>FAIR PLAY</strong><br>
+Merci de vous serrer le petit doigt avant chaque partie 🙏</p>
+
+<p><strong>PLANNING DU TOURNOI</strong><br>
+15h00 à 15h20 — Inscriptions & familiarisation<br>
+15h25 à 15h45 — Manche 1<br>
+15h50 à 16h10 — Manche 2<br>
+16h10 à 16h30 — Manche 3<br>
+16h35 à 16h55 — Manche 4<br>
+17h00 à 17h10 — Demi-finale (20 joueurs)<br>
+17h15 à 17h30 — Grande finale (5 joueurs)
+</p>
+
+<p><strong>LE FORMAT DU TOURNOI</strong><br>
+Le Finger Game Paris Entertainment Company se joue en 4 manches qualificatives, suivies d’une demi-finale à 20 joueurs, puis d’une grande finale à 5 !<br>
+À la clé : une Nintendo Switch et un respect éternel
+</p>
   </div>
-
-  <h2>⚠️ Les fautes de jeu</h2>
-  <ul>
-    <li>🟥 <strong>HORS JEU</strong> : Retirer son doigt avant ou après le rythme. Commencer à compter alors que ce n’est pas son tour.</li>
-    <li>🟥 <strong>PI</strong> : Annoncer un nombre impossible</li>
-    <li>🟥 <strong>NOIRE, NOIRE, DEUX CROCHES NOIRES</strong> : Ne pas respecter le rythme</li>
-    <li>🟥 <strong>STEVIE WONDER</strong> : Annoncer un chiffre et faire l’inverse</li>
-    <li>🟥 <strong>JOHN MAC</strong> : Interdit de parler à l’arbitre</li>
-    <li>🟥 <strong>BAFOUILLE</strong> : Annonce incompréhensible</li>
-  </ul>
-
-  <h2>👀 À savoir</h2>
-  <ul>
-    <li>• <strong>Classement inversé</strong> : plus tu sors tôt, plus tu gagnes de points</li>
-    <li>• <strong>L’arbitre veille</strong> : respecte son silence et ses signes</li>
-  </ul>
-
-  <h2>🤝 Fair play</h2>
-  <p>Merci de vous serrer le petit doigt avant chaque partie 🙏</p>
-
-  <h2>🗓️ Planning du tournoi</h2>
-  <ul>
-    <li>15h00 à 15h20 — Inscriptions &amp; familiarisation</li>
-    <li>15h25 à 15h45 — Manche 1</li>
-    <li>15h50 à 16h10 — Manche 2</li>
-    <li>16h10 à 16h30 — Manche 3</li>
-    <li>16h35 à 16h55 — Manche 4</li>
-    <li>17h00 à 17h10 — Demi-finale (20 joueurs)</li>
-    <li>17h15 à 17h30 — Grande finale (5 joueurs)</li>
-  </ul>
-
-  <h2>🏆 Le format du tournoi</h2>
-  <p>
-    Le Finger Game Paris Entertainment Company se joue en <strong>4 manches qualificatives</strong>, suivies d’une <strong>demi-finale à 20 joueurs</strong>, puis d’une <strong>grande finale à 5</strong> !<br>
-    <br>
-    <strong>À la clé&nbsp;: une Nintendo Switch et un respect éternel</strong>
-  </p>
-</div>
+  <a href="../joueur/index.html">⬅️ Retour à l'accueil joueur</a>
+</body>
+</html>
