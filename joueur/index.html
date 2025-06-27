@@ -1,154 +1,271 @@
-<script type="module">
-import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Joueur - Finger Game</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(to right, #0d47a1, #b71c1c);
+      color: white;
+      text-align: center;
+      padding: 30px;
+      margin: 0;
+    }
+    img {
+      width: 200px;
+      margin-top: 20px;
+      max-width: 90%;
+    }
+    h1 {
+      margin: 10px 0;
+    }
+    button {
+      margin: 15px;
+      padding: 10px 20px;
+      font-size: 16px;
+      font-weight: bold;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      background: #444;
+      color: white;
+      transition: background 0.2s;
+    }
+    button:hover {
+      background: #b71c1c;
+    }
+    a {
+      display: inline-block;
+      margin-top: 10px;
+      color: white;
+      text-decoration: underline;
+      font-weight: bold;
+    }
+    #etat {
+      margin-top: 30px;
+      font-size: 20px;
+      font-weight: bold;
+    }
+    #terrain-table {
+      margin-top: 30px;
+      border-collapse: collapse;
+      width: 100%;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+      background: rgba(255,255,255,0.1);
+    }
+    #terrain-table th, #terrain-table td {
+      border: 1px solid white;
+      padding: 8px;
+    }
+    #terrain-table th {
+      background-color: #222;
+    }
+    dialog::backdrop {
+      background: rgba(0, 0, 0, 0.7);
+    }
+    dialog input {
+      padding: 10px;
+      font-size: 16px;
+      width: 100%;
+      background: black;
+      color: white;
+      border: none;
+      border-radius: 4px;
+    }
+    #prochaines-manches {
+      margin-top: 30px;
+      font-size: 18px;
+      text-align: left;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+      background: rgba(255,255,255,0.07);
+      border-radius: 8px;
+      padding: 10px 20px;
+    }
+  </style>
+</head>
+<body>
+  <img src="../assets/FingerGame_logo_blanc_tagline.png" alt="Finger Game">
 
-const supabase = createClient(
-  'https://ckolzmqarfizoxjgolft.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrb2x6bXFhcmZpem94amdvbGZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk2Nzg3NTYsImV4cCI6MjA2NTI1NDc1Nn0.ZlpERz1uznM0fn--GR9YgM2vjwe_kw-qiPF8KHJvMpI'
-)
+  <div id="etat">Chargement...</div>
 
-let playerId = localStorage.getItem("player_id");
+  <button onclick="location.reload()">📘 Afficher la prochaine manche</button>
+  <button onclick="changerDeJoueur()">🔄 Changer de joueur</button><br>
+  <a href="../classement/index.html">📊 Voir le classement</a>
+  <a href="../regles/index.html">📜 Règles du jeu</a>
 
-async function inscrireOuConnecter() {
-  if (!window.HTMLDialogElement) {
-    alert("Votre navigateur ne supporte pas les dialogues. Merci d'utiliser Chrome, Edge ou Firefox récent.");
-    return;
-  }
-  const dialog = document.getElementById("nameDialog");
-  const input = document.getElementById("nameInput");
-  input.value = "";
-  dialog.showModal();
-  dialog.addEventListener("close", async () => {
-    const baseName = input.value.trim();
-    if (!baseName) return;
+  <table id="terrain-table" style="display:none"></table>
+  <div id="prochaines-manches"></div>
 
-    try {
-      // Génération numéro unique
-      const { data: existing } = await supabase
-        .from("players")
-        .select("id, name")
-        .ilike("name", `${baseName} #%`);
+  <dialog id="nameDialog">
+    <form method="dialog">
+      <label>Entrez votre Nom et Prénom</label>
+      <input id="nameInput" required>
+      <button type="submit">OK</button>
+    </form>
+  </dialog>
 
-      let numero = 1;
-      if (existing && existing.length > 0) {
-        const nums = existing.map(e => {
-          const m = e.name.match(/#(\d+)$/);
-          return m ? parseInt(m[1], 10) : null;
-        }).filter(n => n !== null);
-        while (nums.includes(numero)) numero++;
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+
+    const supabase = createClient(
+      'https://ckolzmqarfizoxjgolft.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrb2x6bXFhcmZpem94amdvbGZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk2Nzg3NTYsImV4cCI6MjA2NTI1NDc1Nn0.ZlpERz1uznM0fn--GR9YgM2vjwe_kw-qiPF8KHJvMpI'
+    )
+
+    let playerId = localStorage.getItem("player_id");
+
+    async function inscrireOuConnecter() {
+      const dialog = document.getElementById("nameDialog");
+      const input = document.getElementById("nameInput");
+      if (!window.HTMLDialogElement) {
+        alert("Votre navigateur ne supporte pas les dialogues. Merci d'utiliser Chrome, Edge ou Firefox récent.");
+        return;
       }
-      const fullName = `${baseName} #${numero}`;
-      const { data: inserted } = await supabase
+      input.value = "";
+      dialog.showModal();
+      dialog.addEventListener("close", async () => {
+        const baseName = input.value.trim();
+        if (!baseName) return;
+
+        try {
+          // Génération numéro unique
+          const { data: existing } = await supabase
+            .from("players")
+            .select("id, name")
+            .ilike("name", `${baseName} #%`);
+
+          let numero = 1;
+          if (existing && existing.length > 0) {
+            const nums = existing.map(e => {
+              const m = e.name.match(/#(\d+)$/);
+              return m ? parseInt(m[1], 10) : null;
+            }).filter(n => n !== null);
+            while (nums.includes(numero)) numero++;
+          }
+          const fullName = `${baseName} #${numero}`;
+          const { data: inserted } = await supabase
+            .from("players")
+            .insert({ name: fullName })
+            .select()
+            .single();
+          if (inserted) {
+            playerId = inserted.id;
+            localStorage.setItem("player_id", playerId);
+            afficher(inserted);
+          } else {
+            alert("Erreur lors de l'inscription.");
+          }
+        } catch (e) {
+          document.getElementById("etat").textContent = "Erreur de connexion. Veuillez vérifier votre réseau.";
+        }
+      }, { once: true });
+    }
+
+    async function getPlayerById(id) {
+      const { data } = await supabase
         .from("players")
-        .insert({ name: fullName })
-        .select()
+        .select("*")
+        .eq("id", id)
         .single();
-      if (inserted) {
-        playerId = inserted.id;
-        localStorage.setItem("player_id", playerId);
-        afficher(inserted);
-      } else {
-        alert("Erreur lors de l'inscription.");
+      return data;
+    }
+
+    async function estVainqueur(joueur) {
+      const { data } = await supabase
+        .from("eliminations")
+        .select("id")
+        .eq("player_id", joueur.id)
+        .eq("phase", 99)
+        .eq("rank", 1)
+        .maybeSingle();
+      return !!data;
+    }
+
+    async function afficher(joueur) {
+      const etat = document.getElementById("etat");
+      if (!joueur) {
+        localStorage.removeItem("player_id");
+        etat.textContent = "Aucune donnée trouvée. Veuillez vous réinscrire.";
+        setTimeout(inscrireOuConnecter, 1000);
+        return;
       }
-    } catch (e) {
-      document.getElementById("etat").textContent = "Erreur de connexion. Veuillez vérifier votre réseau.";
+      if (joueur.phase == 99) {
+        etat.textContent = `${joueur.name} — 🏁 Finale — Piste ${joueur.terrain ?? "-"}`;
+        if (await estVainqueur(joueur)) {
+          console.log("🏆 GRAND VAINQUEUR :", joueur.name);
+        }
+      } else {
+        const partieNum = (joueur.matches ?? 0) + 1;
+        let info = joueur.round === "A" ? " (Démarrage dans 3 min)" : joueur.round === "B" ? " (Démarrage après le round A)" : "";
+        etat.textContent = `${joueur.name} — Piste ${joueur.terrain ?? "non attribuée"} — Partie ${partieNum}/${joueur.round ?? "-"}${info}`;
+
+        if (joueur.terrain) afficherTableauTerrain(joueur.terrain);
+      }
+      afficherProchainesManches(joueur);
     }
-  }, { once: true });
-}
 
-async function getPlayerById(id) {
-  const { data } = await supabase
-    .from("players")
-    .select("*")
-    .eq("id", id)
-    .single();
-  return data;
-}
+    async function afficherTableauTerrain(terrain) {
+      const { data } = await supabase
+        .from("players")
+        .select("name, matches, round")
+        .eq("terrain", terrain);
 
-async function estVainqueur(joueur) {
-  const { data } = await supabase
-    .from("eliminations")
-    .select("id")
-    .eq("player_id", joueur.id)
-    .eq("phase", 99)
-    .eq("rank", 1)
-    .maybeSingle();
-  return !!data;
-}
-
-async function afficher(joueur) {
-  const etat = document.getElementById("etat");
-  if (!joueur) {
-    localStorage.removeItem("player_id");
-    etat.textContent = "Aucune donnée trouvée. Veuillez vous réinscrire.";
-    setTimeout(inscrireOuConnecter, 1000);
-    return;
-  }
-  if (joueur.phase == 99) {
-    etat.textContent = `${joueur.name} — 🏁 Finale — Piste ${joueur.terrain ?? "-"}`;
-    if (await estVainqueur(joueur)) {
-      console.log("🏆 GRAND VAINQUEUR :", joueur.name);
+      const table = document.getElementById("terrain-table");
+      table.innerHTML = `<tr><th>Nom</th><th>Matchs joués</th><th>Round</th></tr>`;
+      for (const p of data) {
+        table.innerHTML += `<tr><td>${p.name}</td><td>${p.matches ?? 0}</td><td>${p.round ?? "-"}</td></tr>`;
+      }
+      table.style.display = "table";
     }
-  } else {
-    const partieNum = (joueur.matches ?? 0) + 1;
-    let info = joueur.round === "A" ? " (Démarrage dans 3 min)" : joueur.round === "B" ? " (Démarrage après le round A)" : "";
-    etat.textContent = `${joueur.name} — Piste ${joueur.terrain ?? "non attribuée"} — Partie ${partieNum}/${joueur.round ?? "-"}${info}`;
 
-    if (joueur.terrain) afficherTableauTerrain(joueur.terrain);
-  }
-  afficherProchainesManches(joueur);
-}
+    async function afficherProchainesManches(joueur) {
+      const { data } = await supabase
+        .from("players")
+        .select("phase, round, terrain")
+        .eq("name", joueur.name)
+        .order("phase, round");
+      const div = document.getElementById("prochaines-manches");
+      if (data && data.length > 0) {
+        let html = "<h2>Prochaines manches</h2><ul>";
+        data.forEach(m =>
+          html += `<li>Phase ${m.phase} — Round ${m.round} — Piste ${m.terrain ?? "-"}</li>`
+        );
+        html += "</ul>";
+        div.innerHTML = html;
+      } else {
+        div.innerHTML = "";
+      }
+    }
 
-async function afficherTableauTerrain(terrain) {
-  const { data } = await supabase
-    .from("players")
-    .select("name, matches, round")
-    .eq("terrain", terrain);
+    window.changerDeJoueur = function () {
+      localStorage.removeItem("player_id");
+      location.reload();
+    }
 
-  const table = document.getElementById("terrain-table");
-  table.innerHTML = `<tr><th>Nom</th><th>Matchs joués</th><th>Round</th></tr>`;
-  for (const p of data) {
-    table.innerHTML += `<tr><td>${p.name}</td><td>${p.matches ?? 0}</td><td>${p.round ?? "-"}</td></tr>`;
-  }
-  table.style.display = "table";
-}
+    function ready(fn) {
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", fn);
+      } else {
+        fn();
+      }
+    }
 
-async function afficherProchainesManches(joueur) {
-  const { data } = await supabase
-    .from("players")
-    .select("phase, round, terrain")
-    .eq("name", joueur.name)
-    .order("phase, round");
-  const div = document.getElementById("prochaines-manches");
-  if (data && data.length > 0) {
-    let html = "<h2>Prochaines manches</h2><ul>";
-    data.forEach(m =>
-      html += `<li>Phase ${m.phase} — Round ${m.round} — Piste ${m.terrain ?? "-"}</li>`
-    );
-    html += "</ul>";
-    div.innerHTML = html;
-  } else {
-    div.innerHTML = "";
-  }
-}
+    ready(() => {
+      if (!playerId) {
+        inscrireOuConnecter();
+      } else {
+        getPlayerById(playerId).then(joueur => afficher(joueur));
+      }
+    });
 
-window.changerDeJoueur = function () {
-  localStorage.removeItem("player_id");
-  location.reload();
-}
-
-// Attendre que le DOM soit prêt avant d'appeler inscrireOuConnecter
-if (!playerId) {
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", inscrireOuConnecter);
-  } else {
-    inscrireOuConnecter();
-  }
-} else {
-  getPlayerById(playerId).then(joueur => afficher(joueur));
-}
-
-// Mise à jour automatique
-setInterval(() => {
-  if (playerId) getPlayerById(playerId).then(joueur => afficher(joueur));
-}, 10000);
-</script>
+    // Mise à jour automatique
+    setInterval(() => {
+      if (playerId) getPlayerById(playerId).then(joueur => afficher(joueur));
+    }, 10000);
+  </script>
