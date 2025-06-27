@@ -320,6 +320,7 @@
         grouped[key].push(joueur);
       }
       const tbody = document.getElementById("dispatch");
+      if (!tbody) return; // Sécurité pour éviter l'erreur JS
       tbody.innerHTML = "";
       for (const bloc in grouped) {
         const header = document.createElement("tr");
@@ -337,7 +338,7 @@
     async function resetPlanning() {
       await supabase.from("players").update({ phase: null, round: null, terrain: null });
       const tbody = document.getElementById("dispatch");
-      tbody.innerHTML = "";
+      if (tbody) tbody.innerHTML = "";
     }
 
     window.genererPhase = genererPhase;
@@ -366,6 +367,7 @@
 
   <table>
     <thead><tr><th>Joueur</th><th>Détails</th></tr></thead>
-    <tbody id=
-
-      
+    <tbody id="dispatch"></tbody>
+  </table>
+</body>
+</html>
