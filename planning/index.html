@@ -74,7 +74,7 @@
       font-weight: bold;
       color: gold;
     }
-    #joueursParSlotInput {
+    #joueursParSlotInput, #terrainsInput {
       font-size: 18px;
       width: 60px;
       border-radius: 6px;
@@ -83,7 +83,7 @@
       margin-left: 8px;
       margin-right: 8px;
     }
-    label[for="joueursParSlotInput"] {
+    label[for="joueursParSlotInput"], label[for="terrainsInput"] {
       font-size: 18px;
       font-weight: bold;
       margin-right: 4px;
@@ -102,6 +102,11 @@
       return isNaN(val) ? 10 : val;
     }
 
+    function getNbTerrains() {
+      const val = parseInt(document.getElementById("terrainsInput").value, 10);
+      return isNaN(val) ? 5 : val;
+    }
+
     async function genererPhase() {
       const { data: joueurs } = await supabase.from("players").select("*");
       if (!joueurs || joueurs.length < 1) {
@@ -113,6 +118,7 @@
         .in("id", joueurs.map(j => j.id));
 
       const joueursParSlot = getJoueursParSlot();
+      const nbTerrains = getNbTerrains();
       const nbPhases = 4;
       let shuffled = joueurs.slice().sort(() => Math.random() - 0.5);
 
@@ -124,19 +130,16 @@
 
       for (let phase = 1; phase <= nbPhases; phase++) {
         let joueursPhase = phaseJoueurs[phase-1];
-        let terrains = [1, 2, 3, 4, 5];
+        let terrains = Array.from({length: nbTerrains}, (_, i) => i + 1);
         let rounds = ["A"];
         if (joueursPhase.length <= joueursParSlot) {
           terrains = [1];
           rounds = ["A"];
         } else if (joueursPhase.length <= 50) {
-          terrains = [1, 2, 3, 4, 5];
           rounds = ["A"];
         } else if (joueursPhase.length <= 100) {
-          terrains = [1, 2, 3, 4, 5];
           rounds = ["A", "B"];
         } else {
-          terrains = [1, 2, 3, 4, 5];
           rounds = ["A", "B", "C"];
         }
         let slots = [];
@@ -191,9 +194,10 @@
       const demiFinalistes = data.slice(0, nb);
 
       const joueursParSlot = getJoueursParSlot();
+      const nbTerrains = getNbTerrains();
       let slots = [];
-      let nbTerrains = Math.ceil(nb / joueursParSlot);
-      for (let terrain = 1; terrain <= nbTerrains; terrain++) {
+      let nbTerrainsEffectif = Math.min(nbTerrains, Math.ceil(nb / joueursParSlot));
+      for (let terrain = 1; terrain <= nbTerrainsEffectif; terrain++) {
         slots.push({ terrain, joueurs: [] });
       }
       let idx = 0;
@@ -289,6 +293,8 @@
         }
         finalistes.push(joueur);
       }
+      const joueursParSlot = getJoueursParSlot();
+      const nbTerrains = getNbTerrains();
       let terrain = 1;
       for (let i = 0; i < finalistes.length; i++) {
         await supabase.from("players").update({
@@ -296,7 +302,7 @@
           round: '🏁 Demi Finale',
           terrain: terrain
         }).eq("id", finalistes[i].id);
-        if ((i + 1) % getJoueursParSlot() === 0) terrain++;
+        if ((i + 1) % joueursParSlot === 0) terrain = terrain < nbTerrains ? terrain + 1 : 1;
       }
       alert("Demi-finale manuelle enregistrée !");
       afficherPlanning();
@@ -358,6 +364,8 @@
   <div class="btn-bar">
     <label for="joueursParSlotInput">Joueurs/piste :</label>
     <input id="joueursParSlotInput" type="number" min="2" max="20" value="10">
+    <label for="terrainsInput">Terrains :</label>
+    <input id="terrainsInput" type="number" min="1" max="20" value="5">
     <button onclick="demiFinaleManuelle()">⚙️ Demi-finale manuelle</button>
     <button onclick="genererPhase()">🚀 Générer la phase</button>
     <button onclick="genererDemiFinale()">🏁 Générer la demi-finale</button>
