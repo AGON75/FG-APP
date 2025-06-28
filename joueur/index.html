@@ -247,10 +247,10 @@
 
     let playerId = localStorage.getItem("player_id");
 
-    function partieLibelle(partie) {
-      if (partie == 99) return "Demi-finale";
-      if (partie === "finale") return "Finale";
-      return "Partie " + partie;
+    function partieLibelle(phase) {
+      if (phase == 99) return "Demi-finale";
+      if (phase === "finale") return "Finale";
+      return "Partie " + phase;
     }
 
     async function inscrireOuConnecter() {
@@ -326,7 +326,7 @@
         .from("eliminations")
         .select("id")
         .eq("player_id", joueur.id)
-        .eq("partie", 99)
+        .eq("phase", 99)
         .eq("rank", 1)
         .maybeSingle();
       return !!data;
@@ -353,11 +353,11 @@
         statut = "🏆 GRAND VAINQUEUR";
         statutClass = "statut-vainqueur";
         emoji = "🏆";
-      } else if (joueur.partie === "finale") {
+      } else if (joueur.phase === "finale") {
         statut = "🎯 FINALISTE";
         statutClass = "statut-finale";
         emoji = "🎯";
-      } else if (joueur.partie == 99) {
+      } else if (joueur.phase == 99) {
         statut = "🥉 DEMI-FINALISTE";
         statutClass = "statut-demi";
         emoji = "🥉";
@@ -366,10 +366,10 @@
       // Cherche la prochaine manche dans matches
       const { data: matches } = await supabase
         .from("matches")
-        .select("partie, manche, terrain")
+        .select("phase, round, terrain")
         .eq("player_id", joueur.id)
-        .order("partie", { ascending: true })
-        .order("manche", { ascending: true })
+        .order("phase", { ascending: true })
+        .order("round", { ascending: true })
         .limit(1);
 
       if (statut) {
@@ -377,9 +377,9 @@
         mainStatus.className = "main-status " + statutClass;
       } else if (matches && matches.length > 0) {
         const m = matches[0];
-        mainStatus.innerHTML = `<b>${joueur.name}</b><br>Piste <b>${m.terrain ?? "non attribuée"}</b> — Partie <b>${m.partie ?? "-"}</b> / Manche <b>${m.manche ?? "-"}</b>`;
+        mainStatus.innerHTML = `<b>${joueur.name}</b><br>Piste <b>${m.terrain ?? "non attribuée"}</b> — Partie <b>${m.phase ?? "-"}</b> / Manche <b>${m.round ?? "-"}</b>`;
         mainStatus.className = "main-status statut-normal";
-        if (m.terrain) afficherTableauTerrain(m.terrain, m.manche);
+        if (m.terrain) afficherTableauTerrain(m.terrain, m.round);
         else document.getElementById("terrain-table").style.display = "none";
       } else {
         mainStatus.innerHTML = `<b>${joueur.name}</b><br>Aucune manche à venir.`;
@@ -391,12 +391,12 @@
     }
 
     // Affiche les joueurs sur la même piste et manche
-    async function afficherTableauTerrain(terrain, manche) {
+    async function afficherTableauTerrain(terrain, round) {
       const { data } = await supabase
         .from("matches")
-        .select("player_id, terrain, manche")
+        .select("player_id, terrain, round")
         .eq("terrain", terrain)
-        .eq("manche", manche);
+        .eq("round", round);
 
       // Récupère les noms des joueurs
       let joueurs = [];
@@ -406,13 +406,13 @@
           .select("name")
           .eq("id", m.player_id)
           .single();
-        joueurs.push({ name: joueur ? joueur.name : "-", manche: m.manche });
+        joueurs.push({ name: joueur ? joueur.name : "-", round: m.round });
       }
 
       const table = document.getElementById("terrain-table");
       table.innerHTML = `<caption>👥 Joueurs sur la piste ${terrain}</caption><tr><th>Nom</th><th>Manche</th></tr>`;
       for (const p of joueurs) {
-        table.innerHTML += `<tr><td>${p.name}</td><td>${p.manche ?? "-"}</td></tr>`;
+        table.innerHTML += `<tr><td>${p.name}</td><td>${p.round ?? "-"}</td></tr>`;
       }
       table.style.display = "table";
     }
@@ -421,19 +421,19 @@
     async function afficherProchainesManches(joueur) {
       const { data } = await supabase
         .from("matches")
-        .select("partie, manche, terrain")
+        .select("phase, round, terrain")
         .eq("player_id", joueur.id)
-        .order("partie", { ascending: true })
-        .order("manche", { ascending: true });
+        .order("phase", { ascending: true })
+        .order("round", { ascending: true });
       const div = document.getElementById("prochaines-manches");
       if (data && data.length > 0) {
         let html = "<h2>📅 Prochaines manches</h2><ul style='padding-left:20px;'>";
         data.forEach(m => {
-          let partieTxt = partieLibelle(m.partie);
+          let partieTxt = partieLibelle(m.phase);
           let icon = "";
-          if (m.partie == 99) icon = "🥉";
-          else if (m.partie === "finale") icon = "🎯";
-          html += `<li>${icon} <b>${partieTxt}</b> — Manche <b>${m.manche ?? "-"}</b> — Piste <b>${m.terrain ?? "-"}</b></li>`;
+          if (m.phase == 99) icon = "🥉";
+          else if (m.phase === "finale") icon = "🎯";
+          html += `<li>${icon} <b>${partieTxt}</b> — Manche <b>${m.round ?? "-"}</b> — Piste <b>${m.terrain ?? "-"}</b></li>`;
         });
         html += "</ul>";
         div.innerHTML = html;
