@@ -214,9 +214,7 @@
   <img src="../assets/FingerGame_logo_blanc_tagline.png" alt="Finger Game">
 
   <nav aria-label="Navigation principale">
-    <a href="index.html" aria-label="Espace joueur" tabindex="0">🏠 Joueur</a>
     <a href="../classement/index.html" aria-label="Voir le classement" tabindex="0">📊 Classement</a>
-    <a href="../planning/index.html" aria-label="Voir le planning" tabindex="0">📅 Planning</a>
     <a href="../regles/index.html" aria-label="Voir les règles du jeu" tabindex="0">📜 Règles</a>
   </nav>
 
@@ -249,10 +247,10 @@
 
     let playerId = localStorage.getItem("player_id");
 
-    function phaseLibelle(phase) {
-      if (phase == 99) return "Demi-finale";
-      if (phase === "finale") return "Finale";
-      return "Partie " + phase;
+    function partieLibelle(partie) {
+      if (partie == 99) return "Demi-finale";
+      if (partie === "finale") return "Finale";
+      return "Partie " + partie;
     }
 
     async function inscrireOuConnecter() {
@@ -328,7 +326,7 @@
         .from("eliminations")
         .select("id")
         .eq("player_id", joueur.id)
-        .eq("phase", 99)
+        .eq("partie", 99)
         .eq("rank", 1)
         .maybeSingle();
       return !!data;
@@ -354,11 +352,11 @@
         statut = "🏆 GRAND VAINQUEUR";
         statutClass = "statut-vainqueur";
         emoji = "🏆";
-      } else if (joueur.phase === "finale") {
+      } else if (joueur.partie === "finale") {
         statut = "🎯 FINALISTE";
         statutClass = "statut-finale";
         emoji = "🎯";
-      } else if (joueur.phase == 99) {
+      } else if (joueur.partie == 99) {
         statut = "🥉 DEMI-FINALISTE";
         statutClass = "statut-demi";
         emoji = "🥉";
@@ -369,8 +367,8 @@
         mainStatus.className = "main-status " + statutClass;
       } else {
         const partieNum = (joueur.matches ?? 0) + 1;
-        let info = joueur.round === "A" ? " (Démarrage dans 3 min)" : joueur.round === "B" ? " (Démarrage après le round A)" : "";
-        mainStatus.innerHTML = `<b>${joueur.name}</b><br>Piste <b>${joueur.terrain ?? "non attribuée"}</b> — Partie <b>${partieNum}</b> / Round <b>${joueur.round ?? "-"}</b>${info}`;
+        let info = joueur.manche === "A" ? " (Démarrage dans 3 min)" : joueur.manche === "B" ? " (Démarrage après la manche A)" : "";
+        mainStatus.innerHTML = `<b>${joueur.name}</b><br>Piste <b>${joueur.terrain ?? "non attribuée"}</b> — Partie <b>${partieNum}</b> / Manche <b>${joueur.manche ?? "-"}</b>${info}`;
         mainStatus.className = "main-status statut-normal";
       }
 
@@ -383,13 +381,13 @@
     async function afficherTableauTerrain(terrain) {
       const { data } = await supabase
         .from("players")
-        .select("name, matches, round")
+        .select("name, matches, manche")
         .eq("terrain", terrain);
 
       const table = document.getElementById("terrain-table");
-      table.innerHTML = `<caption>👥 Joueurs sur la piste ${terrain}</caption><tr><th>Nom</th><th>Matchs joués</th><th>Round</th></tr>`;
+      table.innerHTML = `<caption>👥 Joueurs sur la piste ${terrain}</caption><tr><th>Nom</th><th>Matchs joués</th><th>Manche</th></tr>`;
       for (const p of data) {
-        table.innerHTML += `<tr><td>${p.name}</td><td>${p.matches ?? 0}</td><td>${p.round ?? "-"}</td></tr>`;
+        table.innerHTML += `<tr><td>${p.name}</td><td>${p.matches ?? 0}</td><td>${p.manche ?? "-"}</td></tr>`;
       }
       table.style.display = "table";
     }
@@ -397,18 +395,18 @@
     async function afficherProchainesManches(joueur) {
       const { data } = await supabase
         .from("players")
-        .select("phase, round, terrain")
+        .select("partie, manche, terrain")
         .eq("name", joueur.name)
-        .order("phase, round");
+        .order("partie, manche");
       const div = document.getElementById("prochaines-manches");
       if (data && data.length > 0) {
         let html = "<h2>📅 Prochaines manches</h2><ul style='padding-left:20px;'>";
         data.forEach(m => {
-          let phaseTxt = phaseLibelle(m.phase);
+          let partieTxt = partieLibelle(m.partie);
           let icon = "";
-          if (m.phase == 99) icon = "🥉";
-          else if (m.phase === "finale") icon = "🎯";
-          html += `<li>${icon} <b>${phaseTxt}</b> — Round <b>${m.round ?? "-"}</b> — Piste <b>${m.terrain ?? "-"}</b></li>`;
+          if (m.partie == 99) icon = "🥉";
+          else if (m.partie === "finale") icon = "🎯";
+          html += `<li>${icon} <b>${partieTxt}</b> — Manche <b>${m.manche ?? "-"}</b> — Piste <b>${m.terrain ?? "-"}</b></li>`;
         });
         html += "</ul>";
         div.innerHTML = html;
