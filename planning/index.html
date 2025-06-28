@@ -162,7 +162,11 @@
       return isNaN(val) ? 5 : val;
     }
     function getPhaseSelectionnee() {
-      return parseInt(document.getElementById("phaseSelect").value, 10);
+      const val = document.getElementById("phaseSelect").value;
+      // Ajout : gestion phase spéciale
+      if (val === "demi") return 99;
+      if (val === "finale") return "finale";
+      return parseInt(val, 10);
     }
 
     async function loadPlayersMap() {
@@ -240,6 +244,12 @@
       afficherNbJoueursParSlot();
     }
 
+    function phaseLibelle(phase) {
+      if (phase == 99) return "Demi-finale";
+      if (phase === "finale") return "Finale";
+      return "Partie " + phase;
+    }
+
     function renderPlanningTable() {
       const tbody = document.getElementById("dispatch");
       if (!tbody) return;
@@ -250,7 +260,7 @@
 
       const grouped = {};
       for (const match of pagedData) {
-        let key = `Partie ${match.phase} – Manche ${match.round} – Piste ${match.terrain}`;
+        let key = `${phaseLibelle(match.phase)} – Manche ${match.round} – Piste ${match.terrain}`;
         if (!grouped[key]) grouped[key] = [];
         grouped[key].push(match.players?.name ?? "");
       }
@@ -322,9 +332,10 @@
         showLoading(false);
         return;
       }
-      let csv = "Nom,Piste,Partie,Manche\n";
+      let csv = "Nom,Piste,Phase,Manche\n";
       data.forEach(j => {
-        csv += `"${j.players?.name ?? ""}",${j.terrain ?? ""},${j.phase ?? ""},${j.round ?? ""}\n`;
+        let phaseAff = phaseLibelle(j.phase);
+        csv += `"${j.players?.name ?? ""}",${j.terrain ?? ""},${phaseAff},${j.round ?? ""}\n`;
       });
       const blob = new Blob([csv], { type: "text/csv" });
       const url = URL.createObjectURL(blob);
@@ -364,13 +375,19 @@
         });
       }
       document.getElementById("phaseSelect").addEventListener("change", () => afficherPlanning(1));
-      // Remplacement des intitulés dans le select phase
+      // Ajout des phases spéciales dans le select phase
       const phaseSelect = document.getElementById("phaseSelect");
-      if (phaseSelect) {
-        for (let opt of phaseSelect.options) {
-          opt.textContent = opt.textContent.replace(/Phase/gi, "Partie");
-        }
-        phaseSelect.previousElementSibling.textContent = "Partie :";
+      if (phaseSelect && !phaseSelect.querySelector('option[value="demi"]')) {
+        const optDemi = document.createElement("option");
+        optDemi.value = "demi";
+        optDemi.textContent = "Demi-finale";
+        phaseSelect.appendChild(optDemi);
+      }
+      if (phaseSelect && !phaseSelect.querySelector('option[value="finale"]')) {
+        const optFinale = document.createElement("option");
+        optFinale.value = "finale";
+        optFinale.textContent = "Finale";
+        phaseSelect.appendChild(optFinale);
       }
       // Remplacement du titre principal
       const h1 = document.querySelector("h1");
@@ -539,6 +556,7 @@
       <option value="2">Partie 2</option>
       <option value="3">Partie 3</option>
       <option value="4">Partie 4</option>
+      <!-- Les options Demi-finale et Finale sont ajoutées dynamiquement -->
     </select>
     <button onclick="demiFinaleManuelle()">⚙️ Demi-finale manuelle</button>
     <button onclick="genererPhase()">🚀 Générer la partie</button>
