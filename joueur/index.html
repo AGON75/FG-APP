@@ -200,7 +200,7 @@
     }
 
     html, body {
-      font-family: 'Montserrat', Arial, sans-serif;
+      font-family: 'Montserrat', Impact, Arial, sans-serif;
       color: var(--fg-bleu-marin);
       background: #f7f7f7;
       margin: 0;
@@ -393,6 +393,7 @@
     </div>
   </dialog>
   <script>
+    // Script to handle the opening and closing of the Charte Graphique modal dialog for UI/UX purposes.
     document.getElementById('show-charte-btn').onclick = () => {
       document.getElementById('charteDialog').showModal();
     };
@@ -402,7 +403,7 @@
   </script>
   <!-- ====== FIN CHARTE GRAPHIQUE MODALE ====== -->
 
-  <!-- Inclusion du script principal Supabase pour la gestion du joueur -->
+  <script src="/js/supabase-joueur.js" type="module"></script>
   <script src="../js/supabase-joueur.js" type="module"></script>
   <script type="module">
     // Récupère l'ID du joueur depuis le localStorage
@@ -458,9 +459,8 @@
             let partieTxt = partieLibelle(m.phase);
             let icon = "";
             if (m.phase === 99) icon = "🥉";
-            else if (m.phase === "finale" || m.phase === 100) icon = "🎯";
             else if (m.phase === "finale" || m.phase === 100 || m.phase == 100) icon = "🎯";
-            html += `<li>${icon} <b>${partieTxt}</b> — Manche <b>${m.round ?? "-"}</b> — Piste <b>${m.terrain ?? "-"}</b></li>`;
+            else if (m.phase === "finale" || m.phase == 100) icon = "🎯";
           });
           html += "</ul>";
           div.innerHTML = html;
@@ -539,5 +539,26 @@
           setRefreshLoading(false);
         }
       });
+
+      // Clear interval on page unload to prevent memory leaks
+      window.addEventListener('beforeunload', function() {
+        if (refreshIntervalId) {
+          clearInterval(refreshIntervalId);
+          refreshIntervalId = null;
+        }
+      });
     }); // <-- Ajout du } manquant ici pour fermer la fonction ready
+<div>
+  <form id="signup-form">
+    <input type="text" id="name" placeholder="Ton prénom ou pseudo" required />
+    <button type="submit">S'inscrire</button>
+  </form>
+  <div id="result"></div>
+  <div class="btn-bar">
+    <button id="refresh-btn" onclick="rafraichirDonnees()" aria-label="Afficher la prochaine manche">📘 Afficher la prochaine manche</button>
+    <button onclick="changerDeJoueur()" aria-label="Changer de joueur">🔄 Changer de joueur</button>
+  </div>
+  <table id="terrain-table" class="hidden"></table>
+  <div id="prochaines-manches"></div>
+</div>
 
