@@ -7,6 +7,14 @@
   <link rel="icon" type="image/png" href="../assets/FingerGame_logo_blanc_tagline.png">
   <link rel="icon" href="data:,">
   <style>
+    :root {
+      --fg-bleu-marin: #001B65;
+      --fg-bleu: #0552F5;
+      --fg-rouge: #FF2645;
+      --fg-noir: #35373C;
+      --fg-jaune: #ffd700;
+      --fg-blanc: #fff;
+    }
     /* ...styles inchangés... */
     .error-message {
       color: #ffd700;
@@ -63,6 +71,84 @@
       <button type="submit" aria-label="Valider le nom">OK</button>
     </form>
   </dialog>
+
+  <!-- ====== CHARTE GRAPHIQUE MODALE ====== -->
+  <button id="show-charte-btn"
+    style="position:fixed;bottom:18px;right:18px;z-index:1000;background:var(--fg-jaune);color:var(--fg-bleu-marin);font-weight:700;border:none;border-radius:50%;width:54px;height:54px;box-shadow:0 2px 8px #001B6533;cursor:pointer;font-size:1.8em;"
+    title="Voir la charte graphique">🎨</button>
+  <dialog id="charteDialog" style="max-width:900px;width:95vw;border:none;border-radius:18px;box-shadow:0 4px 32px #001B6588;padding:0;overflow:auto;">
+    <div style="background:var(--fg-bleu-marin);padding:32px 0 24px 0;text-align:center;">
+      <img src="../assets/FingerGame_logo_couleur_tagline.png" alt="Logo couleur" style="max-width:220px;width:60vw;margin-bottom:18px;">
+      <h1 style="font-family:'Montserrat',Impact,sans-serif;color:#fff;font-size:2.2em;margin:0 0 10px 0;">Charte Graphique Finger Game</h1>
+    </div>
+    <div style="background:#fff;padding:32px 24px 24px 24px;">
+      <h2 style="color:var(--fg-bleu);font-family:'Montserrat',Impact,sans-serif;font-size:1.4em;margin-top:0;">Logos</h2>
+      <div style="display:flex;gap:32px;justify-content:center;align-items:center;flex-wrap:wrap;margin-bottom:18px;">
+        <div>
+          <img src="../assets/FingerGame_logo_couleur.png" alt="Logo couleur" style="max-width:120px;max-height:80px;">
+          <div style="font-size:0.95em;text-align:center;">Standard</div>
+        </div>
+        <div>
+          <img src="../assets/FingerGame_logo_couleur_tagline.png" alt="Logo couleur tagline" style="max-width:120px;max-height:80px;">
+          <div style="font-size:0.95em;text-align:center;">Avec tagline</div>
+        </div>
+        <div>
+          <img src="../assets/FingerGame_logo_black.png" alt="Logo noir" style="max-width:120px;max-height:80px;background:#fff;">
+          <div style="font-size:0.95em;text-align:center;">Noir</div>
+        </div>
+        <div>
+          <img src="../assets/FingerGame_logo_black_tagline.png" alt="Logo noir tagline" style="max-width:120px;max-height:80px;background:#fff;">
+          <div style="font-size:0.95em;text-align:center;">Noir + tagline</div>
+        </div>
+        <div style="background:var(--fg-bleu-marin);padding:8px 16px;border-radius:8px;">
+          <img src="../assets/FingerGame_logo_white.png" alt="Logo blanc" style="max-width:120px;max-height:80px;">
+          <div style="font-size:0.95em;color:#fff;text-align:center;">Blanc sur bleu</div>
+        </div>
+      </div>
+      <h2 style="color:var(--fg-bleu);font-family:'Montserrat',Impact,sans-serif;font-size:1.4em;">Palette couleurs</h2>
+      <img src="../assets/FingerGame_palette_couleurs.png" alt="Palette couleurs" style="max-width:600px;width:95vw;display:block;margin:18px auto 24px auto;">
+      <h2 style="color:var(--fg-bleu);font-family:'Montserrat',Impact,sans-serif;font-size:1.4em;">Typographies</h2>
+      <img src="../assets/FingerGame_typographie_structure.png" alt="Typographie" style="max-width:700px;width:95vw;display:block;margin:18px auto 0 auto;">
+      <div style="color:#222;font-size:1.1em;margin:18px auto 0 auto;max-width:600px;">
+        <b>Police principale :</b> Sports World (titres impactants)<br>
+        <b>Police secondaire :</b> Montreal (Bold, Medium, Light) pour les contenus.<br>
+        <span style="font-size:0.95em;">Si indisponibles, utiliser Montserrat ou Impact.</span>
+      </div>
+      <h2 style="color:var(--fg-bleu);font-family:'Montserrat',Impact,sans-serif;font-size:1.4em;margin-top:32px;">Titres exemples</h2>
+      <div style="display:flex;gap:32px;justify-content:center;align-items:flex-end;flex-wrap:wrap;margin-bottom:18px;">
+        <div style="text-align:center;">
+          <img src="../assets/FingerGame_titre_typo_bleue.png" alt="Titre bleu" style="max-width:120px;">
+          <div style="font-size:0.95em;">Bleu sur fond clair</div>
+        </div>
+        <div style="background:var(--fg-bleu-marin);padding:8px 16px;border-radius:8px;text-align:center;">
+          <img src="../assets/FingerGame_titre_typo_blanche.png" alt="Titre blanc" style="max-width:120px;">
+          <div style="font-size:0.95em;color:#fff;">Blanc sur fond sombre</div>
+        </div>
+        <div style="text-align:center;">
+          <img src="../assets/FingerGame_titre_typo_noire.png" alt="Titre noir" style="max-width:120px;">
+          <div style="font-size:0.95em;">Noir sur fond clair</div>
+        </div>
+      </div>
+      <h2 style="color:var(--fg-bleu);font-family:'Montserrat',Impact,sans-serif;font-size:1.2em;margin-top:32px;">Règles d’utilisation</h2>
+      <ul style="color:#35373C;font-size:1em;max-width:600px;margin:0 auto 18px auto;">
+        <li>Respecter la zone de sécurité autour du logo (min. 10 mm)</li>
+        <li>Ne jamais déformer les logos</li>
+        <li>Ne pas modifier les couleurs fournies</li>
+        <li>Utiliser les typographies et couleurs officielles</li>
+        <li>Exemples d’utilisation correcte/interdite : <span style="color:#aaa;">(à illustrer si besoin)</span></li>
+      </ul>
+      <button onclick="document.getElementById('charteDialog').close()" style="margin:24px auto 0 auto;display:block;background:var(--fg-jaune);color:var(--fg-bleu-marin);font-weight:700;border:none;border-radius:8px;padding:10px 32px;font-size:1.1em;cursor:pointer;">Fermer</button>
+    </div>
+  </dialog>
+  <script>
+    document.getElementById('show-charte-btn').onclick = () => {
+      document.getElementById('charteDialog').showModal();
+    };
+    document.getElementById('charteDialog').addEventListener('click', function(e){
+      if(e.target === this) this.close();
+    });
+  </script>
+  <!-- ====== FIN CHARTE GRAPHIQUE MODALE ====== -->
 
   <script type="module">
     import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
@@ -415,5 +501,7 @@
       setRefreshLoading(false);
     });
   </script>
+</body>
+</html>
 </body>
 </html>
