@@ -3,8 +3,7 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 const SUPABASE_URL = "https://ckolzmqarfizoxjgolft.supabase.co";
 // Expected: VITE_SUPABASE_ANON_KEY should be set in your environment variables (e.g., in a .env file for Vite)
 const SUPABASE_ANON_KEY =
-  (typeof import.meta !== "undefined" && import.meta.env && import.meta.env.VITE_SUPABASE_ANON_KEY) ||
-  (typeof window !== "undefined" && window.VITE_SUPABASE_ANON_KEY);
+  (typeof import.meta !== "undefined" && import.meta.env && import.meta.env.VITE_SUPABASE_ANON_KEY);
 
 if (!SUPABASE_ANON_KEY) {
   throw new Error(
@@ -17,53 +16,74 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 document.addEventListener('DOMContentLoaded', () => {
   const form = document.getElementById('signup-form');
   const resultElem = document.getElementById('result'); // Make sure an element with id="result" exists in your HTML
-  if (form) {
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const nameInput = document.getElementById('name');
-      const name = (nameInput && nameInput instanceof HTMLInputElement) ? nameInput.value.trim() : '';
-      if (!name) return;
-      if (resultElem) resultElem.innerText = "⏳ Inscription en cours...";
-      // Check if the player already exists
-      const { data: existing, error: selectError } = await supabase
-        .from('players')
-        .select('id')
-        .eq('name', name)
-        .single();
-
-      // Handle multiple rows found error (PGRST123 = Multiple rows found)
-      if (selectError && selectError.code === 'PGRST123') {
-        if (resultElem) resultElem.innerText = "❌ Plusieurs joueurs portent déjà ce nom. Veuillez contacter un administrateur.";
-        return;
-      }
-
-      // Only show error if it's not just "no rows found" (PGRST116 = No rows found in Supabase/PostgREST)
-      if (selectError && selectError.code !== 'PGRST116') {
-        if (resultElem) resultElem.innerText = "❌ " + selectError.message;
-        return;
-      }
-
-      const { error: insertError } = await supabase
-        .from('players')
-        .insert([{ name, total_points: 0, matches: 0 }]);
-      if (isDuplicateError(insertError)) {
-        if (resultElem) resultElem.innerText = "❌ Ce nom existe déjà !";
-      } else if (insertError) {
-        if (resultElem) resultElem.innerText = "❌ " + insertError.message;
-      } else {
-        if (resultElem) resultElem.innerText = "✅ Inscription réussie !";
-      }
-    });
+  if (!resultElem) {
+    throw new Error('❌ Required element with id="result" not found in the HTML. Please add <div id="result"></div> to your page.');
   }
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const nameInput = document.getElementById('name');
+    if (!nameInput || !(nameInput instanceof HTMLInputElement)) {
+      resultElem.innerText = "❌ Champ de nom introuvable dans le formulaire.";
+      return;
+    }
+    const name = nameInput.value.trim();
+    if (!name) {
+      resultElem.innerText = "❌ Veuillez entrer un nom.";
+      return;
+    }
+    resultElem.innerText = "⏳ Inscription en cours...";
+    // Check if the player already exists
+    // We check for duplicate names both before (select) and after (insert) to handle race conditions:
+    // If two users try to register the same name at the same time, both selects might pass,
+    // but only one insert will succeed due to the unique constraint in the database.
+    // This ensures we always catch duplicates, even in concurrent scenarios.
+    const { data: existingPlayer, error: selectError } = await supabase
+      .from('players')
+      .select('id')
+      .eq('name', name)
+      .maybeSingle();
+
+    // Handle multiple rows found error (PGRST123 = Multiple rows found)
+    if (selectError && selectError.code === 'PGRST123') {
+      resultElem.innerText = "❌ Plusieurs joueurs portent déjà ce nom. Veuillez contacter un administrateur.";
+      return;
+    }
+
+    // Only show error if it's not just "no rows found" (PGRST116 = No rows found in Supabase/PostgREST)
+    if (selectError && selectError.code !== 'PGRST116') {
+      resultElem.innerText = "❌ " + selectError.message;
+      return;
+    }
+
+    if (existingPlayer) {
+      resultElem.innerText = "❌ Ce nom existe déjà !";
+      return;
+    }
+
+    const { error: insertError } = await supabase
+      .from('players')
+      .insert([{ name, total_points: 0, matches: 0 }]);
+    if (isDuplicateError(insertError)) {
+      resultElem.innerText = "❌ Ce nom existe déjà !";
+    } else if (insertError) {
+      resultElem.innerText = "❌ " + insertError.message;
+    } else {
+      resultElem.innerText = "✅ Inscription réussie !";
+    }
+  });
 });
 
-// Postgres unique violation error code constant for maintainability
-const POSTGRES_UNIQUE_VIOLATION_CODE = '23505';
-
+function isDuplicateError(error) {
+  return error && error.code === POSTGRES_UNIQUE_VIOLATION_CODE;
+}
 // Helper to detect duplicate entry error from Supabase/Postgres
 function isDuplicateError(error) {
   return error && (error.code === POSTGRES_UNIQUE_VIOLATION_CODE || (error.message && error.message.toLowerCase().includes('duplicate')));
 }
+
+// Prefix for the court message display
+const COURT_MESSAGE_PREFIX = "Vous êtes sur le terrain n°";
 
 // Displays a message indicating which court the player is on.
 // Usage: Call window.showCourt(courtNumber) to update the "terrainMessage" element with the court info.
