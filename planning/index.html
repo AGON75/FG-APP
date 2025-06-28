@@ -338,7 +338,46 @@
       showLoading(false);
     }
 
-    // Les autres fonctions restent inchangées (elles utilisent encore la table players)
+    // Correction : attacher explicitement les fonctions à window pour les boutons HTML
+    window.genererPhase = genererPhase;
+    window.genererDemiFinale = genererDemiFinale;
+    window.finaleManuelle = finaleManuelle;
+    window.resetPlanning = resetPlanning;
+    window.exporterPlanningCSV = exporterPlanningCSV;
+    window.afficherPlanning = afficherPlanning;
+    window.demiFinaleManuelle = demiFinaleManuelle;
+
+    window.onload = afficherPlanning;
+
+    document.addEventListener("DOMContentLoaded", () => {
+      // Ajout dynamique des manches D à H dans la liste déroulante si elle existe
+      const roundSelect = document.getElementById("round");
+      if (roundSelect) {
+        const rounds = ["D", "E", "F", "G", "H"];
+        rounds.forEach(r => {
+          if (![...roundSelect.options].some(opt => opt.value === r)) {
+            const opt = document.createElement("option");
+            opt.value = r;
+            opt.textContent = "Manche " + r;
+            roundSelect.appendChild(opt);
+          }
+        });
+      }
+      document.getElementById("phaseSelect").addEventListener("change", () => afficherPlanning(1));
+      // Remplacement des intitulés dans le select phase
+      const phaseSelect = document.getElementById("phaseSelect");
+      if (phaseSelect) {
+        for (let opt of phaseSelect.options) {
+          opt.textContent = opt.textContent.replace(/Phase/gi, "Partie");
+        }
+        phaseSelect.previousElementSibling.textContent = "Partie :";
+      }
+      // Remplacement du titre principal
+      const h1 = document.querySelector("h1");
+      if (h1) h1.textContent = "📅 Planning des Parties";
+    });
+
+    // Fonctions pour les boutons (doivent être définies sur window)
     async function genererDemiFinale() {
       const { data, error } = await supabase
         .from("players")
@@ -437,7 +476,6 @@
       alert("Finale manuelle enregistrée !");
       afficherPlanning();
     }
-    window.finaleManuelle = finaleManuelle;
 
     async function demiFinaleManuelle() {
       const { data: allPlayers } = await supabase.from("players").select("id, name");
@@ -482,43 +520,6 @@
       alert("Demi-finale manuelle enregistrée !");
       afficherPlanning();
     }
-    window.demiFinaleManuelle = demiFinaleManuelle;
-
-    window.genererPhase = genererPhase;
-    window.genererDemiFinale = genererDemiFinale;
-    window.finaleManuelle = finaleManuelle;
-    window.resetPlanning = resetPlanning;
-    window.exporterPlanningCSV = exporterPlanningCSV;
-    window.onload = afficherPlanning;
-    window.demiFinaleManuelle = demiFinaleManuelle;
-
-    document.addEventListener("DOMContentLoaded", () => {
-      // Ajout dynamique des manches D à H dans la liste déroulante si elle existe
-      const roundSelect = document.getElementById("round");
-      if (roundSelect) {
-        const rounds = ["D", "E", "F", "G", "H"];
-        rounds.forEach(r => {
-          if (![...roundSelect.options].some(opt => opt.value === r)) {
-            const opt = document.createElement("option");
-            opt.value = r;
-            opt.textContent = "Manche " + r;
-            roundSelect.appendChild(opt);
-          }
-        });
-      }
-      document.getElementById("phaseSelect").addEventListener("change", () => afficherPlanning(1));
-      // Remplacement des intitulés dans le select phase
-      const phaseSelect = document.getElementById("phaseSelect");
-      if (phaseSelect) {
-        for (let opt of phaseSelect.options) {
-          opt.textContent = opt.textContent.replace(/Phase/gi, "Partie");
-        }
-        phaseSelect.previousElementSibling.textContent = "Partie :";
-      }
-      // Remplacement du titre principal
-      const h1 = document.querySelector("h1");
-      if (h1) h1.textContent = "📅 Planning des Parties";
-    });
   </script>
 </head>
 <body>
