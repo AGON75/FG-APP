@@ -5,9 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title id="page-title">Joueur - Finger Game</title>
   <link rel="icon" type="image/png" href="../assets/FingerGame_logo_blanc_tagline.png">
-  <link rel="icon" href="data:,">
   <style>
     /* ===== POLICE MONTSERRAT ===== */
+    /* 
+      NOTE: "Sports World" is the intended main font for impactful titles,
+      but it is not imported here due to licensing or availability.
+      Fallbacks to Montserrat, Impact, Arial, or sans-serif are used.
+      To use "Sports World", import it or host the font file if you have the rights.
+    */
     /* cyrillic-ext */
     @font-face {
       font-family: 'Montserrat';
@@ -196,6 +201,11 @@
       margin: 0;
       padding: 0;
     }
+    /* Example: Use for impactful titles if "Sports World" is available */
+    .impact-title {
+      font-family: 'Sports World', 'Montserrat', Impact, Arial, sans-serif;
+      font-weight: bold;
+    }
     #charteDialog h2 {
       font-family: 'Montserrat', Arial, sans-serif;
       font-weight: 700;
@@ -334,8 +344,8 @@
           <img src="../assets/FingerGame_logo_black_tagline.png" alt="Logo noir tagline" style="max-width:120px;max-height:80px;background:#fff;">
           <div style="font-size:0.95em;text-align:center;">Noir + tagline</div>
         </div>
-        <div style="background:var(--fg-bleu-marin);padding:8px 16px;border-radius:8px;">
-          <img src="../assets/FingerGame_logo_white.png" alt="Logo blanc" style="max-width:120px;max-height:80px;">
+        <b>Police secondaire :</b> Montserrat (Bold, Medium, Light) pour les contenus.<br>
+        <span style="font-size:0.95em;">La police "Montserrat" est utilisée comme alternative principale, ou Impact si indisponible.</span>
           <div style="font-size:0.95em;color:#fff;text-align:center;">Blanc sur bleu</div>
         </div>
       </div>
@@ -345,7 +355,7 @@
       <img src="../assets/FingerGame_typographie_structure.png" alt="Typographie" style="max-width:700px;width:95vw;display:block;margin:18px auto 0 auto;">
       <div style="color:#222;font-size:1.1em;margin:18px auto 0 auto;max-width:600px;">
         <b>Police principale :</b> Sports World (titres impactants)<br>
-        <b>Police secondaire :</b> Montreal (Bold, Medium, Light) pour les contenus.<br>
+        <b>Police secondaire :</b> Montserrat (Bold, Medium, Light) pour les contenus.<br>
         <span style="font-size:0.95em;">Si indisponibles, utiliser Montserrat ou Impact.</span>
       </div>
       <h2>Titres exemples</h2>
@@ -386,17 +396,10 @@
 
   <!-- ...le reste de ton script JS Supabase... -->
   <script type="module">
-    // ...existing code...
-  </script>
-</body>
-</html>
-        setRefreshLoading(false);
-      }
-    }
+    // Récupère l'ID du joueur depuis le localStorage
+    const playerId = localStorage.getItem("player_id");
 
-    /**
-     * Récupère et affiche les joueurs sur la même piste et manche (optimisé Promise.all)
-     */
+    // ...existing code...
     async function afficherTableauTerrain(terrain, round) {
       try {
         const { data } = await supabase
@@ -446,7 +449,7 @@
             let partieTxt = partieLibelle(m.phase);
             let icon = "";
             if (m.phase == 99) icon = "🥉";
-            else if (m.phase === "finale") icon = "🎯";
+            else if (m.phase === "finale" || m.phase === 100) icon = "🎯";
             html += `<li>${icon} <b>${partieTxt}</b> — Manche <b>${m.round ?? "-"}</b> — Piste <b>${m.terrain ?? "-"}</b></li>`;
           });
           html += "</ul>";
@@ -503,25 +506,19 @@
       const loading = document.getElementById("loading");
       loading.style.display = "block";
       mainStatus.textContent = "";
-      if (!playerId) {
-        inscrireOuConnecter();
-      } else {
-        getPlayerById(playerId).then(joueur => afficher(joueur));
-      }
+        if (typeof playerId !== "undefined" && playerId) {
+          getPlayerById(playerId).then(joueur => afficher(joueur));
+        } else {
+          inscrireOuConnecter();
+        }
     });
-
-    // Mise à jour automatique
     setInterval(() => {
       if (playerId) getPlayerById(playerId).then(joueur => afficher(joueur));
     }, 10000);
-
-    // Catch global pour erreurs asynchrones
     window.addEventListener('unhandledrejection', function(event) {
       showError("Une erreur inattendue est survenue.");
-      setRefreshLoading(false);
+      if (typeof setRefreshLoading === "function") {
+        setRefreshLoading(false);
+      }
     });
-  </script>
-</body>
-</html>
-</body>
-</html>
+
