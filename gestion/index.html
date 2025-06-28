@@ -54,7 +54,7 @@
     .edit-btn:hover {
       background: #ffe066;
     }
-    .finaliste-btn, .vainqueur-btn {
+    .finaliste-btn, .vainqueur-btn, .demi-btn, .finale-btn {
       background: #0d47a1;
       color: #ffd700;
       border-radius: 4px;
@@ -64,7 +64,7 @@
       font-size: 14px;
       padding: 2px 7px;
     }
-    .finaliste-btn:hover, .vainqueur-btn:hover {
+    .finaliste-btn:hover, .vainqueur-btn:hover, .demi-btn:hover, .finale-btn:hover {
       background: #1565c0;
     }
     .export-btn {
@@ -135,17 +135,24 @@
       tbody.innerHTML = "";
       data.forEach(j => {
         const tr = document.createElement("tr");
+        // Affichage phase lisible
+        let phaseAff = j.phase;
+        if (j.phase == 99) phaseAff = "Demi-finale";
+        else if (j.phase === "finale") phaseAff = "Finale";
+        else if (!j.phase) phaseAff = "-";
         tr.innerHTML = `
           <td>${j.name}</td>
           <td>
             <span id="pts-${j.id}">${j.total_points ?? 0}</span>
             <button class="edit-btn" onclick="modifierPoints('${j.id}', '${j.total_points ?? 0}')">✏️</button>
+            <button class="demi-btn" onclick="setDemi('${j.id}')">🥉 DEMI</button>
+            <button class="finale-btn" onclick="setFinale('${j.id}')">🏅 FINALE</button>
             <button class="finaliste-btn" onclick="setFinaliste('${j.id}')">🏆 FINALISTE</button>
             <button class="vainqueur-btn" onclick="setVainqueur('${j.id}')">🥇 VAINQUEUR</button>
           </td>
           <td>${j.matches ?? 0}</td>
           <td>${j.terrain || '-'}</td>
-          <td>${j.phase || '-'}</td>
+          <td>${phaseAff}</td>
           <td>${j.round || '-'}</td>
           <td><button onclick="supprimerJoueur('${j.id}')">❌</button></td>
         `;
@@ -248,6 +255,20 @@
       await chargerJoueurs();
     }
 
+    // Ajout : bouton pour mettre en demi-finale
+    async function setDemi(id) {
+      if (!confirm("Mettre ce joueur en demi-finale (phase 99) ?")) return;
+      await supabase.from("players").update({ phase: 99 }).eq("id", id);
+      await chargerJoueurs();
+    }
+
+    // Ajout : bouton pour mettre en finale
+    async function setFinale(id) {
+      if (!confirm("Mettre ce joueur en finale (phase 'finale') ?")) return;
+      await supabase.from("players").update({ phase: "finale" }).eq("id", id);
+      await chargerJoueurs();
+    }
+
     // Export CSV - Classement
     async function exportClassementCSV() {
       showLoading(true);
@@ -260,12 +281,16 @@
         showLoading(false);
         return;
       }
-      let csv = "Rang,Joueur,Points,Matchs\n";
+      let csv = "Rang,Joueur,Points,Matchs,Phase\n";
       data.forEach((joueur, i) => {
         let nom = joueur.name;
         if (i === data.length - 1) nom = "💩 " + nom;
         if (i === data.length - 2) nom = "🫥 " + nom;
-        csv += `${i + 1},"${nom}",${joueur.total_points ?? 0},${joueur.matches ?? 0}\n`;
+        let phaseAff = joueur.phase;
+        if (joueur.phase == 99) phaseAff = "Demi-finale";
+        else if (joueur.phase === "finale") phaseAff = "Finale";
+        else if (!joueur.phase) phaseAff = "-";
+        csv += `${i + 1},"${nom}",${joueur.total_points ?? 0},${joueur.matches ?? 0},${phaseAff}\n`;
       });
       downloadCSV(csv, "classement_finger_game.csv");
       showLoading(false);
@@ -279,7 +304,11 @@
       }
       let csv = "Nom,Points,Matches,Piste,Phase,Round\n";
       filteredData.forEach(j => {
-        csv += `"${j.name}",${j.total_points ?? 0},${j.matches ?? 0},${j.terrain ?? ""},${j.phase ?? ""},${j.round ?? ""}\n`;
+        let phaseAff = j.phase;
+        if (j.phase == 99) phaseAff = "Demi-finale";
+        else if (j.phase === "finale") phaseAff = "Finale";
+        else if (!j.phase) phaseAff = "-";
+        csv += `"${j.name}",${j.total_points ?? 0},${j.matches ?? 0},${j.terrain ?? ""},${phaseAff},${j.round ?? ""}\n`;
       });
       downloadCSV(csv, "liste_joueurs_finger_game.csv");
     }
@@ -298,7 +327,11 @@
       }
       let csv = "Nom,Piste,Phase,Round\n";
       data.forEach(j => {
-        csv += `"${j.players?.name ?? ""}",${j.terrain ?? ""},${j.phase ?? ""},${j.round ?? ""}\n`;
+        let phaseAff = j.phase;
+        if (j.phase == 99) phaseAff = "Demi-finale";
+        else if (j.phase === "finale") phaseAff = "Finale";
+        else if (!j.phase) phaseAff = "-";
+        csv += `"${j.players?.name ?? ""}",${j.terrain ?? ""},${phaseAff},${j.round ?? ""}\n`;
       });
       downloadCSV(csv, "planning_finger_game.csv");
       showLoading(false);
@@ -329,6 +362,8 @@
     window.exportPlanningCSV = exportPlanningCSV;
     window.setFinaliste = setFinaliste;
     window.setVainqueur = setVainqueur;
+    window.setDemi = setDemi;
+    window.setFinale = setFinale;
     window.filtrerJoueurs = filtrerJoueurs;
   </script>
 </head>
