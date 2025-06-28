@@ -445,6 +445,14 @@
           round: '🏁 Demi Finale',
           terrain: slots[idx].terrain
         }).eq("id", joueur.id);
+
+        // Ajout dans matches pour la demi-finale
+        await supabase.from("matches").insert({
+          player_id: joueur.id,
+          phase: 99,
+          round: '🏁 Demi Finale',
+          terrain: slots[idx].terrain
+        });
       }
       alert("🏁 Demi-finale générée avec les " + nb + " premiers du classement !");
       afficherPlanning();
@@ -489,6 +497,14 @@
           terrain: 1,
           total_points: "FINALISTE"
         }).eq("id", joueur.id);
+
+        // Ajout dans matches pour la finale
+        await supabase.from("matches").insert({
+          player_id: joueur.id,
+          phase: "finale",
+          round: '🏁 Grande Finale',
+          terrain: 1
+        });
       }
       alert("Finale manuelle enregistrée !");
       afficherPlanning();
@@ -532,6 +548,15 @@
           round: '🏁 Demi Finale',
           terrain: terrain
         }).eq("id", finalistes[i].id);
+
+        // Ajout dans matches pour la demi-finale manuelle
+        await supabase.from("matches").insert({
+          player_id: finalistes[i].id,
+          phase: 99,
+          round: '🏁 Demi Finale',
+          terrain: terrain
+        });
+
         if ((i + 1) % getJoueursParSlot() === 0) terrain++;
       }
       alert("Demi-finale manuelle enregistrée !");
