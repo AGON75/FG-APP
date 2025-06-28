@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<<!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
@@ -24,6 +24,8 @@
     .table-container {
       overflow-x: auto;
       width: 100%;
+      margin: 0 auto;
+      max-width: 800px;
     }
     table {
       margin: 30px auto;
@@ -99,26 +101,32 @@
       display: none;
     }
     @media (max-width: 600px) {
-      .table-container { width: 100%; }
-      table { min-width: 350px; }
+      .table-container {
+        width: 100vw;
+        padding: 0;
+      }
+      table {
+        min-width: 350px;
+        font-size: 14px;
+      }
     }
   </style>
 </head>
 <body>
-  <img src="../assets/FingerGame_logo_blanc_tagline.png" alt="Finger Game">
+  <img src="../assets/FingerGame_logo_blanc_tagline.png" alt="Finger Game" />
   <h1 id="main-title" aria-label="Classement général du Finger Game">📊 Classement Général</h1>
-  <button id="admin-btn" style="display:none;" aria-label="Sélection du nombre de demi-finalistes">Sélection NB en demi-finale</button>
+  <button id="admin-btn" style="display:none;" aria-label="Définir le nombre de qualifiés en demi-finale">Sélection NB en demi-finale</button>
   <button onclick="afficherClassement()" aria-label="Rafraîchir le classement">🔄 Rafraîchir</button>
-  <div id="loading" role="status" aria-live="polite">Chargement...</div>
-  <div class="table-container">
-    <table aria-label="Tableau du classement général">
+  <div id="loading">Chargement...</div>
+  <div class="table-container" role="region" aria-labelledby="main-title">
+    <table aria-describedby="main-title">
       <thead>
         <tr>
-          <th>Rang</th>
-          <th>Joueur</th>
-          <th>Points</th>
-          <th>Matchs</th>
-          <th>Statut</th>
+          <th scope="col">Rang</th>
+          <th scope="col">Joueur</th>
+          <th scope="col">Points</th>
+          <th scope="col">Matchs</th>
+          <th scope="col">Statut</th>
         </tr>
       </thead>
       <tbody id="classement"></tbody>
@@ -139,70 +147,57 @@
       nbDemiFinale = parseInt(localStorage.getItem("nbDemiFinale"), 10) || 5;
     }
 
-    // --- Tri robuste avec gestion des statuts spéciaux ---
     function classementSort(a, b) {
-      const getRankValue = joueur => {
-        if (joueur.total_points === "VAINQUEUR") return 1000000;
-        if (joueur.phase === "finale") return 900000;
-        if (joueur.phase == 99) return 800000 + (parseInt(joueur.total_points, 10) || 0);
-        return parseInt(joueur.total_points, 10) || 0;
-      };
-      return getRankValue(b) - getRankValue(a);
+      // Vainqueur > Finaliste > Demi > score
+      if (a.total_points === "VAINQUEUR" && b.total_points !== "VAINQUEUR") return -1;
+      if (b.total_points === "VAINQUEUR" && a.total_points !== "VAINQUEUR") return 1;
+      if (a.phase === "finale" && b.phase !== "finale") return -1;
+      if (b.phase === "finale" && a.phase !== "finale") return 1;
+      if (a.phase == 99 && b.phase != 99) return -1;
+      if (b.phase == 99 && a.phase != 99) return 1;
+      const pa = isNaN(parseInt(a.total_points, 10)) ? -Infinity : parseInt(a.total_points, 10);
+      const pb = isNaN(parseInt(b.total_points, 10)) ? -Infinity : parseInt(b.total_points, 10);
+      return pb - pa;
     }
 
-    // --- Récupère le nombre de matchs depuis la table matches ---
-    async function getNbMatchesByPlayer() {
+    async function getMatchesCountByPlayer() {
+      // Connexion à la table matches pour compter les matchs joués par joueur
       const { data, error } = await supabase
         .from("matches")
-        .select("player_id, count:player_id")
-        .group("player_id");
+        .select("player_id", { count: "exact", head: false });
+
       if (error) return {};
-      const map = {};
-      (data || []).forEach(row => {
-        map[row.player_id] = row.count;
+      const counts = {};
+      data.forEach(m => {
+        counts[m.player_id] = (counts[m.player_id] || 0) + 1;
       });
-      return map;
+      return counts;
     }
 
     async function afficherClassement() {
       document.getElementById("loading").style.display = "block";
       try {
-        // Récupère tous les joueurs
+        // Récupère les joueurs
         const { data: players, error } = await supabase
           .from("players")
           .select("id, name, total_points, matches, phase");
-        if (error || !players) throw error || new Error("Aucun joueur trouvé");
 
-        // Récupère le nombre de matches réels depuis la table matches
-        const matchesMap = await getNbMatchesByPlayer();
+        if (error || !players) throw error || new Error("Aucun joueur trouvé.");
+
+        // Récupère le nombre de matches depuis la table matches
+        const matchesCount = await getMatchesCountByPlayer();
 
         // Trie les joueurs
         const sorted = [...players].sort(classementSort);
 
-        // Affichage des égalités (même rang pour scores identiques)
-        let lastPoints = null, lastRank = 0, rang = 1;
+        // Affichage des égalités de rang
+        let lastPoints = null, lastPhase = null, rang = 0, egalite = 1;
+
         const tbody = document.getElementById("classement");
         tbody.innerHTML = "";
 
         sorted.forEach((joueur, i) => {
-          // Statut
-          let statut = "";
-          if (joueur.total_points === "VAINQUEUR") statut = "Vainqueur";
-          else if (joueur.phase === "finale") statut = "Finaliste";
-          else if (joueur.phase == 99 && i < nbDemiFinale) statut = "Demi-finaliste";
-          else statut = "";
-
-          // Rang avec égalités
-          let pointsNum = isNaN(parseInt(joueur.total_points, 10)) ? -Infinity : parseInt(joueur.total_points, 10);
-          if (pointsNum !== lastPoints) {
-            rang = i + 1;
-            lastPoints = pointsNum;
-            lastRank = rang;
-          } else {
-            rang = lastRank;
-          }
-
-          // Ligne demi-finale
+          // Affichage du bandeau demi-finale
           if (i === nbDemiFinale) {
             const trDemi = document.createElement("tr");
             trDemi.className = "ligne-demi";
@@ -210,6 +205,30 @@
             tbody.appendChild(trDemi);
           }
 
+          // Calcul du rang avec égalités
+          let pointsNum = isNaN(parseInt(joueur.total_points, 10)) ? -Infinity : parseInt(joueur.total_points, 10);
+          let phaseVal = joueur.phase;
+          if (
+            lastPoints !== null &&
+            pointsNum === lastPoints &&
+            phaseVal === lastPhase
+          ) {
+            egalite++;
+          } else {
+            rang = i + 1;
+            egalite = 1;
+          }
+          lastPoints = pointsNum;
+          lastPhase = phaseVal;
+
+          // Statut
+          let statut = "";
+          if (joueur.total_points === "VAINQUEUR") statut = "Vainqueur";
+          else if (joueur.phase === "finale") statut = "Finaliste";
+          else if (joueur.phase == 99 && i < nbDemiFinale) statut = "Demi-finaliste";
+          else statut = "";
+
+          // Style
           const tr = document.createElement("tr");
           if (joueur.total_points === "VAINQUEUR") {
             tr.classList.add("vainqueur");
@@ -225,26 +244,23 @@
           if (i === sorted.length - 1) nom = "💩 " + nom;
           if (i === sorted.length - 2) nom = "🫥 " + nom;
 
-          // Nombre de matches réel (table matches) ou fallback sur players.matches
-          const nbMatches = matchesMap[joueur.id] !== undefined
-            ? matchesMap[joueur.id]
-            : (parseInt(joueur.matches, 10) || 0);
-
           tr.innerHTML = `
-            <td>${rang}</td>
+            <td>${rang}${egalite > 1 ? "=" : ""}</td>
             <td>${nom}</td>
             <td>${joueur.total_points ?? 0}</td>
-            <td>${nbMatches}</td>
+            <td>${matchesCount[joueur.id] ?? (parseInt(joueur.matches, 10) || 0)}</td>
             <td>${statut}</td>
           `;
           tbody.appendChild(tr);
         });
 
-        document.getElementById("loading").style.display = "none";
+        if (sorted.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="5">Aucun joueur inscrit.</td></tr>`;
+        }
       } catch (e) {
-        document.getElementById("loading").style.display = "none";
-        document.getElementById("classement").innerHTML = `<tr><td colspan="5">Erreur de connexion ou aucun joueur. Vérifiez votre réseau ou la base.</td></tr>`;
+        document.getElementById("classement").innerHTML = `<tr><td colspan="5">Erreur de connexion. Veuillez vérifier votre réseau.</td></tr>`;
       }
+      document.getElementById("loading").style.display = "none";
     }
 
     // --- ADMIN BUTTON LOGIC ---
@@ -273,12 +289,8 @@
       afficherClassement();
     };
 
-    // Accessibilité : focus sur le titre au chargement
-    window.onload = () => {
-      document.getElementById("main-title").focus();
-      afficherClassement();
-    };
     window.afficherClassement = afficherClassement;
+    afficherClassement();
   </script>
 </body>
 </html>
