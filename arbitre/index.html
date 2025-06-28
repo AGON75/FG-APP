@@ -5,6 +5,7 @@
   <title>Arbitre – Finger Game</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
+    /* ...styles identiques... */
     body {
       background: linear-gradient(to right, #0d47a1, #b71c1c);
       color: white;
@@ -99,6 +100,16 @@
       color: #fff;
       font-size: 15px;
     }
+    .elim-list {
+      margin: 20px auto 0 auto;
+      max-width: 400px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 8px;
+      padding: 10px;
+      color: #ffd700;
+      font-size: 16px;
+      text-align: left;
+    }
     @media (max-width: 700px) {
       .player-grid {
         flex-direction: column;
@@ -184,6 +195,7 @@
 
       eliminatedOrder = [];
       renderPlayers();
+      renderElimines();
       showLoading(false);
     }
 
@@ -320,8 +332,21 @@
       } else {
         document.getElementById("ordre").textContent = `${eliminatedOrder.length} / ${players.length} éliminés`;
       }
-      // Historique rapide
       document.getElementById("historique").innerHTML = historique.slice(-5).map(h => `<div>${h}</div>`).join("");
+    }
+
+    function renderElimines() {
+      // Affiche la liste des joueurs éliminés avec le terrain
+      const elimDiv = document.getElementById("elimines");
+      elimDiv.innerHTML = "";
+      if (eliminatedOrder.length === 0) return;
+      const ul = document.createElement("ul");
+      ul.className = "elim-list";
+      eliminatedOrder.forEach((id, idx) => {
+        const p = players.find(x => x.id === id);
+        ul.innerHTML += `<li>${idx + 1}. ${p ? p.name : id} (Piste ${currentTerrain})</li>`;
+      });
+      elimDiv.appendChild(ul);
     }
 
     function toggleElimination(id) {
@@ -339,6 +364,7 @@
         }
       }
       renderPlayers();
+      renderElimines();
     }
 
     async function validerManche() {
@@ -389,7 +415,6 @@
         }
       }
 
-      // Historique rapide
       historique.push(`Manche validée (${players.length} joueurs) : ${eliminatedOrder.map(id => {
         const p = players.find(x => x.id === id);
         return p ? p.name : id;
@@ -399,6 +424,7 @@
       players = [];
       eliminatedOrder = [];
       renderPlayers();
+      renderElimines();
       await chargerJoueurs();
     }
 
@@ -422,15 +448,23 @@
       const r = document.getElementById("round");
       for (let i = 1; i <= 5; i++) {
         t.innerHTML += `<option value="${i}">Piste ${i}</option>`;
-        p.innerHTML += `<option value="${i}">Phase ${i}</option>`;
+        p.innerHTML += `<option value="${i}">Partie ${i}</option>`;
       }
-      p.innerHTML += `<option value="99">Demi-finale</option>`;
-      p.innerHTML += `<option value="finale">Finale manuelle</option>`;
-      r.innerHTML += `<option value="C">C</option>`;
-      r.innerHTML += `<option value="F">Demi Finale</option>`;
+      // Ajout unique de la demi-finale avec emoji
+      p.innerHTML += `<option value="99">🏁 Demi-finale</option>`;
+      p.innerHTML += `<option value="finale">🏆 Finale manuelle</option>`;
+
+      // Ajout dynamique des manches A à H
+      ["A","B","C","D","E","F","G","H"].forEach(m => {
+        if (![...r.options].some(opt => opt.value === m)) {
+          r.innerHTML += `<option value="${m}">Manche ${m}</option>`;
+        }
+      });
+      // Ajout des manches spéciales si besoin
       r.innerHTML += `<option value="FM">Finale du Tournoi</option>`;
       r.innerHTML += `<option value="🏁 Demi Finale">🏁 Demi Finale</option>`;
       r.innerHTML += `<option value="🏁 Grande Finale">🏁 Grande Finale</option>`;
+
       await chargerAllPlayerNames();
       await chargerJoueurs();
     };
@@ -451,13 +485,10 @@
     <button onclick="ajouterJoueurArbitre()">Ajouter ce joueur à la manche</button>
   </div>
 
-  <label>Phase :</label>
+  <label>Partie :</label>
   <select id="phase" onchange="chargerJoueurs()"></select>
-  <label>Round :</label>
-  <select id="round" onchange="chargerJoueurs()">
-    <option value="A">A</option>
-    <option value="B">B</option>
-  </select>
+  <label>Manche :</label>
+  <select id="round" onchange="chargerJoueurs()"></select>
   <label>Piste :</label>
   <select id="terrain" onchange="chargerJoueurs()"></select>
   <button onclick="chargerJoueurs()">🔄 Rafraîchir</button>
@@ -468,7 +499,8 @@
   <div id="attendus"></div>
   <div id="joueurs"></div>
   <p id="ordre"></p>
-  <div id="historique"></div>
   <button onclick="validerManche()">✅ Valider la manche</button>
+  <div id="elimines"></div>
+  <div id="historique"></div>
 </body>
 </html>
