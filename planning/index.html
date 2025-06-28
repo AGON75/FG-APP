@@ -482,7 +482,7 @@
         }
         finalistes.push(joueur);
       }
-      await supabase.from("players").update({ phase: null, round: null, terrain: null }).neq("id", "");
+      await supabase.from("players").update({ phase: null, round: null, terrain: null });
       for (const joueur of finalistes) {
         await supabase.from("players").update({
           phase: 100,
