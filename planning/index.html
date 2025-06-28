@@ -112,19 +112,17 @@
       return parseInt(document.getElementById("phaseSelect").value, 10);
     }
 
-    // Générer une seule phase à la fois (phase sélectionnée)
+    // Générer une seule phase à la fois (phase sélectionnée) et stocker dans matches
     async function genererPhase() {
-      const { data: joueurs } = await supabase.from("players").select("*");
+      const { data: joueurs } = await supabase.from("players").select("id");
       if (!joueurs || joueurs.length < 1) {
         alert("Aucun joueur inscrit !");
         return;
       }
       const phase = getPhaseSelectionnee();
 
-      // Supprimer les affectations existantes pour cette phase
-      await supabase.from("players")
-        .update({ phase: null, round: null, terrain: null })
-        .eq("phase", phase);
+      // Supprimer les matches existants pour cette phase
+      await supabase.from("matches").delete().eq("phase", phase);
 
       const joueursParSlot = getJoueursParSlot();
       const nbTerrains = getNbTerrains();
@@ -155,18 +153,53 @@
         slots[idx].joueurs.push(joueur);
       }
 
-      // Mise à jour en base pour chaque joueur de la phase
+      // Insertion en base pour chaque joueur de la phase dans matches
       for (const slot of slots) {
         for (const joueur of slot.joueurs) {
-          await supabase.from("players")
-            .update({ phase, round: slot.round, terrain: slot.terrain })
-            .eq("id", joueur.id);
+          await supabase.from("matches").insert({
+            player_id: joueur.id,
+            phase,
+            round: slot.round,
+            terrain: slot.terrain
+          });
         }
       }
       afficherPlanning();
     }
 
+    // Affichage du planning depuis la table matches
+    async function afficherPlanning() {
+      const phase = getPhaseSelectionnee();
+      const { data } = await supabase
+        .from("matches")
+        .select("player_id, phase, round, terrain, players(name)")
+        .eq("phase", phase)
+        .order("round, terrain");
+      const grouped = {};
+      for (const match of data || []) {
+        let key = `Phase ${match.phase} – Round ${match.round} – Piste ${match.terrain}`;
+        if (!grouped[key]) grouped[key] = [];
+        grouped[key].push(match.players?.name ?? "");
+      }
+      const tbody = document.getElementById("dispatch");
+      if (!tbody) return;
+      tbody.innerHTML = "";
+      for (const bloc in grouped) {
+        const header = document.createElement("tr");
+        header.className = "phase-header";
+        header.innerHTML = `<th colspan="2">${bloc}</th>`;
+        tbody.appendChild(header);
+        for (const name of grouped[bloc]) {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `<td>${name}</td><td></td>`;
+          tbody.appendChild(tr);
+        }
+      }
+    }
+
+    // Les autres fonctions restent inchangées (elles utilisent encore la table players)
     async function genererDemiFinale() {
+      // ... inchangé ...
       const { data, error } = await supabase
         .from("players")
         .select("*")
@@ -222,6 +255,7 @@
     }
 
     async function finaleManuelle() {
+      // ... inchangé ...
       const { data: allPlayers } = await supabase.from("players").select("id, name");
       if (!allPlayers || allPlayers.length === 0) {
         alert("Aucun joueur inscrit !");
@@ -267,6 +301,7 @@
     window.finaleManuelle = finaleManuelle;
 
     async function demiFinaleManuelle() {
+      // ... inchangé ...
       const { data: allPlayers } = await supabase.from("players").select("id, name");
       if (!allPlayers || allPlayers.length === 0) {
         alert("Aucun joueur inscrit !");
@@ -311,41 +346,8 @@
     }
     window.demiFinaleManuelle = demiFinaleManuelle;
 
-    // MODIFICATION : filtrage de l'affichage selon la phase sélectionnée
-    async function afficherPlanning() {
-      const phase = getPhaseSelectionnee();
-      const { data } = await supabase.from("players").select("name, terrain, phase, round, total_points").order("phase, round, terrain");
-      const grouped = {};
-      for (const joueur of data) {
-        if (!joueur.phase || joueur.phase != phase) continue; // filtre la phase sélectionnée
-        let key = "";
-        if (joueur.phase === "finale") {
-          key = "🏁 Grande Finale";
-        } else if (joueur.phase == 99 || joueur.round === "🏁 Demi Finale") {
-          key = "🏁 Demi Finale";
-        } else {
-          key = `Phase ${joueur.phase} – Round ${joueur.round} – Piste ${joueur.terrain}`;
-        }
-        if (!grouped[key]) grouped[key] = [];
-        grouped[key].push(joueur);
-      }
-      const tbody = document.getElementById("dispatch");
-      if (!tbody) return; // Sécurité pour éviter l'erreur JS
-      tbody.innerHTML = "";
-      for (const bloc in grouped) {
-        const header = document.createElement("tr");
-        header.className = "phase-header";
-        header.innerHTML = `<th colspan="2">${bloc}</th>`;
-        tbody.appendChild(header);
-        for (const joueur of grouped[bloc]) {
-          const tr = document.createElement("tr");
-          tr.innerHTML = `<td${joueur.total_points === "FINALISTE" ? ' class="finaliste"' : ''}>${joueur.name}</td><td>${joueur.total_points ?? ""}</td>`;
-          tbody.appendChild(tr);
-        }
-      }
-    }
-
     async function resetPlanning() {
+      await supabase.from("matches").delete().neq("phase", null);
       await supabase.from("players").update({ phase: null, round: null, terrain: null });
       const tbody = document.getElementById("dispatch");
       if (tbody) tbody.innerHTML = "";
@@ -358,7 +360,6 @@
     window.onload = afficherPlanning;
     window.demiFinaleManuelle = demiFinaleManuelle;
 
-    // Ajout : rafraîchir l'affichage quand on change la phase
     document.addEventListener("DOMContentLoaded", () => {
       document.getElementById("phaseSelect").addEventListener("change", afficherPlanning);
     });
