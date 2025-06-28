@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Joueur - Finger Game</title>
+  <link rel="icon" type="image/png" href="../assets/FingerGame_logo_blanc_tagline.png">
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
@@ -13,13 +14,33 @@
       padding: 30px;
       margin: 0;
     }
+    nav {
+      display: flex;
+      justify-content: center;
+      gap: 18px;
+      margin-bottom: 18px;
+      flex-wrap: wrap;
+    }
+    nav a {
+      color: #ffd700;
+      background: rgba(0,0,0,0.18);
+      padding: 10px 18px;
+      border-radius: 8px;
+      font-weight: bold;
+      font-size: 18px;
+      text-decoration: none;
+      margin: 4px 0;
+      transition: background 0.2s, color 0.2s;
+    }
+    nav a:focus, nav a:hover {
+      background: #ffd700;
+      color: #0d47a1;
+      outline: none;
+    }
     img {
       width: 200px;
       margin-top: 20px;
       max-width: 90%;
-    }
-    h1 {
-      margin: 10px 0;
     }
     .main-status {
       margin-top: 30px;
@@ -58,32 +79,36 @@
       color: #fff;
       border: 2px solid #fff;
     }
+    .btn-bar {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 16px;
+      margin: 20px 0 10px 0;
+    }
     button {
-      margin: 15px 10px;
-      padding: 12px 24px;
-      font-size: 18px;
+      margin: 0;
+      padding: 16px 28px;
+      font-size: 20px;
       font-weight: bold;
-      border-radius: 8px;
+      border-radius: 10px;
       border: none;
       cursor: pointer;
       background: #444;
       color: white;
-      transition: background 0.2s, color 0.2s;
+      transition: background 0.2s, color 0.2s, transform 0.1s;
       box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-    }
-    button:hover, button:focus {
-      background: #ffd700;
-      color: #0d47a1;
       outline: none;
     }
-    a {
-      display: inline-block;
-      margin-top: 10px;
-      color: #ffd700;
-      text-decoration: underline;
-      font-weight: bold;
-      font-size: 18px;
-      margin-right: 10px;
+    button:focus {
+      outline: 3px solid #ffd700;
+      outline-offset: 2px;
+      background: #222;
+    }
+    button:hover {
+      background: #ffd700;
+      color: #0d47a1;
+      transform: scale(1.04);
     }
     #terrain-table {
       margin-top: 30px;
@@ -151,13 +176,23 @@
       100% { opacity: 0.5; }
     }
     @media (max-width: 700px) {
+      nav {
+        flex-direction: column;
+        gap: 8px;
+      }
       .main-status, #terrain-table, #prochaines-manches {
         font-size: 18px;
         padding: 8px;
       }
+      .btn-bar {
+        flex-direction: column;
+        gap: 12px;
+      }
       button {
-        font-size: 16px;
-        padding: 10px 10px;
+        font-size: 18px;
+        padding: 18px 0;
+        width: 100%;
+        margin-bottom: 8px;
       }
       #terrain-table th, #terrain-table td {
         padding: 6px;
@@ -167,19 +202,31 @@
         font-size: 15px;
         padding: 6px 8px;
       }
+      nav a {
+        font-size: 16px;
+        padding: 10px 0;
+        width: 100%;
+      }
     }
   </style>
 </head>
 <body>
   <img src="../assets/FingerGame_logo_blanc_tagline.png" alt="Finger Game">
 
+  <nav aria-label="Navigation principale">
+    <a href="index.html" aria-label="Espace joueur" tabindex="0">🏠 Joueur</a>
+    <a href="../classement/index.html" aria-label="Voir le classement" tabindex="0">📊 Classement</a>
+    <a href="../planning/index.html" aria-label="Voir le planning" tabindex="0">📅 Planning</a>
+    <a href="../regles/index.html" aria-label="Voir les règles du jeu" tabindex="0">📜 Règles</a>
+  </nav>
+
   <div id="main-status" class="main-status statut-normal" aria-live="polite"></div>
   <div id="loading" style="display:none;">Chargement...</div>
 
-  <button onclick="location.reload()" aria-label="Afficher la prochaine manche">📘 Afficher la prochaine manche</button>
-  <button onclick="changerDeJoueur()" aria-label="Changer de joueur">🔄 Changer de joueur</button><br>
-  <a href="../classement/index.html" aria-label="Voir le classement">📊 Voir le classement</a>
-  <a href="../regles/index.html" aria-label="Voir les règles du jeu">📜 Règles du jeu</a>
+  <div class="btn-bar">
+    <button onclick="location.reload()" aria-label="Afficher la prochaine manche">📘 Afficher la prochaine manche</button>
+    <button onclick="changerDeJoueur()" aria-label="Changer de joueur">🔄 Changer de joueur</button>
+  </div>
 
   <table id="terrain-table" style="display:none"></table>
   <div id="prochaines-manches"></div>
@@ -196,7 +243,7 @@
     import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
 
     const supabase = createClient(
-      'https://ckolzmqarfizoxjgolft.supabase.co',
+      'https://ckolzmqarfizoxgolft.supabase.co',
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrb2x6bXFhcmZpem94amdvbGZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk2Nzg3NTYsImV4cCI6MjA2NTI1NDc1Nn0.ZlpERz1uznM0fn--GR9YgM2vjwe_kw-qiPF8KHJvMpI'
     )
 
@@ -401,5 +448,4 @@
     }, 10000);
   </script>
 </body>
-</html>
 </html>
