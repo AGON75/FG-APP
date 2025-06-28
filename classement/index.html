@@ -212,13 +212,11 @@
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrb2x6bXFhcmZpem94amdvbGZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk2Nzg3NTYsImV4cCI6MjA2NTI1NDc1Nn0.ZlpERz1uznM0fn--GR9YgM2vjwe_kw-qiPF8KHJvMpI'
     )
 
-    // --- PERSISTANCE LOCALSTORAGE ---
     let nbDemiFinale = 5;
     if (localStorage.getItem("nbDemiFinale")) {
       nbDemiFinale = parseInt(localStorage.getItem("nbDemiFinale"), 10) || 5;
     }
 
-    // Pagination
     const PAGE_SIZE = 20;
     let currentPage = 1;
     let filteredSorted = [];
@@ -237,18 +235,22 @@
     }
 
     async function getMatchesCountByPlayer() {
-      const { data, error } = await supabase
-        .from("matches")
-        .select("player_id, created_at", { count: "exact", head: false });
-      if (error) return {};
-      const counts = {};
-      const details = {};
-      data.forEach(m => {
-        counts[m.player_id] = (counts[m.player_id] || 0) + 1;
-        if (!details[m.player_id]) details[m.player_id] = [];
-        details[m.player_id].push(m.created_at);
-      });
-      return { counts, details };
+      try {
+        const { data, error } = await supabase
+          .from("matches")
+          .select("player_id, created_at");
+        if (error || !data) return { counts: {}, details: {} };
+        const counts = {};
+        const details = {};
+        data.forEach(m => {
+          counts[m.player_id] = (counts[m.player_id] || 0) + 1;
+          if (!details[m.player_id]) details[m.player_id] = [];
+          details[m.player_id].push(m.created_at);
+        });
+        return { counts, details };
+      } catch {
+        return { counts: {}, details: {} };
+      }
     }
 
     function getEvolution(joueur, classementActuel) {
@@ -280,10 +282,8 @@
 
         const { counts: matchesCount, details: matchesDetails } = await getMatchesCountByPlayer();
 
-        // Trie les joueurs
         let sorted = [...players].sort(classementSort);
 
-        // Recherche/filtrage
         const search = document.getElementById("search").value.trim().toLowerCase();
         if (search) {
           sorted = sorted.filter(j => j.name.toLowerCase().includes(search));
@@ -292,14 +292,12 @@
         filteredSorted = sorted;
         updateStats(sorted, matchesCount);
 
-        // Pagination
         const totalPages = Math.ceil(sorted.length / PAGE_SIZE) || 1;
         if (currentPage > totalPages) currentPage = totalPages;
         const start = (currentPage - 1) * PAGE_SIZE;
         const end = start + PAGE_SIZE;
         const pageJoueurs = sorted.slice(start, end);
 
-        // Affichage des égalités de rang
         let lastPoints = null, lastPhase = null, rang = 0, egalite = 1;
 
         const tbody = document.getElementById("classement");
@@ -314,7 +312,6 @@
             tbody.appendChild(trDemi);
           }
 
-          // Calcul du rang avec égalités
           let pointsNum = isNaN(parseInt(joueur.total_points, 10)) ? -Infinity : parseInt(joueur.total_points, 10);
           let phaseVal = joueur.phase;
           if (
@@ -330,14 +327,12 @@
           lastPoints = pointsNum;
           lastPhase = phaseVal;
 
-          // Statut
           let statut = "";
           if (joueur.total_points === "VAINQUEUR") statut = "Vainqueur";
           else if (joueur.phase === "finale") statut = "Finaliste";
           else if (joueur.phase == 99 && i < nbDemiFinale) statut = "Demi-finaliste";
           else statut = "";
 
-          // Style
           const tr = document.createElement("tr");
           if (joueur.total_points === "VAINQUEUR") {
             tr.classList.add("vainqueur");
@@ -353,7 +348,6 @@
           if (i === sorted.length - 1) nom = "💩 " + nom;
           if (i === sorted.length - 2) nom = "🫥 " + nom;
 
-          // Détail des matchs bouton
           const detailsBtn = `<button class="details-btn" aria-label="Voir les matchs de ${nom}" onclick="window.showDetails('${joueur.id}','${encodeURIComponent(nom)}')">📋</button>`;
 
           tr.innerHTML = `
@@ -366,7 +360,6 @@
           tbody.appendChild(tr);
         });
 
-        // Pagination info
         document.getElementById("pagination-info").textContent =
           `Page ${currentPage} / ${Math.ceil(sorted.length / PAGE_SIZE) || 1}`;
 
@@ -374,7 +367,6 @@
           tbody.innerHTML = `<tr><td colspan="5">Aucun joueur inscrit.</td></tr>`;
         }
 
-        // Stocke le classement pour l'évolution
         localStorage.setItem("classementPrev", JSON.stringify(sorted));
       } catch (e) {
         document.getElementById("classement").innerHTML = `<tr><td colspan="5">Erreur de connexion. Veuillez vérifier votre réseau.</td></tr>`;
@@ -382,32 +374,35 @@
       document.getElementById("loading").style.display = "none";
     }
 
-    // Détail des matchs d'un joueur (popup)
     window.showDetails = async function(playerId, playerName) {
-      const { data, error } = await supabase
-        .from("matches")
-        .select("created_at, phase, round, terrain")
-        .eq("player_id", playerId)
-        .order("created_at", { ascending: false });
-      let html = `<div class="details-popup"><h3>Matchs de ${decodeURIComponent(playerName)}</h3>`;
-      if (error || !data || !data.length) {
-        html += "<p>Aucun match trouvé.</p>";
-      } else {
-        html += "<ul style='text-align:left;'>";
-        data.forEach(m => {
-          html += `<li>${new Date(m.created_at).toLocaleString()} — Phase ${m.phase}, Round ${m.round}, Piste ${m.terrain}</li>`;
-        });
-        html += "</ul>";
+      try {
+        const { data, error } = await supabase
+          .from("matches")
+          .select("created_at, phase, round, terrain")
+          .eq("player_id", playerId)
+          .order("created_at", { ascending: false });
+        let html = `<div class="details-popup"><h3>Matchs de ${decodeURIComponent(playerName)}</h3>`;
+        if (error || !data || !data.length) {
+          html += "<p>Aucun match trouvé.</p>";
+        } else {
+          html += "<ul style='text-align:left;'>";
+          data.forEach(m => {
+            html += `<li>${new Date(m.created_at).toLocaleString()} — Phase ${m.phase}, Round ${m.round}, Piste ${m.terrain}</li>`;
+          });
+          html += "</ul>";
+        }
+        html += `<button onclick="window.closePopup()">Fermer</button></div>`;
+        document.getElementById("popup").innerHTML = html;
+        document.getElementById("popup").style.display = "block";
+      } catch {
+        document.getElementById("popup").innerHTML = "<div class='details-popup'><p>Erreur lors de la récupération des matchs.</p><button onclick='window.closePopup()'>Fermer</button></div>";
+        document.getElementById("popup").style.display = "block";
       }
-      html += `<button onclick="window.closePopup()">Fermer</button></div>`;
-      document.getElementById("popup").innerHTML = html;
-      document.getElementById("popup").style.display = "block";
     };
     window.closePopup = function() {
       document.getElementById("popup").style.display = "none";
     };
 
-    // Export CSV
     document.getElementById("export-btn").onclick = function() {
       let csv = "Rang,Joueur,Points,Matchs,Statut\n";
       let lastPoints = null, lastPhase = null, rang = 0, egalite = 1;
@@ -444,7 +439,6 @@
       URL.revokeObjectURL(url);
     };
 
-    // Pagination
     document.getElementById("prev-btn").onclick = function() {
       if (currentPage > 1) {
         currentPage--;
@@ -458,13 +452,11 @@
       }
     };
 
-    // Recherche live
     document.getElementById("search").oninput = function() {
       currentPage = 1;
       afficherClassement();
     };
 
-    // --- ADMIN BUTTON LOGIC ---
     const adminBtn = document.getElementById("admin-btn");
     window.addEventListener("keydown", (e) => {
       if (e.ctrlKey && e.altKey && e.key === "a") {
