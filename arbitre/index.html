@@ -21,13 +21,22 @@
     h1 {
       margin-top: 10px;
     }
-    select, button {
+    select, button, input, datalist {
       font-size: 16px;
       padding: 10px;
       margin: 10px 5px;
     }
+    .player-grid {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 20px;
+    }
     .player-button {
-      display: inline-block;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
       margin: 6px;
       padding: 10px 16px;
       border-radius: 6px;
@@ -36,13 +45,16 @@
       color: white;
       font-size: 16px;
       cursor: pointer;
+      min-width: 120px;
+      min-height: 48px;
+      box-sizing: border-box;
     }
     .eliminated {
       background-color: #b71c1c !important;
       text-decoration: line-through;
     }
     .score-btn {
-      margin-left: 6px;
+      margin: 4px 2px 0 2px;
       font-size: 13px;
       padding: 2px 7px;
       border-radius: 4px;
@@ -61,6 +73,42 @@
       opacity: 0.5;
       cursor: not-allowed;
     }
+    #loading {
+      display: none;
+      color: #ffd700;
+      font-weight: bold;
+      margin: 10px 0;
+    }
+    #feedback {
+      margin: 10px 0;
+      font-weight: bold;
+      color: #ffd700;
+      min-height: 24px;
+    }
+    #attendus {
+      margin: 10px 0;
+      color: #ffd700;
+      font-weight: bold;
+    }
+    #historique {
+      margin: 20px auto 0 auto;
+      max-width: 400px;
+      background: rgba(0,0,0,0.15);
+      border-radius: 8px;
+      padding: 10px;
+      color: #fff;
+      font-size: 15px;
+    }
+    @media (max-width: 700px) {
+      .player-grid {
+        flex-direction: column;
+        align-items: center;
+      }
+      .player-button {
+        min-width: 90vw;
+        font-size: 15px;
+      }
+    }
   </style>
   <script type="module">
     import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
@@ -74,6 +122,8 @@
     let currentPhase = 1;
     let currentRound = "A";
     let currentTerrain = 1;
+    let allPlayerNames = [];
+    let historique = [];
 
     const baremes = {
       4: [20, 10, 0, -5],
@@ -85,6 +135,20 @@
       10:[40, 35, 30, 25, 20, 15, 10, 5, 0, -5]
     };
 
+    function showLoading(show) {
+      document.getElementById("loading").style.display = show ? "block" : "none";
+      Array.from(document.querySelectorAll("button,input,select")).forEach(el => {
+        el.disabled = show;
+      });
+    }
+
+    function feedback(msg, isError = false) {
+      const f = document.getElementById("feedback");
+      f.textContent = msg;
+      f.style.color = isError ? "#ff4444" : "#ffd700";
+      setTimeout(() => { f.textContent = ""; }, 2500);
+    }
+
     function isFinale() {
       return (
         (currentPhase === 99 && (currentRound === "F" || currentRound === "🏁 Demi Finale")) ||
@@ -93,75 +157,97 @@
     }
 
     async function chargerJoueurs() {
+      showLoading(true);
       const phaseValue = document.getElementById("phase").value;
       currentPhase = isNaN(phaseValue) ? phaseValue : parseInt(phaseValue);
       currentRound = document.getElementById("round").value;
       currentTerrain = parseInt(document.getElementById("terrain").value);
 
-      let query = supabase.from("players").select("*").eq("terrain", currentTerrain);
+      // Utilisation de la table matches pour la manche courante
+      const { data: matches } = await supabase
+        .from("matches")
+        .select("player_id, players(name, total_points, matches)")
+        .eq("phase", currentPhase)
+        .eq("round", currentRound)
+        .eq("terrain", currentTerrain);
 
-      // ✅ Prise en compte des rounds spéciaux pour les phases spéciales
-      if (
-        (currentPhase === 99 && (currentRound === "🏁 Demi Finale" || currentRound === "F")) ||
-        (currentPhase === 99 && currentRound === "Demi Finale")
-      ) {
-        query = query.eq("phase", 99).eq("round", "🏁 Demi Finale");
-      } else if (
-        (currentPhase === "finale" && (currentRound === "🏁 Grande Finale" || currentRound === "FM"))
-      ) {
-        query = query.eq("phase", "finale").eq("round", "🏁 Grande Finale");
-      } else {
-        if (currentPhase === "finale") {
-          query = query.eq("phase", "finale").eq("round", currentRound);
-        } else {
-          query = query.eq("phase", currentPhase).eq("round", currentRound);
-        }
-      }
+      players = (matches || []).map(m => ({
+        id: m.player_id,
+        name: m.players?.name ?? "",
+        total_points: m.players?.total_points ?? 0,
+        matches: m.players?.matches ?? 0
+      }));
 
-      const { data } = await query.order("name");
-      players = data;
+      // Nombre de joueurs attendus (depuis le planning)
+      let nbAttendus = matches ? matches.length : 0;
+      document.getElementById("attendus").textContent = `Joueurs attendus : ${nbAttendus}`;
+
       eliminatedOrder = [];
       renderPlayers();
+      showLoading(false);
+    }
+
+    async function chargerAllPlayerNames() {
+      // Pour l'autocomplétion
+      const { data } = await supabase.from("players").select("name");
+      allPlayerNames = (data || []).map(p => p.name);
+      const datalist = document.getElementById("allNames");
+      datalist.innerHTML = "";
+      allPlayerNames.forEach(n => {
+        const opt = document.createElement("option");
+        opt.value = n;
+        datalist.appendChild(opt);
+      });
     }
 
     window.ajouterJoueurArbitre = async function() {
+      showLoading(true);
       const nom = document.getElementById("ajoutNom").value.trim();
-      if (!nom) return alert("Nom requis");
-      // Génère un numéro unique comme pour l'inscription
-      const { data: existing } = await supabase.from("players").select("id, name").ilike("name", `${nom} #%`);
-      let numero = 1;
-      if (existing && existing.length > 0) {
-        const nums = existing.map(e => {
-          const m = e.name.match(/#(\d+)$/);
-          return m ? parseInt(m[1], 10) : null;
-        }).filter(n => n !== null);
-        while (nums.includes(numero)) numero++;
+      if (!nom) {
+        showLoading(false);
+        feedback("Nom requis", true);
+        return;
       }
-      const fullName = `${nom} #${numero}`;
-      let joueur;
-      const { data: found } = await supabase.from("players").select("*").eq("name", fullName);
-      if (found && found.length > 0) {
-        joueur = found[0];
-      } else {
-        const { data: inserted } = await supabase.from("players").insert({ name: fullName }).select().single();
-        joueur = inserted;
+      // Recherche du joueur existant (auto-complétion)
+      const { data: found } = await supabase.from("players").select("id").eq("name", nom).single();
+      if (!found) {
+        showLoading(false);
+        feedback("Joueur non trouvé dans la base !", true);
+        return;
       }
-      // Affecte à la phase/round/terrain courants
-      await supabase.from("players").update({
+      // Vérifie s'il est déjà dans la manche
+      const { data: matchExist } = await supabase.from("matches")
+        .select("id")
+        .eq("player_id", found.id)
+        .eq("phase", currentPhase)
+        .eq("round", currentRound)
+        .eq("terrain", currentTerrain);
+      if (matchExist && matchExist.length > 0) {
+        showLoading(false);
+        feedback("Ce joueur est déjà dans cette manche !", true);
+        return;
+      }
+      // Ajoute dans matches
+      await supabase.from("matches").insert({
+        player_id: found.id,
         phase: currentPhase,
         round: currentRound,
         terrain: currentTerrain
-      }).eq("id", joueur.id);
+      });
       document.getElementById("ajoutNom").value = "";
-      chargerJoueurs();
+      await chargerJoueurs();
+      showLoading(false);
+      feedback("Joueur ajouté !");
     }
 
     function renderPlayers() {
       const zone = document.getElementById("joueurs");
       zone.innerHTML = "";
+      const grid = document.createElement("div");
+      grid.className = "player-grid";
       players.forEach(p => {
         const btn = document.createElement("button");
-        btn.textContent = p.name;
+        btn.textContent = `${p.name} (${p.total_points} pts, ${p.matches} m)`;
         btn.className = "player-button";
         let elim = eliminatedOrder.filter(id => id === p.id).length;
         if (elim > 0) {
@@ -182,6 +268,7 @@
           let base = isNaN(parseInt(p.total_points, 10)) ? 0 : parseInt(p.total_points, 10);
           await supabase.from("players").update({ total_points: base + 10 }).eq("id", p.id);
           await chargerJoueurs();
+          feedback("+10 points !");
         };
         if (p.total_points === "FINALISTE" || p.total_points === "VAINQUEUR") plusBtn.disabled = true;
 
@@ -196,18 +283,26 @@
           let base = isNaN(parseInt(p.total_points, 10)) ? 0 : parseInt(p.total_points, 10);
           await supabase.from("players").update({ total_points: base - 5 }).eq("id", p.id);
           await chargerJoueurs();
+          feedback("-5 points !");
         };
         if (p.total_points === "FINALISTE" || p.total_points === "VAINQUEUR") minusBtn.disabled = true;
 
-        // Ajout bouton ❌ pour retirer le joueur de la manche
+        // Ajout bouton ❌ pour retirer le joueur de la manche (supprime de matches)
         const removeBtn = document.createElement("button");
         removeBtn.textContent = "❌";
         removeBtn.className = "score-btn minus";
         removeBtn.title = "Retirer ce joueur de cette manche";
         removeBtn.onclick = async (e) => {
           e.stopPropagation();
-          await supabase.from("players").update({ phase: null, round: null, terrain: null }).eq("id", p.id);
+          if (!confirm("Retirer ce joueur de cette manche ?")) return;
+          await supabase.from("matches")
+            .delete()
+            .eq("player_id", p.id)
+            .eq("phase", currentPhase)
+            .eq("round", currentRound)
+            .eq("terrain", currentTerrain);
           await chargerJoueurs();
+          feedback("Joueur retiré !");
         };
 
         const wrapper = document.createElement("span");
@@ -216,13 +311,17 @@
         wrapper.appendChild(minusBtn);
         wrapper.appendChild(removeBtn);
 
-        zone.appendChild(wrapper);
+        grid.appendChild(wrapper);
       });
+      zone.appendChild(grid);
+
       if (isFinale()) {
         document.getElementById("ordre").textContent = `${eliminatedOrder.length} éliminations / ${players.length * 2} nécessaires`;
       } else {
         document.getElementById("ordre").textContent = `${eliminatedOrder.length} / ${players.length} éliminés`;
       }
+      // Historique rapide
+      document.getElementById("historique").innerHTML = historique.slice(-5).map(h => `<div>${h}</div>`).join("");
     }
 
     function toggleElimination(id) {
@@ -243,7 +342,6 @@
     }
 
     async function validerManche() {
-      // 🛑 Confirmation avant validation
       if (!confirm("Êtes-vous sûr de vouloir valider cette manche ? Cette action est irréversible.")) return;
 
       if (isFinale()) {
@@ -252,13 +350,13 @@
         eliminatedOrder.forEach(id => counts[id]++);
         const stillIn = Object.entries(counts).filter(([id, c]) => c < 2);
         if (stillIn.length !== 1) {
-          alert("⚠ Il doit rester un seul joueur avec moins de 2 éliminations.");
+          feedback("⚠ Il doit rester un seul joueur avec moins de 2 éliminations.", true);
           return;
         }
         eliminatedOrder.push(stillIn[0][0]);
       } else {
         if (eliminatedOrder.length !== players.length - 1) {
-          alert("⚠ Il doit rester un seul joueur non éliminé.");
+          feedback("⚠ Il doit rester un seul joueur non éliminé.", true);
           return;
         }
         const winner = players.find(p => !eliminatedOrder.includes(p.id));
@@ -279,7 +377,6 @@
 
         const { data } = await supabase.from("players").select("*").eq("id", playerId).single();
         if (data) {
-          // Ne pas ajouter de points si le joueur est FINALISTE ou VAINQUEUR
           let newPoints = data.total_points;
           if (data.total_points !== "FINALISTE" && data.total_points !== "VAINQUEUR") {
             const base = isNaN(parseInt(data.total_points, 10)) ? 0 : parseInt(data.total_points, 10);
@@ -292,13 +389,34 @@
         }
       }
 
-      alert("✅ Manche enregistrée !");
+      // Historique rapide
+      historique.push(`Manche validée (${players.length} joueurs) : ${eliminatedOrder.map(id => {
+        const p = players.find(x => x.id === id);
+        return p ? p.name : id;
+      }).join(", ")}`);
+
+      feedback("✅ Manche enregistrée !");
       players = [];
       eliminatedOrder = [];
       renderPlayers();
+      await chargerJoueurs();
     }
 
-    window.onload = () => {
+    window.resetManche = async function() {
+      if (!confirm("Supprimer tous les joueurs de cette manche ?")) return;
+      showLoading(true);
+      await supabase.from("matches")
+        .delete()
+        .eq("phase", currentPhase)
+        .eq("round", currentRound)
+        .eq("terrain", currentTerrain);
+      await chargerJoueurs();
+      showLoading(false);
+      feedback("Manche réinitialisée !");
+    };
+
+    // Auto-chargement à l'ouverture + auto-complétion
+    window.onload = async () => {
       const t = document.getElementById("terrain");
       const p = document.getElementById("phase");
       const r = document.getElementById("round");
@@ -311,9 +429,10 @@
       r.innerHTML += `<option value="C">C</option>`;
       r.innerHTML += `<option value="F">Demi Finale</option>`;
       r.innerHTML += `<option value="FM">Finale du Tournoi</option>`;
-      // Ajout des rounds spéciaux pour sélection rapide
       r.innerHTML += `<option value="🏁 Demi Finale">🏁 Demi Finale</option>`;
       r.innerHTML += `<option value="🏁 Grande Finale">🏁 Grande Finale</option>`;
+      await chargerAllPlayerNames();
+      await chargerJoueurs();
     };
 
     window.chargerJoueurs = chargerJoueurs;
@@ -327,22 +446,29 @@
   </header>
 
   <div style="margin-bottom:10px;">
-    <input id="ajoutNom" placeholder="Nom et prénom" style="padding:6px;">
+    <input id="ajoutNom" placeholder="Nom et prénom" list="allNames" style="padding:6px;">
+    <datalist id="allNames"></datalist>
     <button onclick="ajouterJoueurArbitre()">Ajouter ce joueur à la manche</button>
   </div>
 
   <label>Phase :</label>
-  <select id="phase"></select>
+  <select id="phase" onchange="chargerJoueurs()"></select>
   <label>Round :</label>
-  <select id="round">
+  <select id="round" onchange="chargerJoueurs()">
     <option value="A">A</option>
     <option value="B">B</option>
   </select>
   <label>Piste :</label>
-  <select id="terrain"></select>
-  <button onclick="chargerJoueurs()">Charger les joueurs</button>
+  <select id="terrain" onchange="chargerJoueurs()"></select>
+  <button onclick="chargerJoueurs()">🔄 Rafraîchir</button>
+  <button onclick="resetManche()">🗑️ Réinitialiser la manche</button>
 
-  <div id="joueurs" style="margin-top: 20px;"></div>
+  <div id="loading">Chargement...</div>
+  <div id="feedback"></div>
+  <div id="attendus"></div>
+  <div id="joueurs"></div>
   <p id="ordre"></p>
-
-  <button
+  <div id="historique"></div>
+  <button onclick="validerManche()">✅ Valider la manche</button>
+</body>
+</html>
