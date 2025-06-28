@@ -1,9 +1,15 @@
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
 const SUPABASE_URL = "https://ckolzmqarfizoxjgolft.supabase.co";
-const SUPABASE_ANON_KEY = import.meta.env?.VITE_SUPABASE_ANON_KEY;
+const SUPABASE_ANON_KEY =
+  import.meta.env?.VITE_SUPABASE_ANON_KEY ||
+  window?.VITE_SUPABASE_ANON_KEY ||
+  undefined;
+
 if (!SUPABASE_ANON_KEY) {
-  throw new Error("Supabase anon key is missing. Please set VITE_SUPABASE_ANON_KEY in your environment variables.");
+  throw new Error(
+    "Supabase anon key is missing. Please set VITE_SUPABASE_ANON_KEY in your environment variables (for Vite), or ensure it's available as window.VITE_SUPABASE_ANON_KEY if running outside Vite."
+  );
 }
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -38,16 +44,6 @@ document.addEventListener('DOMContentLoaded', () => {
         .insert([{ name, total_points: 0, matches: 0 }])
         .select()
         .single();
-          // Standardized check for duplicate name (unique constraint violation)
-          function isDuplicateError(error) {
-            if (!error) return false;
-            // Supabase/Postgres unique violation code or message check
-            return error.code === '23505' ||
-              (error.message && (
-                error.message.toLowerCase().includes('duplicate') ||
-                error.message.toLowerCase().includes('unique constraint')
-              ));
-          }
           if (isDuplicateError(insertError)) {
             if (resultElem) resultElem.innerText = "❌ Ce nom existe déjà !";
           } else if (insertError) {
@@ -70,8 +66,10 @@ window.showCourt = function(court) {
   if (msg) msg.textContent = "You are playing on court: " + court;
 };
 
-// Show the court after registration (utility function if needed)
 window.showCourt = function(court) {
+  const msg = document.getElementById("terrainMessage");
+  if (msg) msg.textContent = "You are playing on court: " + court;
+};window.showCourt = function(court) {
   const msg = document.getElementById("terrainMessage");
   if (msg) msg.textContent = "You are playing on court: " + court;
 };
