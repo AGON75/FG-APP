@@ -1,5 +1,4 @@
-<!DOCTYPE html>
-<html lang="fr">
+tml lang="fr">
 <head>
   <meta charset="UTF-8" />
   <title>Arbitre – Finger Game</title>
@@ -120,6 +119,38 @@
       }
     }
   </style>
+</head>
+<body>
+  <header>
+    <img src="../assets/FingerGame_logo_blanc_tagline.png" alt="Finger Game" />
+    <h1>🎯 Arbitrage – Finger Game</h1>
+  </header>
+
+  <div style="margin-bottom:10px;">
+    <input id="ajoutNom" placeholder="Nom et prénom" list="allNames" style="padding:6px;">
+    <datalist id="allNames"></datalist>
+    <button onclick="ajouterJoueurArbitre()">Ajouter ce joueur à la manche</button>
+  </div>
+
+  <label>Partie :</label>
+  <select id="phase" onchange="chargerJoueurs()"></select>
+  <label>Manche :</label>
+  <select id="round" onchange="chargerJoueurs()"></select>
+  <label>Piste :</label>
+  <select id="terrain" onchange="chargerJoueurs()"></select>
+  <button onclick="chargerJoueurs()">🔄 Rafraîchir</button>
+  <button onclick="resetManche()">🗑️ Réinitialiser la manche</button>
+
+  <div id="loading">Chargement...</div>
+  <div id="feedback"></div>
+  <div id="attendus"></div>
+  <div id="joueurs"></div>
+  <p id="ordre"></p>
+  <button onclick="validerManche()">✅ Valider la manche</button>
+  <div id="elimines"></div>
+  <div id="historique"></div>
+</body>
+</html>  <div id="historique"></div>
   <script type="module">
     import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
     const supabase = createClient(
@@ -488,35 +519,5 @@
     window.chargerJoueurs = chargerJoueurs;
     window.validerManche = validerManche;
   </script>
-</head>
-<body>
-  <header>
-    <img src="../assets/FingerGame_logo_blanc_tagline.png" alt="Finger Game" />
-    <h1>🎯 Arbitrage – Finger Game</h1>
-  </header>
-
-  <div style="margin-bottom:10px;">
-    <input id="ajoutNom" placeholder="Nom et prénom" list="allNames" style="padding:6px;">
-    <datalist id="allNames"></datalist>
-    <button onclick="ajouterJoueurArbitre()">Ajouter ce joueur à la manche</button>
-  </div>
-
-  <label>Partie :</label>
-  <select id="phase" onchange="chargerJoueurs()"></select>
-  <label>Manche :</label>
-  <select id="round" onchange="chargerJoueurs()"></select>
-  <label>Piste :</label>
-  <select id="terrain" onchange="chargerJoueurs()"></select>
-  <button onclick="chargerJoueurs()">🔄 Rafraîchir</button>
-  <button onclick="resetManche()">🗑️ Réinitialiser la manche</button>
-
-  <div id="loading">Chargement...</div>
-  <div id="feedback"></div>
-  <div id="attendus"></div>
-  <div id="joueurs"></div>
-  <p id="ordre"></p>
-  <button onclick="validerManche()">✅ Valider la manche</button>
-  <div id="elimines"></div>
-  <div id="historique"></div>
 </body>
 </html>
