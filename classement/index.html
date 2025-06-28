@@ -21,12 +21,17 @@
     h1 {
       margin: 10px 0;
     }
+    .table-container {
+      overflow-x: auto;
+      width: 100%;
+    }
     table {
       margin: 30px auto;
       border-collapse: collapse;
       width: 95%;
       max-width: 700px;
       background: rgba(0,0,0,0.2);
+      min-width: 400px;
     }
     th, td {
       border: 1px solid rgba(255,255,255,0.2);
@@ -87,24 +92,39 @@
       background: #fff;
       color: #b71c1c;
     }
+    #loading {
+      color: #ffd700;
+      font-weight: bold;
+      margin: 10px 0;
+      display: none;
+    }
+    @media (max-width: 600px) {
+      .table-container { width: 100%; }
+      table { min-width: 350px; }
+    }
   </style>
 </head>
 <body>
   <img src="../assets/FingerGame_logo_blanc_tagline.png" alt="Finger Game">
-  <h1>📊 Classement Général</h1>
-  <button id="admin-btn" style="display:none;">Sélection NB en demi-finale</button>
-  <table>
-    <thead>
-      <tr>
-        <th>Rang</th>
-        <th>Joueur</th>
-        <th>Points</th>
-        <th>Matchs</th>
-      </tr>
-    </thead>
-    <tbody id="classement"></tbody>
-  </table>
-  <a href="../joueur/index.html">⬅️ Retour joueur</a>
+  <h1 id="main-title" aria-label="Classement général du Finger Game">📊 Classement Général</h1>
+  <button id="admin-btn" style="display:none;" aria-label="Sélection du nombre de demi-finalistes">Sélection NB en demi-finale</button>
+  <button onclick="afficherClassement()" aria-label="Rafraîchir le classement">🔄 Rafraîchir</button>
+  <div id="loading" role="status" aria-live="polite">Chargement...</div>
+  <div class="table-container">
+    <table aria-label="Tableau du classement général">
+      <thead>
+        <tr>
+          <th>Rang</th>
+          <th>Joueur</th>
+          <th>Points</th>
+          <th>Matchs</th>
+          <th>Statut</th>
+        </tr>
+      </thead>
+      <tbody id="classement"></tbody>
+    </table>
+  </div>
+  <a href="../joueur/index.html" aria-label="Retour à l'espace joueur">⬅️ Retour joueur</a>
   <script type="module">
     import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
 
@@ -119,34 +139,74 @@
       nbDemiFinale = parseInt(localStorage.getItem("nbDemiFinale"), 10) || 5;
     }
 
+    // --- Tri robuste avec gestion des statuts spéciaux ---
     function classementSort(a, b) {
-      if (a.total_points === "VAINQUEUR" && b.total_points !== "VAINQUEUR") return -1;
-      if (b.total_points === "VAINQUEUR" && a.total_points !== "VAINQUEUR") return 1;
-      if (a.phase === "finale" && b.phase !== "finale") return -1;
-      if (b.phase === "finale" && a.phase !== "finale") return 1;
-      const pa = isNaN(parseInt(a.total_points, 10)) ? -Infinity : parseInt(a.total_points, 10);
-      const pb = isNaN(parseInt(b.total_points, 10)) ? -Infinity : parseInt(b.total_points, 10);
-      return pb - pa;
+      const getRankValue = joueur => {
+        if (joueur.total_points === "VAINQUEUR") return 1000000;
+        if (joueur.phase === "finale") return 900000;
+        if (joueur.phase == 99) return 800000 + (parseInt(joueur.total_points, 10) || 0);
+        return parseInt(joueur.total_points, 10) || 0;
+      };
+      return getRankValue(b) - getRankValue(a);
+    }
+
+    // --- Récupère le nombre de matchs depuis la table matches ---
+    async function getNbMatchesByPlayer() {
+      const { data, error } = await supabase
+        .from("matches")
+        .select("player_id, count:player_id")
+        .group("player_id");
+      if (error) return {};
+      const map = {};
+      (data || []).forEach(row => {
+        map[row.player_id] = row.count;
+      });
+      return map;
     }
 
     async function afficherClassement() {
+      document.getElementById("loading").style.display = "block";
       try {
-        const { data, error } = await supabase
+        // Récupère tous les joueurs
+        const { data: players, error } = await supabase
           .from("players")
-          .select("name, total_points, matches, phase");
+          .select("id, name, total_points, matches, phase");
+        if (error || !players) throw error || new Error("Aucun joueur trouvé");
 
-        if (error) throw error;
+        // Récupère le nombre de matches réels depuis la table matches
+        const matchesMap = await getNbMatchesByPlayer();
 
-        const sorted = [...data].sort(classementSort);
+        // Trie les joueurs
+        const sorted = [...players].sort(classementSort);
 
+        // Affichage des égalités (même rang pour scores identiques)
+        let lastPoints = null, lastRank = 0, rang = 1;
         const tbody = document.getElementById("classement");
         tbody.innerHTML = "";
 
         sorted.forEach((joueur, i) => {
+          // Statut
+          let statut = "";
+          if (joueur.total_points === "VAINQUEUR") statut = "Vainqueur";
+          else if (joueur.phase === "finale") statut = "Finaliste";
+          else if (joueur.phase == 99 && i < nbDemiFinale) statut = "Demi-finaliste";
+          else statut = "";
+
+          // Rang avec égalités
+          let pointsNum = isNaN(parseInt(joueur.total_points, 10)) ? -Infinity : parseInt(joueur.total_points, 10);
+          if (pointsNum !== lastPoints) {
+            rang = i + 1;
+            lastPoints = pointsNum;
+            lastRank = rang;
+          } else {
+            rang = lastRank;
+          }
+
+          // Ligne demi-finale
           if (i === nbDemiFinale) {
             const trDemi = document.createElement("tr");
             trDemi.className = "ligne-demi";
-            trDemi.innerHTML = `<td colspan="4">⬇️ Non qualifiés pour la Demi finale ⬇️</td>`;
+            trDemi.innerHTML = `<td colspan="5">⬇️ Non qualifiés pour la Demi finale ⬇️</td>`;
             tbody.appendChild(trDemi);
           }
 
@@ -158,7 +218,6 @@
           } else if (joueur.phase == 99 && i < nbDemiFinale) {
             tr.classList.add("demi-finaliste");
           }
-
           if (i === sorted.length - 1) tr.classList.add("emoji-caca");
           if (i === sorted.length - 2) tr.classList.add("emoji-nul");
 
@@ -166,16 +225,25 @@
           if (i === sorted.length - 1) nom = "💩 " + nom;
           if (i === sorted.length - 2) nom = "🫥 " + nom;
 
+          // Nombre de matches réel (table matches) ou fallback sur players.matches
+          const nbMatches = matchesMap[joueur.id] !== undefined
+            ? matchesMap[joueur.id]
+            : (parseInt(joueur.matches, 10) || 0);
+
           tr.innerHTML = `
-            <td>${i + 1}</td>
+            <td>${rang}</td>
             <td>${nom}</td>
             <td>${joueur.total_points ?? 0}</td>
-            <td>${parseInt(joueur.matches, 10) || 0}</td>
+            <td>${nbMatches}</td>
+            <td>${statut}</td>
           `;
           tbody.appendChild(tr);
         });
+
+        document.getElementById("loading").style.display = "none";
       } catch (e) {
-        document.getElementById("classement").innerHTML = `<tr><td colspan="4">Erreur de connexion. Veuillez vérifier votre réseau.</td></tr>`;
+        document.getElementById("loading").style.display = "none";
+        document.getElementById("classement").innerHTML = `<tr><td colspan="5">Erreur de connexion ou aucun joueur. Vérifiez votre réseau ou la base.</td></tr>`;
       }
     }
 
@@ -201,10 +269,16 @@
       }
       nbDemiFinale = nb;
       localStorage.setItem("nbDemiFinale", nbDemiFinale); // Persistance
+      adminBtn.style.display = "none";
       afficherClassement();
     };
 
-    afficherClassement();
+    // Accessibilité : focus sur le titre au chargement
+    window.onload = () => {
+      document.getElementById("main-title").focus();
+      afficherClassement();
+    };
+    window.afficherClassement = afficherClassement;
   </script>
 </body>
 </html>
