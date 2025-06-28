@@ -6,6 +6,11 @@
   <title id="page-title">Joueur - Finger Game</title>
   <link rel="icon" type="image/png" href="../assets/FingerGame_logo_blanc_tagline.png">
   <style>
+    :root {
+      --fg-bleu-marin: #001B65; /* Bleu marin principal */
+      --fg-jaune: #ffd700;      /* Jaune principal */
+      --fg-bleu: #0d47a1;
+    }
     /* ===== POLICE MONTSERRAT ===== */
     /* 
       NOTE: "Sports World" is the intended main font for impactful titles,
@@ -281,6 +286,9 @@
       vertical-align: middle;
       margin-left: 8px;
     }
+    .hidden {
+      display: none !important;
+    }
     @keyframes spin {
       0% { transform: rotate(0deg);}
       100% { transform: rotate(360deg);}
@@ -305,7 +313,7 @@
     <button onclick="changerDeJoueur()" aria-label="Changer de joueur">🔄 Changer de joueur</button>
   </div>
 
-  <table id="terrain-table" style="display:none"></table>
+  <table id="terrain-table" class="hidden"></table>
   <div id="prochaines-manches"></div>
 
   <dialog id="nameDialog">
@@ -344,10 +352,10 @@
           <img src="../assets/FingerGame_logo_black_tagline.png" alt="Logo noir tagline" style="max-width:120px;max-height:80px;background:#fff;">
           <div style="font-size:0.95em;text-align:center;">Noir + tagline</div>
         </div>
+      </div>
+      <div style="margin-top:8px;margin-bottom:8px;">
         <b>Police secondaire :</b> Montserrat (Bold, Medium, Light) pour les contenus.<br>
         <span style="font-size:0.95em;">La police "Montserrat" est utilisée comme alternative principale, ou Impact si indisponible.</span>
-          <div style="font-size:0.95em;color:#fff;text-align:center;">Blanc sur bleu</div>
-        </div>
       </div>
       <h2>Palette couleurs</h2>
       <img src="../assets/FingerGame_palette_couleurs.png" alt="Palette couleurs" style="max-width:600px;width:95vw;display:block;margin:18px auto 24px auto;">
@@ -394,7 +402,8 @@
   </script>
   <!-- ====== FIN CHARTE GRAPHIQUE MODALE ====== -->
 
-  <!-- ...le reste de ton script JS Supabase... -->
+  <!-- Inclusion du script principal Supabase pour la gestion du joueur -->
+  <script src="../js/supabase-joueur.js" type="module"></script>
   <script type="module">
     // Récupère l'ID du joueur depuis le localStorage
     const playerId = localStorage.getItem("player_id");
@@ -448,8 +457,9 @@
           data.forEach(m => {
             let partieTxt = partieLibelle(m.phase);
             let icon = "";
-            if (m.phase == 99) icon = "🥉";
+            if (m.phase === 99) icon = "🥉";
             else if (m.phase === "finale" || m.phase === 100) icon = "🎯";
+            else if (m.phase === "finale" || m.phase === 100 || m.phase == 100) icon = "🎯";
             html += `<li>${icon} <b>${partieTxt}</b> — Manche <b>${m.round ?? "-"}</b> — Piste <b>${m.terrain ?? "-"}</b></li>`;
           });
           html += "</ul>";
@@ -465,14 +475,10 @@
     /**
      * Déconnexion du joueur
      */
-    window.changerDeJoueur = function () {
-      localStorage.removeItem("player_id");
-      location.reload();
-    }
+    // La fonction changerDeJoueur est définie plus bas pour gérer aussi le clearInterval.
     document.getElementById("logout-btn").onclick = window.changerDeJoueur;
 
     /**
-     * Rafraîchit les données du joueur
      */
     window.rafraichirDonnees = async function () {
       if (playerId) {
@@ -500,6 +506,7 @@
     }
 
     // Initialisation
+    let refreshIntervalId = null;
     ready(() => {
       hideError();
       const mainStatus = document.getElementById("main-status");
@@ -511,14 +518,26 @@
         } else {
           inscrireOuConnecter();
         }
-    });
-    setInterval(() => {
-      if (playerId) getPlayerById(playerId).then(joueur => afficher(joueur));
-    }, 10000);
-    window.addEventListener('unhandledrejection', function(event) {
-      showError("Une erreur inattendue est survenue.");
-      if (typeof setRefreshLoading === "function") {
-        setRefreshLoading(false);
+      // Start periodic refresh only if playerId exists
+      if (playerId) {
+        refreshIntervalId = setInterval(() => {
+          getPlayerById(playerId).then(joueur => afficher(joueur));
+        }, 10000);
       }
-    });
+    window.changerDeJoueur = function () {
+      localStorage.removeItem("player_id");
+      if (refreshIntervalId) {
+        clearInterval(refreshIntervalId);
+        refreshIntervalId = null;
+      }
+      location.reload();
+    }
+
+      window.addEventListener('unhandledrejection', function(event) {
+        showError("Une erreur inattendue est survenue.");
+        if (typeof setRefreshLoading === "function") {
+          setRefreshLoading(false);
+        }
+      });
+    }); // <-- Ajout du } manquant ici pour fermer la fonction ready
 
