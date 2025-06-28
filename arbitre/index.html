@@ -5,7 +5,6 @@
   <title>Arbitre – Finger Game</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
-    /* ...styles identiques... */
     body {
       background: linear-gradient(to right, #0d47a1, #b71c1c);
       color: white;
@@ -160,11 +159,20 @@
       setTimeout(() => { f.textContent = ""; }, 2500);
     }
 
-    function isFinale() {
-      return (
-        (currentPhase === 99 && (currentRound === "F" || currentRound === "🏁 Demi Finale")) ||
-        (currentPhase === "finale" && (currentRound === "FM" || currentRound === "🏁 Grande Finale"))
-      );
+    // Détection explicite des phases spéciales
+    function getPhaseType() {
+      if (
+        currentPhase === 99 ||
+        currentRound === "🏁 Demi Finale" ||
+        (typeof currentRound === "string" && currentRound.toLowerCase().includes("demi"))
+      ) return "demi";
+      if (
+        currentPhase === "finale" ||
+        currentRound === "🏁 Grande Finale" ||
+        currentRound === "FM" ||
+        (typeof currentRound === "string" && currentRound.toLowerCase().includes("finale"))
+      ) return "finale";
+      return "partie";
     }
 
     async function chargerJoueurs() {
@@ -257,6 +265,7 @@
       zone.innerHTML = "";
       const grid = document.createElement("div");
       grid.className = "player-grid";
+      const phaseType = getPhaseType();
       players.forEach(p => {
         const btn = document.createElement("button");
         btn.textContent = `${p.name} (${p.total_points} pts, ${p.matches} m)`;
@@ -264,7 +273,7 @@
         let elim = eliminatedOrder.filter(id => id === p.id).length;
         if (elim > 0) {
           btn.classList.add("eliminated");
-          btn.textContent += isFinale() ? ` (${elim}/2)` : ` (#${elim})`;
+          btn.textContent += phaseType !== "partie" ? ` (${elim}/2)` : ` (#${elim})`;
         }
         btn.onclick = () => toggleElimination(p.id);
 
@@ -327,11 +336,15 @@
       });
       zone.appendChild(grid);
 
-      if (isFinale()) {
-        document.getElementById("ordre").textContent = `${eliminatedOrder.length} éliminations / ${players.length * 2} nécessaires`;
+      // Affichage du type de phase et du nombre d'éliminations nécessaires
+      const phaseType = getPhaseType();
+      let info = "";
+      if (phaseType === "finale" || phaseType === "demi") {
+        info = `${eliminatedOrder.length} éliminations / ${players.length * 2} nécessaires (${phaseType === "finale" ? "Finale" : "Demi-finale"})`;
       } else {
-        document.getElementById("ordre").textContent = `${eliminatedOrder.length} / ${players.length} éliminés`;
+        info = `${eliminatedOrder.length} / ${players.length} éliminés (Partie)`;
       }
+      document.getElementById("ordre").textContent = info;
       document.getElementById("historique").innerHTML = historique.slice(-5).map(h => `<div>${h}</div>`).join("");
     }
 
@@ -350,7 +363,8 @@
     }
 
     function toggleElimination(id) {
-      if (isFinale()) {
+      const phaseType = getPhaseType();
+      if (phaseType === "finale" || phaseType === "demi") {
         const count = eliminatedOrder.filter(pid => pid === id).length;
         if (count < 2) {
           eliminatedOrder.push(id);
@@ -370,7 +384,9 @@
     async function validerManche() {
       if (!confirm("Êtes-vous sûr de vouloir valider cette manche ? Cette action est irréversible.")) return;
 
-      if (isFinale()) {
+      const phaseType = getPhaseType();
+
+      if (phaseType === "finale" || phaseType === "demi") {
         const counts = {};
         players.forEach(p => counts[p.id] = 0);
         eliminatedOrder.forEach(id => counts[id]++);
@@ -415,7 +431,7 @@
         }
       }
 
-      historique.push(`Manche validée (${players.length} joueurs) : ${eliminatedOrder.map(id => {
+      historique.push(`Manche validée (${getPhaseType().toUpperCase()} – ${players.length} joueurs) : ${eliminatedOrder.map(id => {
         const p = players.find(x => x.id === id);
         return p ? p.name : id;
       }).join(", ")}`);
@@ -450,9 +466,9 @@
         t.innerHTML += `<option value="${i}">Piste ${i}</option>`;
         p.innerHTML += `<option value="${i}">Partie ${i}</option>`;
       }
-      // Ajout unique de la demi-finale avec emoji
+      // Ajout unique de la demi-finale et finale avec emoji
       p.innerHTML += `<option value="99">🏁 Demi-finale</option>`;
-      p.innerHTML += `<option value="finale">🏆 Finale manuelle</option>`;
+      p.innerHTML += `<option value="finale">🏆 Finale</option>`;
 
       // Ajout dynamique des manches A à H
       ["A","B","C","D","E","F","G","H"].forEach(m => {
