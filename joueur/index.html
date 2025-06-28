@@ -368,7 +368,8 @@
         .from("matches")
         .select("partie, manche, terrain")
         .eq("player_id", joueur.id)
-        .order("partie, manche")
+        .order("partie", { ascending: true })
+        .order("manche", { ascending: true })
         .limit(1);
 
       if (statut) {
@@ -422,7 +423,8 @@
         .from("matches")
         .select("partie, manche, terrain")
         .eq("player_id", joueur.id)
-        .order("partie, manche");
+        .order("partie", { ascending: true })
+        .order("manche", { ascending: true });
       const div = document.getElementById("prochaines-manches");
       if (data && data.length > 0) {
         let html = "<h2>📅 Prochaines manches</h2><ul style='padding-left:20px;'>";
