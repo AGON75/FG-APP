@@ -21,32 +21,69 @@
     h1 {
       margin: 10px 0;
     }
-    button {
-      margin: 15px;
-      padding: 10px 20px;
-      font-size: 16px;
+    .main-status {
+      margin-top: 30px;
+      font-size: 24px;
       font-weight: bold;
-      border-radius: 6px;
+      border-radius: 12px;
+      padding: 18px 10px;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+      transition: background 0.3s, color 0.3s;
+    }
+    .statut-demi {
+      background: #cd7f32;
+      color: #fff;
+      border: 2px solid #fff;
+    }
+    .statut-finale {
+      background: #c0c0c0;
+      color: #222;
+      border: 2px solid #fff;
+    }
+    .statut-vainqueur {
+      background: #ffd700;
+      color: #222;
+      border: 2px solid #fff;
+      animation: winnerPulse 1.2s infinite alternate;
+    }
+    @keyframes winnerPulse {
+      0% { box-shadow: 0 0 10px #ffd700; }
+      100% { box-shadow: 0 0 30px #ffd700; }
+    }
+    .statut-normal {
+      background: rgba(0,0,0,0.15);
+      color: #fff;
+      border: 2px solid #fff;
+    }
+    button {
+      margin: 15px 10px;
+      padding: 12px 24px;
+      font-size: 18px;
+      font-weight: bold;
+      border-radius: 8px;
       border: none;
       cursor: pointer;
       background: #444;
       color: white;
-      transition: background 0.2s;
+      transition: background 0.2s, color 0.2s;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
     }
-    button:hover {
-      background: #b71c1c;
+    button:hover, button:focus {
+      background: #ffd700;
+      color: #0d47a1;
+      outline: none;
     }
     a {
       display: inline-block;
       margin-top: 10px;
-      color: white;
+      color: #ffd700;
       text-decoration: underline;
       font-weight: bold;
-    }
-    #etat {
-      margin-top: 30px;
-      font-size: 20px;
-      font-weight: bold;
+      font-size: 18px;
+      margin-right: 10px;
     }
     #terrain-table {
       margin-top: 30px;
@@ -56,13 +93,27 @@
       margin-left: auto;
       margin-right: auto;
       background: rgba(255,255,255,0.1);
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    #terrain-table caption {
+      caption-side: top;
+      font-size: 20px;
+      font-weight: bold;
+      color: #ffd700;
+      margin-bottom: 8px;
     }
     #terrain-table th, #terrain-table td {
       border: 1px solid white;
-      padding: 8px;
+      padding: 10px;
     }
     #terrain-table th {
       background-color: #222;
+      font-size: 17px;
+    }
+    #terrain-table tr:nth-child(even) td {
+      background: rgba(255,255,255,0.07);
     }
     dialog::backdrop {
       background: rgba(0, 0, 0, 0.7);
@@ -86,18 +137,49 @@
       background: rgba(255,255,255,0.07);
       border-radius: 8px;
       padding: 10px 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    #loading {
+      font-size: 22px;
+      color: #ffd700;
+      margin-top: 30px;
+      font-weight: bold;
+      animation: blink 1.2s infinite alternate;
+    }
+    @keyframes blink {
+      0% { opacity: 1; }
+      100% { opacity: 0.5; }
+    }
+    @media (max-width: 700px) {
+      .main-status, #terrain-table, #prochaines-manches {
+        font-size: 18px;
+        padding: 8px;
+      }
+      button {
+        font-size: 16px;
+        padding: 10px 10px;
+      }
+      #terrain-table th, #terrain-table td {
+        padding: 6px;
+        font-size: 14px;
+      }
+      #prochaines-manches {
+        font-size: 15px;
+        padding: 6px 8px;
+      }
     }
   </style>
 </head>
 <body>
   <img src="../assets/FingerGame_logo_blanc_tagline.png" alt="Finger Game">
 
-  <div id="etat">Chargement...</div>
+  <div id="main-status" class="main-status statut-normal" aria-live="polite"></div>
+  <div id="loading" style="display:none;">Chargement...</div>
 
-  <button onclick="location.reload()">📘 Afficher la prochaine manche</button>
-  <button onclick="changerDeJoueur()">🔄 Changer de joueur</button><br>
-  <a href="../classement/index.html">📊 Voir le classement</a>
-  <a href="../regles/index.html">📜 Règles du jeu</a>
+  <button onclick="location.reload()" aria-label="Afficher la prochaine manche">📘 Afficher la prochaine manche</button>
+  <button onclick="changerDeJoueur()" aria-label="Changer de joueur">🔄 Changer de joueur</button><br>
+  <a href="../classement/index.html" aria-label="Voir le classement">📊 Voir le classement</a>
+  <a href="../regles/index.html" aria-label="Voir les règles du jeu">📜 Règles du jeu</a>
 
   <table id="terrain-table" style="display:none"></table>
   <div id="prochaines-manches"></div>
@@ -119,6 +201,12 @@
     )
 
     let playerId = localStorage.getItem("player_id");
+
+    function phaseLibelle(phase) {
+      if (phase == 99) return "Demi-finale";
+      if (phase === "finale") return "Finale";
+      return "Partie " + phase;
+    }
 
     async function inscrireOuConnecter() {
       const dialog = document.getElementById("nameDialog");
@@ -142,7 +230,6 @@
 
           let joueurTrouve = null;
           if (existing && existing.length > 0) {
-            // Prend le premier joueur existant (ou propose la liste si tu veux)
             joueurTrouve = existing[0];
           }
 
@@ -175,7 +262,7 @@
             }
           }
         } catch (e) {
-          document.getElementById("etat").textContent = "Erreur de connexion. Veuillez vérifier votre réseau.";
+          document.getElementById("main-status").textContent = "Erreur de connexion. Veuillez vérifier votre réseau.";
         }
       }, { once: true });
     }
@@ -201,25 +288,48 @@
     }
 
     async function afficher(joueur) {
-      const etat = document.getElementById("etat");
+      const mainStatus = document.getElementById("main-status");
+      const loading = document.getElementById("loading");
+      loading.style.display = "none";
       if (!joueur) {
         localStorage.removeItem("player_id");
-        etat.textContent = "Aucune donnée trouvée. Veuillez vous réinscrire.";
+        mainStatus.textContent = "Aucune donnée trouvée. Veuillez vous réinscrire.";
+        mainStatus.className = "main-status statut-normal";
         setTimeout(inscrireOuConnecter, 1000);
         return;
       }
-      if (joueur.phase == 99) {
-        etat.textContent = `${joueur.name} — 🏁 Finale — Piste ${joueur.terrain ?? "-"}`;
-        if (await estVainqueur(joueur)) {
-          console.log("🏆 GRAND VAINQUEUR :", joueur.name);
-        }
+
+      // Détection du statut spécial
+      let statut = "";
+      let statutClass = "statut-normal";
+      let emoji = "";
+      if (joueur.total_points === "VAINQUEUR") {
+        statut = "🏆 GRAND VAINQUEUR";
+        statutClass = "statut-vainqueur";
+        emoji = "🏆";
+      } else if (joueur.phase === "finale") {
+        statut = "🎯 FINALISTE";
+        statutClass = "statut-finale";
+        emoji = "🎯";
+      } else if (joueur.phase == 99) {
+        statut = "🥉 DEMI-FINALISTE";
+        statutClass = "statut-demi";
+        emoji = "🥉";
+      }
+
+      if (statut) {
+        mainStatus.innerHTML = `<span style="font-size:2em;">${emoji}</span><br>${joueur.name}<br>${statut}<br>Piste <b>${joueur.terrain ?? "-"}</b>`;
+        mainStatus.className = "main-status " + statutClass;
       } else {
         const partieNum = (joueur.matches ?? 0) + 1;
         let info = joueur.round === "A" ? " (Démarrage dans 3 min)" : joueur.round === "B" ? " (Démarrage après le round A)" : "";
-        etat.textContent = `${joueur.name} — Piste ${joueur.terrain ?? "non attribuée"} — Partie ${partieNum}/${joueur.round ?? "-"}${info}`;
-
-        if (joueur.terrain) afficherTableauTerrain(joueur.terrain);
+        mainStatus.innerHTML = `<b>${joueur.name}</b><br>Piste <b>${joueur.terrain ?? "non attribuée"}</b> — Partie <b>${partieNum}</b> / Round <b>${joueur.round ?? "-"}</b>${info}`;
+        mainStatus.className = "main-status statut-normal";
       }
+
+      if (joueur.terrain) afficherTableauTerrain(joueur.terrain);
+      else document.getElementById("terrain-table").style.display = "none";
+
       afficherProchainesManches(joueur);
     }
 
@@ -230,7 +340,7 @@
         .eq("terrain", terrain);
 
       const table = document.getElementById("terrain-table");
-      table.innerHTML = `<tr><th>Nom</th><th>Matchs joués</th><th>Round</th></tr>`;
+      table.innerHTML = `<caption>👥 Joueurs sur la piste ${terrain}</caption><tr><th>Nom</th><th>Matchs joués</th><th>Round</th></tr>`;
       for (const p of data) {
         table.innerHTML += `<tr><td>${p.name}</td><td>${p.matches ?? 0}</td><td>${p.round ?? "-"}</td></tr>`;
       }
@@ -245,10 +355,14 @@
         .order("phase, round");
       const div = document.getElementById("prochaines-manches");
       if (data && data.length > 0) {
-        let html = "<h2>Prochaines manches</h2><ul>";
-        data.forEach(m =>
-          html += `<li>Phase ${m.phase} — Round ${m.round} — Piste ${m.terrain ?? "-"}</li>`
-        );
+        let html = "<h2>📅 Prochaines manches</h2><ul style='padding-left:20px;'>";
+        data.forEach(m => {
+          let phaseTxt = phaseLibelle(m.phase);
+          let icon = "";
+          if (m.phase == 99) icon = "🥉";
+          else if (m.phase === "finale") icon = "🎯";
+          html += `<li>${icon} <b>${phaseTxt}</b> — Round <b>${m.round ?? "-"}</b> — Piste <b>${m.terrain ?? "-"}</b></li>`;
+        });
         html += "</ul>";
         div.innerHTML = html;
       } else {
@@ -270,6 +384,10 @@
     }
 
     ready(() => {
+      const mainStatus = document.getElementById("main-status");
+      const loading = document.getElementById("loading");
+      loading.style.display = "block";
+      mainStatus.textContent = "";
       if (!playerId) {
         inscrireOuConnecter();
       } else {
@@ -283,4 +401,5 @@
     }, 10000);
   </script>
 </body>
+</html>
 </html>
