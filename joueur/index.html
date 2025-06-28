@@ -225,6 +225,7 @@
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrb2x6bXFhcmZpem94amdvbGZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk2Nzg3NTYsImV4cCI6MjA2NTI1NDc1Nn0.ZlpERz1uznM0fn--GR9YgM2vjwe_kw-qiPF8KHJvMpI'
     );
     let playerId = localStorage.getItem("player_id");
+    let refreshIntervalId = null;
     async function inscrireOuConnecter() {
       const dialog = document.getElementById("nameDialog");
       const input = document.getElementById("nameInput");
@@ -241,6 +242,7 @@
             playerId = existing[0].id;
             localStorage.setItem("player_id", playerId);
             afficher(await getPlayerById(playerId));
+            startRefresh();
           } else {
             const numero = Math.floor(Math.random() * 120) + 1;
             const fullName = `${baseName} #${numero}`;
@@ -253,6 +255,7 @@
               playerId = inserted.id;
               localStorage.setItem("player_id", playerId);
               afficher(inserted);
+              startRefresh();
             } else {
               alert("Erreur lors de l'inscription.");
             }
@@ -314,8 +317,17 @@
         div.innerHTML = "<div style='color:#ffd700;font-weight:bold;'>Aucune prochaine manche prévue.</div>";
       }
     }
+    function startRefresh() {
+      if (refreshIntervalId) clearInterval(refreshIntervalId);
+      if (playerId) {
+        refreshIntervalId = setInterval(() => {
+          getPlayerById(playerId).then(joueur => afficher(joueur));
+        }, 10000);
+      }
+    }
     window.changerDeJoueur = function () {
       localStorage.removeItem("player_id");
+      if (refreshIntervalId) clearInterval(refreshIntervalId);
       location.reload();
     };
     document.getElementById("refresh-btn").onclick = function () {
@@ -327,7 +339,11 @@
       inscrireOuConnecter();
     } else {
       getPlayerById(playerId).then(joueur => afficher(joueur));
+      startRefresh();
     }
+    window.addEventListener('beforeunload', function() {
+      if (refreshIntervalId) clearInterval(refreshIntervalId);
+    });
   </script>
 </body>
 </html>
