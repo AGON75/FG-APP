@@ -44,17 +44,17 @@
       background: rgba(255,255,255,0.1);
     }
     .demi-finaliste {
-      background: #cd7f32 !important; /* bronze */
+      background: #cd7f32 !important;
       color: #fff;
       font-weight: bold;
     }
     .finaliste {
-      background: #c0c0c0 !important; /* silver */
+      background: #c0c0c0 !important;
       color: #222;
       font-weight: bold;
     }
     .vainqueur {
-      background: #ffd700 !important; /* gold */
+      background: #ffd700 !important;
       color: #222;
       font-weight: bold;
     }
@@ -78,8 +78,8 @@
       color: #222;
       font-weight: bold;
     }
-    #admin-btn, #export-btn {
-      margin: 20px 0 10px 0;
+    #admin-btn, #export-btn, #prev-btn, #next-btn {
+      margin: 10px 5px 10px 5px;
       padding: 8px 18px;
       font-size: 16px;
       border-radius: 8px;
@@ -90,7 +90,7 @@
       cursor: pointer;
       transition: background 0.2s, color 0.2s;
     }
-    #admin-btn:hover, #export-btn:hover {
+    #admin-btn:hover, #export-btn:hover, #prev-btn:hover, #next-btn:hover {
       background: #fff;
       color: #b71c1c;
     }
@@ -102,8 +102,8 @@
     }
     #stats {
       margin: 10px 0 20px 0;
-      color: #ffd700;
       font-size: 16px;
+      color: #ffd700;
       font-weight: bold;
     }
     #search {
@@ -112,16 +112,21 @@
       font-size: 16px;
       border-radius: 6px;
       border: none;
-      width: 220px;
+      width: 250px;
       max-width: 90vw;
     }
+    .evolution {
+      font-size: 18px;
+      margin-left: 4px;
+      vertical-align: middle;
+    }
     .details-btn {
-      background: #0d47a1;
+      background: #444;
       color: #ffd700;
       border: none;
       border-radius: 4px;
       padding: 2px 8px;
-      margin-left: 6px;
+      margin-left: 4px;
       cursor: pointer;
       font-size: 13px;
     }
@@ -136,28 +141,23 @@
       padding: 20px;
       z-index: 1000;
       box-shadow: 0 0 20px #000;
-      min-width: 250px;
       max-width: 90vw;
       max-height: 80vh;
       overflow-y: auto;
     }
     .details-popup h3 {
       margin-top: 0;
+      color: #ffd700;
     }
-    .close-popup {
-      background: #b71c1c;
-      color: #fff;
+    .details-popup button {
+      margin-top: 10px;
+      background: #ffd700;
+      color: #222;
       border: none;
-      border-radius: 4px;
-      padding: 4px 10px;
-      cursor: pointer;
-      float: right;
+      border-radius: 6px;
+      padding: 6px 16px;
       font-size: 15px;
-    }
-    .evolution {
-      font-size: 18px;
-      margin-left: 4px;
-      vertical-align: middle;
+      cursor: pointer;
     }
     @media (max-width: 600px) {
       .table-container {
@@ -169,7 +169,7 @@
         font-size: 14px;
       }
       #search {
-        width: 90vw;
+        width: 95vw;
       }
     }
   </style>
@@ -180,8 +180,8 @@
   <input id="search" type="text" placeholder="🔍 Rechercher un joueur..." aria-label="Rechercher un joueur" />
   <div id="stats" aria-live="polite"></div>
   <button id="admin-btn" style="display:none;" aria-label="Définir le nombre de qualifiés en demi-finale">Sélection NB en demi-finale</button>
-  <button onclick="afficherClassement()" aria-label="Rafraîchir le classement">🔄 Rafraîchir</button>
   <button id="export-btn" aria-label="Exporter le classement en CSV">⬇️ Export CSV</button>
+  <button onclick="afficherClassement()" aria-label="Rafraîchir le classement">🔄 Rafraîchir</button>
   <div id="loading">Chargement...</div>
   <div class="table-container" role="region" aria-labelledby="main-title">
     <table aria-describedby="main-title">
@@ -192,11 +192,15 @@
           <th scope="col">Points</th>
           <th scope="col">Matchs</th>
           <th scope="col">Statut</th>
-          <th scope="col">Détail</th>
         </tr>
       </thead>
       <tbody id="classement"></tbody>
     </table>
+  </div>
+  <div style="margin:10px;">
+    <button id="prev-btn" aria-label="Page précédente">⬅️</button>
+    <span id="pagination-info"></span>
+    <button id="next-btn" aria-label="Page suivante">➡️</button>
   </div>
   <a href="../joueur/index.html" aria-label="Retour à l'espace joueur">⬅️ Retour joueur</a>
   <div id="popup" style="display:none;"></div>
@@ -208,12 +212,17 @@
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrb2x6bXFhcmZpem94amdvbGZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk2Nzg3NTYsImV4cCI6MjA2NTI1NDc1Nn0.ZlpERz1uznM0fn--GR9YgM2vjwe_kw-qiPF8KHJvMpI'
     )
 
-    let classementData = [];
-    let classementPrev = JSON.parse(localStorage.getItem("classementPrev") || "[]");
+    // --- PERSISTANCE LOCALSTORAGE ---
     let nbDemiFinale = 5;
     if (localStorage.getItem("nbDemiFinale")) {
       nbDemiFinale = parseInt(localStorage.getItem("nbDemiFinale"), 10) || 5;
     }
+
+    // Pagination
+    const PAGE_SIZE = 20;
+    let currentPage = 1;
+    let filteredSorted = [];
+    let classementPrev = JSON.parse(localStorage.getItem("classementPrev") || "[]");
 
     function classementSort(a, b) {
       if (a.total_points === "VAINQUEUR" && b.total_points !== "VAINQUEUR") return -1;
@@ -230,7 +239,7 @@
     async function getMatchesCountByPlayer() {
       const { data, error } = await supabase
         .from("matches")
-        .select("player_id, created_at");
+        .select("player_id, created_at", { count: "exact", head: false });
       if (error) return {};
       const counts = {};
       const details = {};
@@ -242,22 +251,23 @@
       return { counts, details };
     }
 
-    function getEvolution(name, index) {
+    function getEvolution(joueur, classementActuel) {
       if (!classementPrev.length) return "";
-      const prev = classementPrev.findIndex(j => j.name === name);
-      if (prev === -1) return "";
-      if (prev > index) return '<span class="evolution" title="Gagné des places">⬆️</span>';
-      if (prev < index) return '<span class="evolution" title="Perdu des places">⬇️</span>';
+      const prevIdx = classementPrev.findIndex(j => j.id === joueur.id);
+      const currIdx = classementActuel.findIndex(j => j.id === joueur.id);
+      if (prevIdx === -1 || currIdx === -1) return "";
+      if (prevIdx > currIdx) return '<span class="evolution" title="Montée">⬆️</span>';
+      if (prevIdx < currIdx) return '<span class="evolution" title="Descente">⬇️</span>';
       return "";
     }
 
-    function updateStats(sorted, matchesCount) {
-      const nbJoueurs = sorted.length;
-      const totalPoints = sorted.reduce((acc, j) => acc + (isNaN(parseInt(j.total_points, 10)) ? 0 : parseInt(j.total_points, 10)), 0);
+    function updateStats(joueurs, matchesCount) {
+      const nb = joueurs.length;
+      const totalPoints = joueurs.reduce((acc, j) => acc + (parseInt(j.total_points, 10) || 0), 0);
       const totalMatches = Object.values(matchesCount).reduce((a, b) => a + b, 0);
-      const avgPoints = nbJoueurs ? Math.round(totalPoints / nbJoueurs) : 0;
+      const avg = nb ? (totalPoints / nb).toFixed(1) : 0;
       document.getElementById("stats").textContent =
-        `Joueurs : ${nbJoueurs} | Score moyen : ${avgPoints} | Total matchs : ${totalMatches}`;
+        `Joueurs : ${nb} | Score moyen : ${avg} | Total matchs : ${totalMatches}`;
     }
 
     async function afficherClassement() {
@@ -279,13 +289,15 @@
           sorted = sorted.filter(j => j.name.toLowerCase().includes(search));
         }
 
-        // Pagination (20 joueurs/page)
-        const pageSize = 20;
-        let page = parseInt(localStorage.getItem("classementPage") || "1", 10);
-        const nbPages = Math.ceil(sorted.length / pageSize);
-        if (page < 1) page = 1;
-        if (page > nbPages) page = nbPages;
-        const paged = sorted.slice((page - 1) * pageSize, page * pageSize);
+        filteredSorted = sorted;
+        updateStats(sorted, matchesCount);
+
+        // Pagination
+        const totalPages = Math.ceil(sorted.length / PAGE_SIZE) || 1;
+        if (currentPage > totalPages) currentPage = totalPages;
+        const start = (currentPage - 1) * PAGE_SIZE;
+        const end = start + PAGE_SIZE;
+        const pageJoueurs = sorted.slice(start, end);
 
         // Affichage des égalités de rang
         let lastPoints = null, lastPhase = null, rang = 0, egalite = 1;
@@ -293,12 +305,12 @@
         const tbody = document.getElementById("classement");
         tbody.innerHTML = "";
 
-        paged.forEach((joueur, i) => {
-          const globalIndex = (page - 1) * pageSize + i;
-          if (globalIndex === nbDemiFinale) {
+        pageJoueurs.forEach((joueur, idx) => {
+          const i = start + idx;
+          if (i === nbDemiFinale) {
             const trDemi = document.createElement("tr");
             trDemi.className = "ligne-demi";
-            trDemi.innerHTML = `<td colspan="6">⬇️ Non qualifiés pour la Demi finale ⬇️</td>`;
+            trDemi.innerHTML = `<td colspan="5">⬇️ Non qualifiés pour la Demi finale ⬇️</td>`;
             tbody.appendChild(trDemi);
           }
 
@@ -312,7 +324,7 @@
           ) {
             egalite++;
           } else {
-            rang = globalIndex + 1;
+            rang = i + 1;
             egalite = 1;
           }
           lastPoints = pointsNum;
@@ -322,7 +334,7 @@
           let statut = "";
           if (joueur.total_points === "VAINQUEUR") statut = "Vainqueur";
           else if (joueur.phase === "finale") statut = "Finaliste";
-          else if (joueur.phase == 99 && globalIndex < nbDemiFinale) statut = "Demi-finaliste";
+          else if (joueur.phase == 99 && i < nbDemiFinale) statut = "Demi-finaliste";
           else statut = "";
 
           // Style
@@ -331,84 +343,125 @@
             tr.classList.add("vainqueur");
           } else if (joueur.phase === "finale") {
             tr.classList.add("finaliste");
-          } else if (joueur.phase == 99 && globalIndex < nbDemiFinale) {
+          } else if (joueur.phase == 99 && i < nbDemiFinale) {
             tr.classList.add("demi-finaliste");
           }
-          if (globalIndex === sorted.length - 1) tr.classList.add("emoji-caca");
-          if (globalIndex === sorted.length - 2) tr.classList.add("emoji-nul");
+          if (i === sorted.length - 1) tr.classList.add("emoji-caca");
+          if (i === sorted.length - 2) tr.classList.add("emoji-nul");
 
           let nom = joueur.name;
-          if (globalIndex === sorted.length - 1) nom = "💩 " + nom;
-          if (globalIndex === sorted.length - 2) nom = "🫥 " + nom;
+          if (i === sorted.length - 1) nom = "💩 " + nom;
+          if (i === sorted.length - 2) nom = "🫥 " + nom;
+
+          // Détail des matchs bouton
+          const detailsBtn = `<button class="details-btn" aria-label="Voir les matchs de ${nom}" onclick="window.showDetails('${joueur.id}','${encodeURIComponent(nom)}')">📋</button>`;
 
           tr.innerHTML = `
-            <td>${rang}${egalite > 1 ? "=" : ""} ${getEvolution(joueur.name, globalIndex)}</td>
-            <td>${nom}</td>
+            <td>${rang}${egalite > 1 ? "=" : ""}${getEvolution(joueur, sorted)}</td>
+            <td>${nom} ${detailsBtn}</td>
             <td>${joueur.total_points ?? 0}</td>
             <td>${matchesCount[joueur.id] ?? (parseInt(joueur.matches, 10) || 0)}</td>
             <td>${statut}</td>
-            <td>
-              <button class="details-btn" aria-label="Voir les matchs de ${nom}" onclick="window.showDetails('${joueur.id}','${encodeURIComponent(nom)}')">👁️</button>
-            </td>
           `;
           tbody.appendChild(tr);
         });
 
-        // Pagination controls
-        if (nbPages > 1) {
-          const tr = document.createElement("tr");
-          tr.innerHTML = `<td colspan="6">
-            <button onclick="window.changePage(-1)" ${page === 1 ? "disabled" : ""} aria-label="Page précédente">⬅️</button>
-            Page ${page} / ${nbPages}
-            <button onclick="window.changePage(1)" ${page === nbPages ? "disabled" : ""} aria-label="Page suivante">➡️</button>
-          </td>`;
-          tbody.appendChild(tr);
-        }
+        // Pagination info
+        document.getElementById("pagination-info").textContent =
+          `Page ${currentPage} / ${Math.ceil(sorted.length / PAGE_SIZE) || 1}`;
 
         if (sorted.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="6">Aucun joueur inscrit.</td></tr>`;
+          tbody.innerHTML = `<tr><td colspan="5">Aucun joueur inscrit.</td></tr>`;
         }
 
-        updateStats(sorted, matchesCount);
-
-        // Sauvegarde classement pour évolution
-        classementData = sorted.map(j => ({ name: j.name }));
-        localStorage.setItem("classementPrev", JSON.stringify(classementData));
-        localStorage.setItem("classementPage", page);
+        // Stocke le classement pour l'évolution
+        localStorage.setItem("classementPrev", JSON.stringify(sorted));
       } catch (e) {
-        document.getElementById("classement").innerHTML = `<tr><td colspan="6">Erreur de connexion. Veuillez vérifier votre réseau.</td></tr>`;
+        document.getElementById("classement").innerHTML = `<tr><td colspan="5">Erreur de connexion. Veuillez vérifier votre réseau.</td></tr>`;
       }
       document.getElementById("loading").style.display = "none";
     }
 
-    window.changePage = function(delta) {
-      let page = parseInt(localStorage.getItem("classementPage") || "1", 10);
-      page += delta;
-      localStorage.setItem("classementPage", page);
-      afficherClassement();
-    };
-
+    // Détail des matchs d'un joueur (popup)
     window.showDetails = async function(playerId, playerName) {
       const { data, error } = await supabase
         .from("matches")
         .select("created_at, phase, round, terrain")
         .eq("player_id", playerId)
         .order("created_at", { ascending: false });
-      const popup = document.getElementById("popup");
+      let html = `<div class="details-popup"><h3>Matchs de ${decodeURIComponent(playerName)}</h3>`;
       if (error || !data || !data.length) {
-        popup.innerHTML = `<div class="details-popup"><button class="close-popup" onclick="window.closePopup()">✖</button><h3>${decodeURIComponent(playerName)}</h3><p>Aucun match trouvé.</p></div>`;
+        html += "<p>Aucun match trouvé.</p>";
       } else {
-        popup.innerHTML = `<div class="details-popup"><button class="close-popup" onclick="window.closePopup()">✖</button>
-          <h3>Matchs de ${decodeURIComponent(playerName)}</h3>
-          <ul style="text-align:left;">${data.map(m =>
-            `<li>${new Date(m.created_at).toLocaleString()} – Phase ${m.phase}, Round ${m.round}, Piste ${m.terrain}</li>`
-          ).join("")}</ul>
-        </div>`;
+        html += "<ul style='text-align:left;'>";
+        data.forEach(m => {
+          html += `<li>${new Date(m.created_at).toLocaleString()} — Phase ${m.phase}, Round ${m.round}, Piste ${m.terrain}</li>`;
+        });
+        html += "</ul>";
       }
-      popup.style.display = "block";
+      html += `<button onclick="window.closePopup()">Fermer</button></div>`;
+      document.getElementById("popup").innerHTML = html;
+      document.getElementById("popup").style.display = "block";
     };
     window.closePopup = function() {
       document.getElementById("popup").style.display = "none";
+    };
+
+    // Export CSV
+    document.getElementById("export-btn").onclick = function() {
+      let csv = "Rang,Joueur,Points,Matchs,Statut\n";
+      let lastPoints = null, lastPhase = null, rang = 0, egalite = 1;
+      filteredSorted.forEach((joueur, i) => {
+        let pointsNum = isNaN(parseInt(joueur.total_points, 10)) ? -Infinity : parseInt(joueur.total_points, 10);
+        let phaseVal = joueur.phase;
+        if (
+          lastPoints !== null &&
+          pointsNum === lastPoints &&
+          phaseVal === lastPhase
+        ) {
+          egalite++;
+        } else {
+          rang = i + 1;
+          egalite = 1;
+        }
+        lastPoints = pointsNum;
+        lastPhase = phaseVal;
+        let statut = "";
+        if (joueur.total_points === "VAINQUEUR") statut = "Vainqueur";
+        else if (joueur.phase === "finale") statut = "Finaliste";
+        else if (joueur.phase == 99 && i < nbDemiFinale) statut = "Demi-finaliste";
+        else statut = "";
+        csv += `"${rang}${egalite > 1 ? "=" : ""}","${joueur.name.replace(/"/g, '""')}","${joueur.total_points ?? 0}","${joueur.matches ?? 0}","${statut}"\n`;
+      });
+      const blob = new Blob([csv], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "classement_finger_game.csv";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    };
+
+    // Pagination
+    document.getElementById("prev-btn").onclick = function() {
+      if (currentPage > 1) {
+        currentPage--;
+        afficherClassement();
+      }
+    };
+    document.getElementById("next-btn").onclick = function() {
+      if (currentPage < Math.ceil(filteredSorted.length / PAGE_SIZE)) {
+        currentPage++;
+        afficherClassement();
+      }
+    };
+
+    // Recherche live
+    document.getElementById("search").oninput = function() {
+      currentPage = 1;
+      afficherClassement();
     };
 
     // --- ADMIN BUTTON LOGIC ---
@@ -432,37 +485,10 @@
         return;
       }
       nbDemiFinale = nb;
-      localStorage.setItem("nbDemiFinale", nbDemiFinale); // Persistance
+      localStorage.setItem("nbDemiFinale", nbDemiFinale);
       adminBtn.style.display = "none";
       afficherClassement();
     };
-
-    // Export CSV
-    document.getElementById("export-btn").onclick = function() {
-      let csv = "Rang,Joueur,Points,Matchs,Statut\n";
-      const rows = document.querySelectorAll("#classement tr");
-      rows.forEach(row => {
-        const cols = Array.from(row.querySelectorAll("td")).slice(0, 5);
-        if (cols.length === 5) {
-          csv += cols.map(td => `"${td.textContent.replace(/"/g, '""')}"`).join(",") + "\n";
-        }
-      });
-      const blob = new Blob([csv], { type: "text/csv" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "classement_finger_game.csv";
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    };
-
-    // Recherche dynamique
-    document.getElementById("search").addEventListener("input", () => {
-      localStorage.setItem("classementPage", "1");
-      afficherClassement();
-    });
 
     window.afficherClassement = afficherClassement;
     afficherClassement();
