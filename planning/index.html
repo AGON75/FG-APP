@@ -74,7 +74,7 @@
       font-weight: bold;
       color: gold;
     }
-    #joueursParSlotInput, #nbTerrainsInput {
+    #joueursParSlotInput, #nbTerrainsInput, #phaseSelect {
       font-size: 18px;
       width: 60px;
       border-radius: 6px;
@@ -83,7 +83,10 @@
       margin-left: 8px;
       margin-right: 8px;
     }
-    label[for="joueursParSlotInput"], label[for="nbTerrainsInput"] {
+    #phaseSelect {
+      width: 100px;
+    }
+    label[for="joueursParSlotInput"], label[for="nbTerrainsInput"], label[for="phaseSelect"] {
       font-size: 18px;
       font-weight: bold;
       margin-right: 4px;
@@ -105,61 +108,59 @@
       const val = parseInt(document.getElementById("nbTerrainsInput").value, 10);
       return isNaN(val) ? 5 : val;
     }
+    function getPhaseSelectionnee() {
+      return parseInt(document.getElementById("phaseSelect").value, 10);
+    }
 
-    // Nouvelle logique pour générer les phases/rounds/pistes
+    // Générer une seule phase à la fois (phase sélectionnée)
     async function genererPhase() {
       const { data: joueurs } = await supabase.from("players").select("*");
       if (!joueurs || joueurs.length < 1) {
         alert("Aucun joueur inscrit !");
         return;
       }
+      const phase = getPhaseSelectionnee();
+
+      // Supprimer les affectations existantes pour cette phase
       await supabase.from("players")
         .update({ phase: null, round: null, terrain: null })
-        .in("id", joueurs.map(j => j.id));
+        .eq("phase", phase);
 
       const joueursParSlot = getJoueursParSlot();
       const nbTerrains = getNbTerrains();
-      const nbPhases = 4;
       let shuffled = joueurs.slice().sort(() => Math.random() - 0.5);
 
-      // Pour chaque phase, on répartit tous les joueurs sur les rounds et pistes
-      for (let phase = 1; phase <= nbPhases; phase++) {
-        // Découpe les joueurs pour cette phase
-        // On veut que chaque joueur joue chaque phase, donc on reprend tout le monde à chaque phase
-        let joueursPhase = shuffled.slice();
+      // Calcul du nombre de slots nécessaires pour cette phase
+      const nbSlots = Math.ceil(shuffled.length / joueursParSlot);
+      const nbRounds = Math.ceil(nbSlots / nbTerrains);
 
-        // Calcul du nombre de slots nécessaires pour cette phase
-        const nbSlots = Math.ceil(joueursPhase.length / joueursParSlot);
-        const nbRounds = Math.ceil(nbSlots / nbTerrains);
+      // Génère les rounds (A, B, C, D, ...)
+      const roundLabels = Array.from({length: nbRounds}, (_, i) => String.fromCharCode(65 + i)); // ['A','B','C',...]
 
-        // Génère les rounds (A, B, C, D, ...)
-        const roundLabels = Array.from({length: nbRounds}, (_, i) => String.fromCharCode(65 + i)); // ['A','B','C',...]
-
-        // Création des slots (round, terrain)
-        let slots = [];
-        for (let r = 0; r < nbRounds; r++) {
-          for (let t = 1; t <= nbTerrains; t++) {
-            slots.push({ round: roundLabels[r], terrain: t, joueurs: [] });
-          }
+      // Création des slots (round, terrain)
+      let slots = [];
+      for (let r = 0; r < nbRounds; r++) {
+        for (let t = 1; t <= nbTerrains; t++) {
+          slots.push({ round: roundLabels[r], terrain: t, joueurs: [] });
         }
+      }
 
-        // Répartition des joueurs dans les slots
-        let idx = 0;
-        for (const joueur of joueursPhase) {
-          while (idx < slots.length && slots[idx].joueurs.length >= joueursParSlot) {
-            idx++;
-          }
-          if (idx >= slots.length) break;
-          slots[idx].joueurs.push(joueur);
+      // Répartition des joueurs dans les slots
+      let idx = 0;
+      for (const joueur of shuffled) {
+        while (idx < slots.length && slots[idx].joueurs.length >= joueursParSlot) {
+          idx++;
         }
+        if (idx >= slots.length) break;
+        slots[idx].joueurs.push(joueur);
+      }
 
-        // Mise à jour en base pour chaque joueur de la phase
-        for (const slot of slots) {
-          for (const joueur of slot.joueurs) {
-            await supabase.from("players")
-              .update({ phase, round: slot.round, terrain: slot.terrain })
-              .eq("id", joueur.id);
-          }
+      // Mise à jour en base pour chaque joueur de la phase
+      for (const slot of slots) {
+        for (const joueur of slot.joueurs) {
+          await supabase.from("players")
+            .update({ phase, round: slot.round, terrain: slot.terrain })
+            .eq("id", joueur.id);
         }
       }
       afficherPlanning();
@@ -310,11 +311,13 @@
     }
     window.demiFinaleManuelle = demiFinaleManuelle;
 
+    // MODIFICATION : filtrage de l'affichage selon la phase sélectionnée
     async function afficherPlanning() {
+      const phase = getPhaseSelectionnee();
       const { data } = await supabase.from("players").select("name, terrain, phase, round, total_points").order("phase, round, terrain");
       const grouped = {};
       for (const joueur of data) {
-        if (!joueur.phase) continue;
+        if (!joueur.phase || joueur.phase != phase) continue; // filtre la phase sélectionnée
         let key = "";
         if (joueur.phase === "finale") {
           key = "🏁 Grande Finale";
@@ -354,6 +357,11 @@
     window.resetPlanning = resetPlanning;
     window.onload = afficherPlanning;
     window.demiFinaleManuelle = demiFinaleManuelle;
+
+    // Ajout : rafraîchir l'affichage quand on change la phase
+    document.addEventListener("DOMContentLoaded", () => {
+      document.getElementById("phaseSelect").addEventListener("change", afficherPlanning);
+    });
   </script>
 </head>
 <body>
@@ -367,6 +375,13 @@
     <input id="joueursParSlotInput" type="number" min="2" max="20" value="10">
     <label for="nbTerrainsInput">Nombre de pistes :</label>
     <input id="nbTerrainsInput" type="number" min="1" max="20" value="5">
+    <label for="phaseSelect">Phase :</label>
+    <select id="phaseSelect">
+      <option value="1">Phase 1</option>
+      <option value="2">Phase 2</option>
+      <option value="3">Phase 3</option>
+      <option value="4">Phase 4</option>
+    </select>
     <button onclick="demiFinaleManuelle()">⚙️ Demi-finale manuelle</button>
     <button onclick="genererPhase()">🚀 Générer la phase</button>
     <button onclick="genererDemiFinale()">🏁 Générer la demi-finale</button>
