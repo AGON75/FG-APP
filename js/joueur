@@ -1,7 +1,10 @@
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
 const SUPABASE_URL = "https://ckolzmqarfizoxjgolft.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrb2x6bXFhcmZpem94amdvbGZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk2Nzg3NTYsImV4cCI6MjA2NTI1NDc1Nn0.ZlpERz1uznM0fn--GR9YgM2vjwe_kw-qiPF8KHJvMpI";
+const SUPABASE_ANON_KEY = import.meta.env?.VITE_SUPABASE_ANON_KEY;
+if (!SUPABASE_ANON_KEY) {
+  throw new Error("Supabase anon key is missing. Please set VITE_SUPABASE_ANON_KEY in your environment variables.");
+}
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -11,14 +14,64 @@ document.addEventListener('DOMContentLoaded', () => {
       e.preventDefault();
       const name = document.getElementById('name').value.trim();
       if (!name) return;
-      const { error } = await supabase.from('players').insert([{ name, total_points: 0, matches: 0 }]);
-      document.getElementById('result').innerText = error ? "❌ " + error.message : "✅ Inscription réussie !";
-    });
+      const resultElem = document.getElementById('result');
+      if (resultElem) resultElem.innerText = "⏳ Inscription en cours...";
+      // Check if the player already exists
+      const { data: existing, error: selectError } = await supabase
+        .from('players')
+        .select('id')
+        .eq('name', name)
+        .single();
+
+      // Only show error if it's not just "no rows found" (PGRST116 = No rows found in Supabase/PostgREST)
+      if (selectError && selectError.code !== 'PGRST116') {
+        if (resultElem) resultElem.innerText = "❌ " + selectError.message;
+        return;
+      }
+
+      if (existing) {
+        if (resultElem) resultElem.innerText = "❌ Ce nom existe déjà !";
+        return;
+      }
+      const { error: insertError } = await supabase
+        .from('players')
+        .insert([{ name, total_points: 0, matches: 0 }])
+        .select()
+        .single();
+          // Standardized check for duplicate name (unique constraint violation)
+          function isDuplicateError(error) {
+            if (!error) return false;
+            // Supabase/Postgres unique violation code or message check
+            return error.code === '23505' ||
+              (error.message && (
+                error.message.toLowerCase().includes('duplicate') ||
+                error.message.toLowerCase().includes('unique constraint')
+              ));
+          }
+          if (isDuplicateError(insertError)) {
+            if (resultElem) resultElem.innerText = "❌ Ce nom existe déjà !";
+          } else if (insertError) {
+            if (resultElem) resultElem.innerText = "❌ " + insertError.message;
+          } else {
+            if (resultElem) resultElem.innerText = "✅ Inscription réussie !";
+          }
+      });
   }
 });
 
-// Affiche le terrain après inscription (fonction utilitaire si besoin)
-window.afficherTerrain = function(terrain) {
+// Show the court after registration (utility function if needed)
+export function showCourt(court) {
   const msg = document.getElementById("terrainMessage");
-  if (msg) msg.textContent = "Tu joues sur la piste : " + terrain;
+  if (msg) msg.textContent = "You are playing on court: " + court;
+}
+
+window.showCourt = function(court) {
+  const msg = document.getElementById("terrainMessage");
+  if (msg) msg.textContent = "You are playing on court: " + court;
+};
+
+// Show the court after registration (utility function if needed)
+window.showCourt = function(court) {
+  const msg = document.getElementById("terrainMessage");
+  if (msg) msg.textContent = "You are playing on court: " + court;
 };
