@@ -163,7 +163,6 @@
     }
     function getPhaseSelectionnee() {
       const val = document.getElementById("phaseSelect").value;
-      // Ajout : gestion phase spéciale
       if (val === "demi") return 99;
       if (val === "finale") return "finale";
       return parseInt(val, 10);
@@ -349,7 +348,6 @@
       showLoading(false);
     }
 
-    // Correction : attacher explicitement les fonctions à window pour les boutons HTML
     window.genererPhase = genererPhase;
     window.genererDemiFinale = genererDemiFinale;
     window.finaleManuelle = finaleManuelle;
@@ -361,7 +359,6 @@
     window.onload = afficherPlanning;
 
     document.addEventListener("DOMContentLoaded", () => {
-      // Ajout dynamique des manches D à H dans la liste déroulante si elle existe
       const roundSelect = document.getElementById("round");
       if (roundSelect) {
         const rounds = ["D", "E", "F", "G", "H"];
@@ -375,7 +372,6 @@
         });
       }
       document.getElementById("phaseSelect").addEventListener("change", () => afficherPlanning(1));
-      // Ajout des phases spéciales dans le select phase
       const phaseSelect = document.getElementById("phaseSelect");
       if (phaseSelect && !phaseSelect.querySelector('option[value="demi"]')) {
         const optDemi = document.createElement("option");
@@ -389,12 +385,10 @@
         optFinale.textContent = "Finale";
         phaseSelect.appendChild(optFinale);
       }
-      // Remplacement du titre principal
       const h1 = document.querySelector("h1");
       if (h1) h1.textContent = "📅 Planning des Parties";
     });
 
-    // Fonctions pour les boutons (doivent être définies sur window)
     async function genererDemiFinale() {
       const { data, error } = await supabase
         .from("players")
@@ -446,7 +440,6 @@
           terrain: slots[idx].terrain
         }).eq("id", joueur.id);
 
-        // Ajout dans matches pour la demi-finale
         await supabase.from("matches").insert({
           player_id: joueur.id,
           phase: 99,
@@ -498,7 +491,6 @@
           total_points: "FINALISTE"
         }).eq("id", joueur.id);
 
-        // Ajout dans matches pour la finale
         await supabase.from("matches").insert({
           player_id: joueur.id,
           phase: "finale",
@@ -549,7 +541,6 @@
           terrain: terrain
         }).eq("id", finalistes[i].id);
 
-        // Ajout dans matches pour la demi-finale manuelle
         await supabase.from("matches").insert({
           player_id: finalistes[i].id,
           phase: 99,
