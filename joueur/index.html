@@ -7,18 +7,10 @@
   <link rel="icon" type="image/png" href="../assets/FingerGame_logo_blanc_tagline.png">
   <style>
     :root {
-      --fg-bleu-marin: #001B65; /* Bleu marin principal */
-      --fg-jaune: #ffd700;      /* Jaune principal */
+      --fg-bleu-marin: #001B65;
+      --fg-jaune: #ffd700;
       --fg-bleu: #0d47a1;
     }
-    /* ===== POLICE MONTSERRAT ===== */
-    /* 
-      NOTE: "Sports World" is the intended main font for impactful titles,
-      but it is not imported here due to licensing or availability.
-      Fallbacks to Montserrat, Impact, Arial, or sans-serif are used.
-      To use "Sports World", import it or host the font file if you have the rights.
-    */
-    /* cyrillic-ext */
     @font-face {
       font-family: 'Montserrat';
       font-style: normal;
@@ -27,79 +19,6 @@
       src: url(https://fonts.gstatic.com/s/montserrat/v30/JTUSjIg1_i6t8kCHKm459WRhyzbi.woff2) format('woff2');
       unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
     }
-    /* cyrillic */
-    @font-face {
-      font-family: 'Montserrat';
-      font-style: normal;
-      font-weight: 300;
-      font-display: swap;
-      src: url(https://fonts.gstatic.com/s/montserrat/v30/JTUSjIg1_i6t8kCHKm459W1hyzbi.woff2) format('woff2');
-      unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
-    }
-    /* vietnamese */
-    @font-face {
-      font-family: 'Montserrat';
-      font-style: normal;
-      font-weight: 300;
-      font-display: swap;
-      src: url(https://fonts.gstatic.com/s/montserrat/v30/JTUSjIg1_i6t8kCHKm459WZhyzbi.woff2) format('woff2');
-      unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
-    }
-    /* latin-ext */
-    @font-face {
-      font-family: 'Montserrat';
-      font-style: normal;
-      font-weight: 300;
-      font-display: swap;
-      src: url(https://fonts.gstatic.com/s/montserrat/v30/JTUSjIg1_i6t8kCHKm459Wdhyzbi.woff2) format('woff2');
-      unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
-    }
-    /* latin */
-    @font-face {
-      font-family: 'Montserrat';
-      font-style: normal;
-      font-weight: 300;
-      font-display: swap;
-      src: url(https://fonts.gstatic.com/s/montserrat/v30/JTUSjIg1_i6t8kCHKm459Wlhyw.woff2) format('woff2');
-      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-    }
-    /* cyrillic-ext */
-    @font-face {
-      font-family: 'Montserrat';
-      font-style: normal;
-      font-weight: 400;
-      font-display: swap;
-      src: url(https://fonts.gstatic.com/s/montserrat/v30/JTUSjIg1_i6t8kCHKm459WRhyzbi.woff2) format('woff2');
-      unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
-    }
-    /* cyrillic */
-    @font-face {
-      font-family: 'Montserrat';
-      font-style: normal;
-      font-weight: 400;
-      font-display: swap;
-      src: url(https://fonts.gstatic.com/s/montserrat/v30/JTUSjIg1_i6t8kCHKm459W1hyzbi.woff2) format('woff2');
-      unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
-    }
-    /* vietnamese */
-    @font-face {
-      font-family: 'Montserrat';
-      font-style: normal;
-      font-weight: 400;
-      font-display: swap;
-      src: url(https://fonts.gstatic.com/s/montserrat/v30/JTUSjIg1_i6t8kCHKm459WZhyzbi.woff2) format('woff2');
-      unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
-    }
-    /* latin-ext */
-    @font-face {
-      font-family: 'Montserrat';
-      font-style: normal;
-      font-weight: 400;
-      font-display: swap;
-      src: url(https://fonts.gstatic.com/s/montserrat/v30/JTUSjIg1_i6t8kCHKm459Wdhyzbi.woff2) format('woff2');
-      unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
-    }
-    /* latin */
     @font-face {
       font-family: 'Montserrat';
       font-style: normal;
@@ -108,97 +27,6 @@
       src: url(https://fonts.gstatic.com/s/montserrat/v30/JTUSjIg1_i6t8kCHKm459Wlhyw.woff2) format('woff2');
       unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
     }
-    /* cyrillic-ext */
-    @font-face {
-      font-family: 'Montserrat';
-      font-style: normal;
-      font-weight: 500;
-      font-display: swap;
-      src: url(https://fonts.gstatic.com/s/montserrat/v30/JTUSjIg1_i6t8kCHKm459WRhyzbi.woff2) format('woff2');
-      unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
-    }
-    /* cyrillic */
-    @font-face {
-      font-family: 'Montserrat';
-      font-style: normal;
-      font-weight: 500;
-      font-display: swap;
-      src: url(https://fonts.gstatic.com/s/montserrat/v30/JTUSjIg1_i6t8kCHKm459W1hyzbi.woff2) format('woff2');
-      unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
-    }
-    /* vietnamese */
-    @font-face {
-      font-family: 'Montserrat';
-      font-style: normal;
-      font-weight: 500;
-      font-display: swap;
-      src: url(https://fonts.gstatic.com/s/montserrat/v30/JTUSjIg1_i6t8kCHKm459WZhyzbi.woff2) format('woff2');
-      unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
-    }
-    /* latin-ext */
-    @font-face {
-      font-family: 'Montserrat';
-      font-style: normal;
-      font-weight: 500;
-      font-display: swap;
-      src: url(https://fonts.gstatic.com/s/montserrat/v30/JTUSjIg1_i6t8kCHKm459Wdhyzbi.woff2) format('woff2');
-      unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
-    }
-    /* latin */
-    @font-face {
-      font-family: 'Montserrat';
-      font-style: normal;
-      font-weight: 500;
-      font-display: swap;
-      src: url(https://fonts.gstatic.com/s/montserrat/v30/JTUSjIg1_i6t8kCHKm459Wlhyw.woff2) format('woff2');
-      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-    }
-    /* cyrillic-ext */
-    @font-face {
-      font-family: 'Montserrat';
-      font-style: normal;
-      font-weight: 700;
-      font-display: swap;
-      src: url(https://fonts.gstatic.com/s/montserrat/v30/JTUSjIg1_i6t8kCHKm459WRhyzbi.woff2) format('woff2');
-      unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
-    }
-    /* cyrillic */
-    @font-face {
-      font-family: 'Montserrat';
-      font-style: normal;
-      font-weight: 700;
-      font-display: swap;
-      src: url(https://fonts.gstatic.com/s/montserrat/v30/JTUSjIg1_i6t8kCHKm459W1hyzbi.woff2) format('woff2');
-      unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
-    }
-    /* vietnamese */
-    @font-face {
-      font-family: 'Montserrat';
-      font-style: normal;
-      font-weight: 700;
-      font-display: swap;
-      src: url(https://fonts.gstatic.com/s/montserrat/v30/JTUSjIg1_i6t8kCHKm459WZhyzbi.woff2) format('woff2');
-      unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
-    }
-    /* latin-ext */
-    @font-face {
-      font-family: 'Montserrat';
-      font-style: normal;
-      font-weight: 700;
-      font-display: swap;
-      src: url(https://fonts.gstatic.com/s/montserrat/v30/JTUSjIg1_i6t8kCHKm459Wdhyzbi.woff2) format('woff2');
-      unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
-    }
-    /* latin */
-    @font-face {
-      font-family: 'Montserrat';
-      font-style: normal;
-      font-weight: 700;
-      font-display: swap;
-      src: url(https://fonts.gstatic.com/s/montserrat/v30/JTUSjIg1_i6t8kCHKm459Wlhyw.woff2) format('woff2');
-      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-    }
-
     html, body {
       font-family: 'Montserrat', Impact, Arial, sans-serif;
       color: var(--fg-bleu-marin);
@@ -206,11 +34,166 @@
       margin: 0;
       padding: 0;
     }
-    /* Example: Use for impactful titles if "Sports World" is available */
     .impact-title {
       font-family: 'Sports World', 'Montserrat', Impact, Arial, sans-serif;
       font-weight: bold;
     }
+    nav {
+      margin: 18px 0 18px 0;
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+      align-items: center;
+    }
+    nav a, nav button {
+      font-size: 1.1em;
+      color: var(--fg-bleu-marin);
+      background: none;
+      border: none;
+      text-decoration: none;
+      font-weight: bold;
+      cursor: pointer;
+      padding: 6px 12px;
+      border-radius: 6px;
+      transition: background 0.2s, color 0.2s;
+    }
+    nav a:hover, nav button:hover {
+      background: var(--fg-jaune);
+      color: var(--fg-bleu-marin);
+    }
+    .main-status {
+      font-size: 1.2em;
+      margin: 18px auto 8px auto;
+      max-width: 600px;
+      font-weight: bold;
+      text-align: center;
+    }
+    .error-message {
+      color: #ffd700;
+      background: #b71c1c;
+      border-radius: 6px;
+      padding: 10px;
+      margin: 10px auto;
+      max-width: 500px;
+      font-weight: bold;
+      display: none;
+    }
+    .spinner {
+      display: inline-block;
+      width: 22px;
+      height: 22px;
+      border: 3px solid #ffd700;
+      border-radius: 50%;
+      border-top: 3px solid #0d47a1;
+      animation: spin 1s linear infinite;
+      vertical-align: middle;
+      margin-left: 8px;
+    }
+    .hidden {
+      display: none !important;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg);}
+      100% { transform: rotate(360deg);}
+    }
+    .btn-bar {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      flex-wrap: wrap;
+      margin: 18px 0 24px 0;
+    }
+    .btn-bar button {
+      padding: 12px 24px;
+      font-size: 18px;
+      border-radius: 8px;
+      border: none;
+      background: var(--fg-jaune);
+      color: var(--fg-bleu-marin);
+      font-weight: bold;
+      cursor: pointer;
+      transition: box-shadow 0.2s, background 0.2s, color 0.2s;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    .btn-bar button:hover, .btn-bar button:focus {
+      background: var(--fg-bleu);
+      color: #fff;
+      outline: none;
+    }
+    #terrain-table {
+      margin: 20px auto;
+      border-collapse: collapse;
+      width: 95%;
+      max-width: 700px;
+      background: rgba(0,0,0,0.02);
+      font-size: 1.1em;
+      display: none;
+    }
+    #terrain-table caption {
+      font-weight: bold;
+      font-size: 1.2em;
+      margin-bottom: 8px;
+      color: var(--fg-bleu-marin);
+    }
+    #terrain-table th, #terrain-table td {
+      border: 1px solid #ccc;
+      padding: 10px;
+      text-align: center;
+    }
+    #terrain-table th {
+      background: #e3e8f0;
+      color: var(--fg-bleu-marin);
+    }
+    #prochaines-manches {
+      margin: 24px auto 0 auto;
+      max-width: 700px;
+      font-size: 1.1em;
+    }
+    #signup-form {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin: 32px auto 0 auto;
+      gap: 12px;
+      max-width: 350px;
+    }
+    #signup-form input[type="text"] {
+      font-size: 1.1em;
+      padding: 8px 12px;
+      border-radius: 6px;
+      border: 1px solid #bbb;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    #signup-form button {
+      background: var(--fg-jaune);
+      color: var(--fg-bleu-marin);
+      font-weight: bold;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 24px;
+      font-size: 1.1em;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+    }
+    #signup-form button:hover {
+      background: var(--fg-bleu);
+      color: #fff;
+    }
+    @media (max-width: 600px) {
+      .btn-bar {
+        flex-direction: column;
+        gap: 10px;
+      }
+      #terrain-table, #prochaines-manches {
+        font-size: 1em;
+      }
+      nav {
+        flex-direction: column;
+        gap: 10px;
+      }
+    }
+    /* Charte Graphique Modal Styles */
     #charteDialog h2 {
       font-family: 'Montserrat', Arial, sans-serif;
       font-weight: 700;
@@ -264,58 +247,29 @@
         max-width: 90vw !important;
       }
     }
-    /* ...styles inchangés... */
-    .error-message {
-      color: #ffd700;
-      background: #b71c1c;
-      border-radius: 6px;
-      padding: 10px;
-      margin: 10px auto;
-      max-width: 500px;
-      font-weight: bold;
-      display: none;
-    }
-    .spinner {
-      display: inline-block;
-      width: 22px;
-      height: 22px;
-      border: 3px solid #ffd700;
-      border-radius: 50%;
-      border-top: 3px solid #0d47a1;
-      animation: spin 1s linear infinite;
-      vertical-align: middle;
-      margin-left: 8px;
-    }
-    .hidden {
-      display: none !important;
-    }
-    @keyframes spin {
-      0% { transform: rotate(0deg);}
-      100% { transform: rotate(360deg);}
-    }
   </style>
 </head>
 <body>
-  <img src="../assets/FingerGame_logo_blanc_tagline.png" alt="Finger Game">
-
+  <img src="../assets/FingerGame_logo_blanc_tagline.png" alt="Finger Game" style="display:block;margin:24px auto 0 auto;max-width:220px;width:60vw;">
   <nav aria-label="Navigation principale">
     <a href="../classement/index.html" aria-label="Voir le classement" tabindex="0">📊 Classement</a>
     <a href="../regles/index.html" aria-label="Voir les règles du jeu" tabindex="0">📜 Règles</a>
     <button id="logout-btn" style="margin-left:20px;display:none;" aria-label="Déconnexion">🚪 Déconnexion</button>
   </nav>
-
   <div id="main-status" class="main-status statut-normal" aria-live="polite"></div>
   <div id="error-message" class="error-message"></div>
   <div id="loading" style="display:none;">Chargement...</div>
-
+  <form id="signup-form" style="display:none;">
+    <input type="text" id="name" placeholder="Ton prénom ou pseudo" required />
+    <button type="submit">S'inscrire</button>
+  </form>
+  <div id="result"></div>
   <div class="btn-bar">
     <button id="refresh-btn" onclick="rafraichirDonnees()" aria-label="Afficher la prochaine manche">📘 Afficher la prochaine manche</button>
     <button onclick="changerDeJoueur()" aria-label="Changer de joueur">🔄 Changer de joueur</button>
   </div>
-
   <table id="terrain-table" class="hidden"></table>
   <div id="prochaines-manches"></div>
-
   <dialog id="nameDialog">
     <form method="dialog">
       <label>Entrez votre Nom et Prénom</label>
@@ -323,7 +277,6 @@
       <button type="submit" aria-label="Valider le nom">OK</button>
     </form>
   </dialog>
-
   <!-- ====== CHARTE GRAPHIQUE MODALE ====== -->
   <button id="show-charte-btn"
     style="position:fixed;bottom:18px;right:18px;z-index:1000;background:var(--fg-jaune);color:var(--fg-bleu-marin);font-weight:700;border:none;border-radius:50%;width:54px;height:54px;box-shadow:0 2px 8px #001B6533;cursor:pointer;font-size:1.8em;"
@@ -393,7 +346,7 @@
     </div>
   </dialog>
   <script>
-    // Script to handle the opening and closing of the Charte Graphique modal dialog for UI/UX purposes.
+    // Charte Graphique modal
     document.getElementById('show-charte-btn').onclick = () => {
       document.getElementById('charteDialog').showModal();
     };
@@ -406,10 +359,10 @@
   <script src="/js/supabase-joueur.js" type="module"></script>
   <script src="../js/supabase-joueur.js" type="module"></script>
   <script type="module">
-    // Récupère l'ID du joueur depuis le localStorage
+    import { supabase, getPlayerById, inscrireOuConnecter, partieLibelle, showError, hideError, setRefreshLoading } from '../js/supabase-joueur.js';
+
     const playerId = localStorage.getItem("player_id");
 
-    // ...existing code...
     async function afficherTableauTerrain(terrain, round) {
       try {
         const { data } = await supabase
@@ -418,7 +371,6 @@
           .eq("terrain", terrain)
           .eq("round", round);
 
-        // Récupère les noms des joueurs en parallèle (performance)
         const joueurs = await Promise.all(
           data.map(async m => {
             const { data: joueur } = await supabase
@@ -441,9 +393,6 @@
       }
     }
 
-    /**
-     * Affiche toutes les prochaines manches du joueur depuis matches
-     */
     async function afficherProchainesManches(joueur) {
       try {
         const { data } = await supabase
@@ -460,7 +409,7 @@
             let icon = "";
             if (m.phase === 99) icon = "🥉";
             else if (m.phase === "finale" || m.phase === 100 || m.phase == 100) icon = "🎯";
-            else if (m.phase === "finale" || m.phase == 100) icon = "🎯";
+            html += `<li>${icon} <b>${partieTxt}</b> – Manche <b>${m.round}</b> – Piste <b>${m.terrain}</b></li>`;
           });
           html += "</ul>";
           div.innerHTML = html;
@@ -472,14 +421,8 @@
       }
     }
 
-    /**
-     * Déconnexion du joueur
-     */
-    // La fonction changerDeJoueur est définie plus bas pour gérer aussi le clearInterval.
     document.getElementById("logout-btn").onclick = window.changerDeJoueur;
 
-    /**
-     */
     window.rafraichirDonnees = async function () {
       if (playerId) {
         setRefreshLoading(true);
@@ -494,9 +437,6 @@
       }
     }
 
-    /**
-     * Exécute une fonction quand le DOM est prêt
-     */
     function ready(fn) {
       if (document.readyState === "loading") {
         document.addEventListener("DOMContentLoaded", fn);
@@ -505,7 +445,6 @@
       }
     }
 
-    // Initialisation
     let refreshIntervalId = null;
     ready(() => {
       hideError();
@@ -513,52 +452,38 @@
       const loading = document.getElementById("loading");
       loading.style.display = "block";
       mainStatus.textContent = "";
-        if (typeof playerId !== "undefined" && playerId) {
-          getPlayerById(playerId).then(joueur => afficher(joueur));
-        } else {
-          inscrireOuConnecter();
-        }
-      // Start periodic refresh only if playerId exists
+      if (typeof playerId !== "undefined" && playerId) {
+        getPlayerById(playerId).then(joueur => afficher(joueur));
+      } else {
+        inscrireOuConnecter();
+      }
       if (playerId) {
         refreshIntervalId = setInterval(() => {
           getPlayerById(playerId).then(joueur => afficher(joueur));
         }, 10000);
       }
-    window.changerDeJoueur = function () {
-      localStorage.removeItem("player_id");
-      if (refreshIntervalId) {
-        clearInterval(refreshIntervalId);
-        refreshIntervalId = null;
+      window.changerDeJoueur = function () {
+        localStorage.removeItem("player_id");
+        if (refreshIntervalId) {
+          clearInterval(refreshIntervalId);
+          refreshIntervalId = null;
+        }
+        location.reload();
       }
-      location.reload();
-    }
-
       window.addEventListener('unhandledrejection', function(event) {
         showError("Une erreur inattendue est survenue.");
         if (typeof setRefreshLoading === "function") {
           setRefreshLoading(false);
         }
       });
-
-      // Clear interval on page unload to prevent memory leaks
       window.addEventListener('beforeunload', function() {
         if (refreshIntervalId) {
           clearInterval(refreshIntervalId);
           refreshIntervalId = null;
         }
       });
-    }); // <-- Ajout du } manquant ici pour fermer la fonction ready
-<div>
-  <form id="signup-form">
-    <input type="text" id="name" placeholder="Ton prénom ou pseudo" required />
-    <button type="submit">S'inscrire</button>
-  </form>
-  <div id="result"></div>
-  <div class="btn-bar">
-    <button id="refresh-btn" onclick="rafraichirDonnees()" aria-label="Afficher la prochaine manche">📘 Afficher la prochaine manche</button>
-    <button onclick="changerDeJoueur()" aria-label="Changer de joueur">🔄 Changer de joueur</button>
-  </div>
-  <table id="terrain-table" class="hidden"></table>
-  <div id="prochaines-manches"></div>
-</div>
+    });
+  </script>
+</body>
+</html>
 
