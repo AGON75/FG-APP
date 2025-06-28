@@ -5,7 +5,6 @@
   <title>Planning – Finger Game</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
-    /* ...styles inchangés... */
     body {
       background: linear-gradient(to right, #0d47a1, #b71c1c);
       color: white;
@@ -483,8 +482,7 @@
         }
         finalistes.push(joueur);
       }
-      // Correction ici : on enlève .neq("id", "")
-      await supabase.from("players").update({ phase: null, round: null, terrain: null });
+      await supabase.from("players").update({ phase: null, round: null, terrain: null }).neq("id", "");
       for (const joueur of finalistes) {
         await supabase.from("players").update({
           phase: 100,
@@ -593,4 +591,6 @@
       <tbody id="dispatch"></tbody>
     </table>
   </div>
-  <div class="pagination"
+  <div class="pagination" id="pagination"></div>
+</body>
+</html>
