@@ -145,6 +145,7 @@
       if (!confirm("Supprimer ce joueur ?")) return;
       try {
         await supabase.from("eliminations").delete().eq("player_id", id);
+        await supabase.from("matches").delete().eq("player_id", id); // suppression des matches liés
         await supabase.from("players").delete().eq("id", id);
         chargerJoueurs();
       } catch (e) {
@@ -153,9 +154,10 @@
     }
 
     async function resetTournoi() {
-      if (!confirm("Réinitialiser tous les scores, phases et terrains ?")) return;
+      if (!confirm("Réinitialiser tous les scores, phases, terrains et matches ?")) return;
       try {
         await supabase.from("eliminations").delete().neq("id", "");
+        await supabase.from("matches").delete().neq("id", ""); // reset matches
         await supabase.from('players').update({ total_points: 0, matches: 0, phase: null, round: null, terrain: null }).not('id', 'is', null);
         chargerJoueurs();
       } catch (e) {
@@ -167,6 +169,7 @@
       if (!confirm("Supprimer tous les joueurs ? Action irréversible.")) return;
       try {
         await supabase.from("eliminations").delete().neq("id", "");
+        await supabase.from("matches").delete().neq("id", ""); // suppression des matches liés
         await supabase.from('players').delete().not('id', 'is', null);
         chargerJoueurs();
       } catch (e) {
@@ -245,11 +248,11 @@
       downloadCSV(csv, "liste_joueurs_finger_game.csv");
     }
 
-    // Export CSV - Planning
+    // Export CSV - Planning (MAJ : depuis matches)
     async function exportPlanningCSV() {
       const { data, error } = await supabase
-        .from("players")
-        .select("name, terrain, phase, round")
+        .from("matches")
+        .select("phase, round, terrain, players(name)")
         .order("phase, round, terrain");
       if (error || !data) {
         alert("Erreur lors de l'export du planning.");
@@ -257,7 +260,7 @@
       }
       let csv = "Nom,Piste,Phase,Round\n";
       data.forEach(j => {
-        csv += `"${j.name}",${j.terrain ?? ""},${j.phase ?? ""},${j.round ?? ""}\n`;
+        csv += `"${j.players?.name ?? ""}",${j.terrain ?? ""},${j.phase ?? ""},${j.round ?? ""}\n`;
       });
       downloadCSV(csv, "planning_finger_game.csv");
     }
