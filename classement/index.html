@@ -327,20 +327,22 @@
           lastPoints = pointsNum;
           lastPhase = phaseVal;
 
+          // Statut et couleur robustes selon la phase réelle
           let statut = "";
-          if (joueur.total_points === "VAINQUEUR") statut = "Vainqueur";
-          else if (joueur.phase === "finale") statut = "Finaliste";
-          else if (joueur.phase == 99 && i < nbDemiFinale) statut = "Demi-finaliste";
-          else statut = "";
+          let trClass = "";
+          if (joueur.total_points === "VAINQUEUR") {
+            statut = "Vainqueur";
+            trClass = "vainqueur";
+          } else if (joueur.phase === "finale") {
+            statut = "Finaliste";
+            trClass = "finaliste";
+          } else if (joueur.phase == 99) {
+            statut = "Demi-finaliste";
+            trClass = "demi-finaliste";
+          }
 
           const tr = document.createElement("tr");
-          if (joueur.total_points === "VAINQUEUR") {
-            tr.classList.add("vainqueur");
-          } else if (joueur.phase === "finale") {
-            tr.classList.add("finaliste");
-          } else if (joueur.phase == 99 && i < nbDemiFinale) {
-            tr.classList.add("demi-finaliste");
-          }
+          if (trClass) tr.classList.add(trClass);
           if (i === sorted.length - 1) tr.classList.add("emoji-caca");
           if (i === sorted.length - 2) tr.classList.add("emoji-nul");
 
@@ -421,10 +423,11 @@
         }
         lastPoints = pointsNum;
         lastPhase = phaseVal;
+        // Statut robuste pour l'export
         let statut = "";
         if (joueur.total_points === "VAINQUEUR") statut = "Vainqueur";
         else if (joueur.phase === "finale") statut = "Finaliste";
-        else if (joueur.phase == 99 && i < nbDemiFinale) statut = "Demi-finaliste";
+        else if (joueur.phase == 99) statut = "Demi-finaliste";
         else statut = "";
         csv += `"${rang}${egalite > 1 ? "=" : ""}","${joueur.name.replace(/"/g, '""')}","${joueur.total_points ?? 0}","${joueur.matches ?? 0}","${statut}"\n`;
       });
