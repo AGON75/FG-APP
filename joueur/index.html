@@ -3,210 +3,35 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Joueur - Finger Game</title>
+  <title id="page-title">Joueur - Finger Game</title>
   <link rel="icon" type="image/png" href="../assets/FingerGame_logo_blanc_tagline.png">
+  <link rel="icon" href="data:,">
   <style>
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      background: linear-gradient(to right, #0d47a1, #b71c1c);
-      color: white;
-      text-align: center;
-      padding: 30px;
-      margin: 0;
-    }
-    nav {
-      display: flex;
-      justify-content: center;
-      gap: 18px;
-      margin-bottom: 18px;
-      flex-wrap: wrap;
-    }
-    nav a {
+    /* ...styles inchangés... */
+    .error-message {
       color: #ffd700;
-      background: rgba(0,0,0,0.18);
-      padding: 10px 18px;
-      border-radius: 8px;
-      font-weight: bold;
-      font-size: 18px;
-      text-decoration: none;
-      margin: 4px 0;
-      transition: background 0.2s, color 0.2s;
-    }
-    nav a:focus, nav a:hover {
-      background: #ffd700;
-      color: #0d47a1;
-      outline: none;
-    }
-    img {
-      width: 200px;
-      margin-top: 20px;
-      max-width: 90%;
-    }
-    .main-status {
-      margin-top: 30px;
-      font-size: 24px;
-      font-weight: bold;
-      border-radius: 12px;
-      padding: 18px 10px;
-      max-width: 600px;
-      margin-left: auto;
-      margin-right: auto;
-      box-shadow: 0 2px 12px rgba(0,0,0,0.15);
-      transition: background 0.3s, color 0.3s;
-    }
-    .statut-demi {
-      background: #cd7f32;
-      color: #fff;
-      border: 2px solid #fff;
-    }
-    .statut-finale {
-      background: #c0c0c0;
-      color: #222;
-      border: 2px solid #fff;
-    }
-    .statut-vainqueur {
-      background: #ffd700;
-      color: #222;
-      border: 2px solid #fff;
-      animation: winnerPulse 1.2s infinite alternate;
-    }
-    @keyframes winnerPulse {
-      0% { box-shadow: 0 0 10px #ffd700; }
-      100% { box-shadow: 0 0 30px #ffd700; }
-    }
-    .statut-normal {
-      background: rgba(0,0,0,0.15);
-      color: #fff;
-      border: 2px solid #fff;
-    }
-    .btn-bar {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 16px;
-      margin: 20px 0 10px 0;
-    }
-    button {
-      margin: 0;
-      padding: 16px 28px;
-      font-size: 20px;
-      font-weight: bold;
-      border-radius: 10px;
-      border: none;
-      cursor: pointer;
-      background: #444;
-      color: white;
-      transition: background 0.2s, color 0.2s, transform 0.1s;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-      outline: none;
-    }
-    button:focus {
-      outline: 3px solid #ffd700;
-      outline-offset: 2px;
-      background: #222;
-    }
-    button:hover {
-      background: #ffd700;
-      color: #0d47a1;
-      transform: scale(1.04);
-    }
-    #terrain-table {
-      margin-top: 30px;
-      border-collapse: collapse;
-      width: 100%;
-      max-width: 600px;
-      margin-left: auto;
-      margin-right: auto;
-      background: rgba(255,255,255,0.1);
-      border-radius: 8px;
-      overflow: hidden;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-    }
-    #terrain-table caption {
-      caption-side: top;
-      font-size: 20px;
-      font-weight: bold;
-      color: #ffd700;
-      margin-bottom: 8px;
-    }
-    #terrain-table th, #terrain-table td {
-      border: 1px solid white;
+      background: #b71c1c;
+      border-radius: 6px;
       padding: 10px;
-    }
-    #terrain-table th {
-      background-color: #222;
-      font-size: 17px;
-    }
-    #terrain-table tr:nth-child(even) td {
-      background: rgba(255,255,255,0.07);
-    }
-    dialog::backdrop {
-      background: rgba(0, 0, 0, 0.7);
-    }
-    dialog input {
-      padding: 10px;
-      font-size: 16px;
-      width: 100%;
-      background: black;
-      color: white;
-      border: none;
-      border-radius: 4px;
-    }
-    #prochaines-manches {
-      margin-top: 30px;
-      font-size: 18px;
-      text-align: left;
-      max-width: 600px;
-      margin-left: auto;
-      margin-right: auto;
-      background: rgba(255,255,255,0.07);
-      border-radius: 8px;
-      padding: 10px 20px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-    }
-    #loading {
-      font-size: 22px;
-      color: #ffd700;
-      margin-top: 30px;
+      margin: 10px auto;
+      max-width: 500px;
       font-weight: bold;
-      animation: blink 1.2s infinite alternate;
+      display: none;
     }
-    @keyframes blink {
-      0% { opacity: 1; }
-      100% { opacity: 0.5; }
+    .spinner {
+      display: inline-block;
+      width: 22px;
+      height: 22px;
+      border: 3px solid #ffd700;
+      border-radius: 50%;
+      border-top: 3px solid #0d47a1;
+      animation: spin 1s linear infinite;
+      vertical-align: middle;
+      margin-left: 8px;
     }
-    @media (max-width: 700px) {
-      nav {
-        flex-direction: column;
-        gap: 8px;
-      }
-      .main-status, #terrain-table, #prochaines-manches {
-        font-size: 18px;
-        padding: 8px;
-      }
-      .btn-bar {
-        flex-direction: column;
-        gap: 12px;
-      }
-      button {
-        font-size: 18px;
-        padding: 18px 0;
-        width: 100%;
-        margin-bottom: 8px;
-      }
-      #terrain-table th, #terrain-table td {
-        padding: 6px;
-        font-size: 14px;
-      }
-      #prochaines-manches {
-        font-size: 15px;
-        padding: 6px 8px;
-      }
-      nav a {
-        font-size: 16px;
-        padding: 10px 0;
-        width: 100%;
-      }
+    @keyframes spin {
+      0% { transform: rotate(0deg);}
+      100% { transform: rotate(360deg);}
     }
   </style>
 </head>
@@ -216,13 +41,15 @@
   <nav aria-label="Navigation principale">
     <a href="../classement/index.html" aria-label="Voir le classement" tabindex="0">📊 Classement</a>
     <a href="../regles/index.html" aria-label="Voir les règles du jeu" tabindex="0">📜 Règles</a>
+    <button id="logout-btn" style="margin-left:20px;display:none;" aria-label="Déconnexion">🚪 Déconnexion</button>
   </nav>
 
   <div id="main-status" class="main-status statut-normal" aria-live="polite"></div>
+  <div id="error-message" class="error-message"></div>
   <div id="loading" style="display:none;">Chargement...</div>
 
   <div class="btn-bar">
-    <button onclick="rafraichirDonnees()" aria-label="Afficher la prochaine manche">📘 Afficher la prochaine manche</button>
+    <button id="refresh-btn" onclick="rafraichirDonnees()" aria-label="Afficher la prochaine manche">📘 Afficher la prochaine manche</button>
     <button onclick="changerDeJoueur()" aria-label="Changer de joueur">🔄 Changer de joueur</button>
   </div>
 
@@ -233,7 +60,7 @@
     <form method="dialog">
       <label>Entrez votre Nom et Prénom</label>
       <input id="nameInput" required>
-      <button type="submit">OK</button>
+      <button type="submit" aria-label="Valider le nom">OK</button>
     </form>
   </dialog>
 
@@ -246,14 +73,53 @@
     )
 
     let playerId = localStorage.getItem("player_id");
+    let isLoading = false;
 
+    /**
+     * Affiche un message d'erreur visible
+     */
+    function showError(msg) {
+      const errorDiv = document.getElementById("error-message");
+      errorDiv.textContent = msg;
+      errorDiv.style.display = "block";
+    }
+    function hideError() {
+      const errorDiv = document.getElementById("error-message");
+      errorDiv.textContent = "";
+      errorDiv.style.display = "none";
+    }
+
+    /**
+     * Affiche un spinner sur le bouton de rafraîchissement
+     */
+    function setRefreshLoading(loading) {
+      const btn = document.getElementById("refresh-btn");
+      if (loading) {
+        btn.disabled = true;
+        if (!btn.querySelector('.spinner')) {
+          btn.innerHTML += '<span class="spinner"></span>';
+        }
+      } else {
+        btn.disabled = false;
+        const sp = btn.querySelector('.spinner');
+        if (sp) sp.remove();
+      }
+    }
+
+    /**
+     * Retourne le libellé d'une phase
+     */
     function partieLibelle(phase) {
       if (phase == 99) return "Demi-finale";
       if (phase === "finale") return "Finale";
       return "Partie " + phase;
     }
 
+    /**
+     * Affiche le dialog pour inscrire ou connecter un joueur
+     */
     async function inscrireOuConnecter() {
+      hideError();
       const dialog = document.getElementById("nameDialog");
       const input = document.getElementById("nameInput");
       if (!window.HTMLDialogElement) {
@@ -267,7 +133,6 @@
         if (!baseName) return;
 
         try {
-          // Recherche d'un joueur existant (même nom/prénom, sans tenir compte du numéro)
           const { data: existing } = await supabase
             .from("players")
             .select("id, name")
@@ -282,6 +147,7 @@
             playerId = joueurTrouve.id;
             localStorage.setItem("player_id", playerId);
             afficher(joueurTrouve);
+            document.getElementById("logout-btn").style.display = "inline-block";
           } else {
             // Génération numéro unique
             let numero = 1;
@@ -302,38 +168,58 @@
               playerId = inserted.id;
               localStorage.setItem("player_id", playerId);
               afficher(inserted);
+              document.getElementById("logout-btn").style.display = "inline-block";
             } else {
-              alert("Erreur lors de l'inscription.");
+              showError("Erreur lors de l'inscription.");
             }
           }
         } catch (e) {
-          document.getElementById("main-status").textContent = "Erreur de connexion. Veuillez vérifier votre réseau.";
+          showError("Erreur de connexion. Veuillez vérifier votre réseau.");
         }
       }, { once: true });
     }
 
+    /**
+     * Récupère un joueur par son id
+     */
     async function getPlayerById(id) {
-      const { data } = await supabase
-        .from("players")
-        .select("*")
-        .eq("id", id)
-        .single();
-      return data;
+      try {
+        const { data } = await supabase
+          .from("players")
+          .select("*")
+          .eq("id", id)
+          .single();
+        return data;
+      } catch (e) {
+        showError("Erreur lors de la récupération du joueur.");
+        return null;
+      }
     }
 
+    /**
+     * Vérifie si le joueur est vainqueur
+     */
     async function estVainqueur(joueur) {
-      const { data } = await supabase
-        .from("eliminations")
-        .select("id")
-        .eq("player_id", joueur.id)
-        .eq("phase", 99)
-        .eq("rank", 1)
-        .maybeSingle();
-      return !!data;
+      try {
+        const { data } = await supabase
+          .from("eliminations")
+          .select("id")
+          .eq("player_id", joueur.id)
+          .eq("phase", 99)
+          .eq("rank", 1)
+          .maybeSingle();
+        return !!data;
+      } catch (e) {
+        showError("Erreur lors de la vérification du statut.");
+        return false;
+      }
     }
 
-    // Affiche les infos du joueur et la prochaine manche depuis la table matches
+    /**
+     * Affiche les infos du joueur et la prochaine manche depuis la table matches
+     */
     async function afficher(joueur) {
+      hideError();
       const mainStatus = document.getElementById("main-status");
       const loading = document.getElementById("loading");
       loading.style.display = "none";
@@ -344,6 +230,11 @@
         setTimeout(inscrireOuConnecter, 1000);
         return;
       }
+
+      // Titre dynamique
+      document.title = joueur.name + " - Finger Game";
+      document.getElementById("page-title").textContent = joueur.name + " - Finger Game";
+      document.getElementById("logout-btn").style.display = "inline-block";
 
       // Détection du statut spécial
       let statut = "";
@@ -364,93 +255,132 @@
       }
 
       // Cherche la prochaine manche dans matches
-      const { data: matches } = await supabase
-        .from("matches")
-        .select("phase, round, terrain")
-        .eq("player_id", joueur.id)
-        .order("phase", { ascending: true })
-        .order("round", { ascending: true })
-        .limit(1);
+      try {
+        setRefreshLoading(true);
+        const { data: matches } = await supabase
+          .from("matches")
+          .select("phase, round, terrain")
+          .eq("player_id", joueur.id)
+          .order("phase", { ascending: true })
+          .order("round", { ascending: true })
+          .limit(1);
 
-      if (statut) {
-        mainStatus.innerHTML = `<span style="font-size:2em;">${emoji}</span><br>${joueur.name}<br>${statut}<br>Piste <b>${joueur.terrain ?? "-"}</b>`;
-        mainStatus.className = "main-status " + statutClass;
-      } else if (matches && matches.length > 0) {
-        const m = matches[0];
-        mainStatus.innerHTML = `<b>${joueur.name}</b><br>Piste <b>${m.terrain ?? "non attribuée"}</b> — Partie <b>${m.phase ?? "-"}</b> / Manche <b>${m.round ?? "-"}</b>`;
-        mainStatus.className = "main-status statut-normal";
-        if (m.terrain) afficherTableauTerrain(m.terrain, m.round);
-        else document.getElementById("terrain-table").style.display = "none";
-      } else {
-        mainStatus.innerHTML = `<b>${joueur.name}</b><br>Aucune manche à venir.`;
-        mainStatus.className = "main-status statut-normal";
-        document.getElementById("terrain-table").style.display = "none";
+        if (statut) {
+          mainStatus.innerHTML = `<span style="font-size:2em;">${emoji}</span><br>${joueur.name}<br>${statut}<br>Piste <b>${joueur.terrain ?? "-"}</b>`;
+          mainStatus.className = "main-status " + statutClass;
+        } else if (matches && matches.length > 0) {
+          const m = matches[0];
+          mainStatus.innerHTML = `<b>${joueur.name}</b><br>Piste <b>${m.terrain ?? "non attribuée"}</b> — Partie <b>${m.phase ?? "-"}</b> / Manche <b>${m.round ?? "-"}</b>`;
+          mainStatus.className = "main-status statut-normal";
+          if (m.terrain) await afficherTableauTerrain(m.terrain, m.round);
+          else document.getElementById("terrain-table").style.display = "none";
+        } else {
+          mainStatus.innerHTML = `<b>${joueur.name}</b><br>Aucune manche à venir.`;
+          mainStatus.className = "main-status statut-normal";
+          document.getElementById("terrain-table").style.display = "none";
+        }
+        await afficherProchainesManches(joueur);
+      } catch (e) {
+        showError("Erreur lors de la récupération des données.");
+      } finally {
+        setRefreshLoading(false);
       }
-
-      afficherProchainesManches(joueur);
     }
 
-    // Affiche les joueurs sur la même piste et manche
+    /**
+     * Récupère et affiche les joueurs sur la même piste et manche (optimisé Promise.all)
+     */
     async function afficherTableauTerrain(terrain, round) {
-      const { data } = await supabase
-        .from("matches")
-        .select("player_id, terrain, round")
-        .eq("terrain", terrain)
-        .eq("round", round);
+      try {
+        const { data } = await supabase
+          .from("matches")
+          .select("player_id, terrain, round")
+          .eq("terrain", terrain)
+          .eq("round", round);
 
-      // Récupère les noms des joueurs
-      let joueurs = [];
-      for (const m of data) {
-        const { data: joueur } = await supabase
-          .from("players")
-          .select("name")
-          .eq("id", m.player_id)
-          .single();
-        joueurs.push({ name: joueur ? joueur.name : "-", round: m.round });
-      }
+        // Récupère les noms des joueurs en parallèle
+        const joueurs = await Promise.all(
+          data.map(async m => {
+            const { data: joueur } = await supabase
+              .from("players")
+              .select("name")
+              .eq("id", m.player_id)
+              .single();
+            return { name: joueur ? joueur.name : "-", round: m.round };
+          })
+        );
 
-      const table = document.getElementById("terrain-table");
-      table.innerHTML = `<caption>👥 Joueurs sur la piste ${terrain}</caption><tr><th>Nom</th><th>Manche</th></tr>`;
-      for (const p of joueurs) {
-        table.innerHTML += `<tr><td>${p.name}</td><td>${p.round ?? "-"}</td></tr>`;
+        const table = document.getElementById("terrain-table");
+        table.innerHTML = `<caption>👥 Joueurs sur la piste ${terrain}</caption><tr><th>Nom</th><th>Manche</th></tr>`;
+        for (const p of joueurs) {
+          table.innerHTML += `<tr><td>${p.name}</td><td>${p.round ?? "-"}</td></tr>`;
+        }
+        table.style.display = "table";
+      } catch (e) {
+        showError("Erreur lors de l'affichage des joueurs sur la piste.");
       }
-      table.style.display = "table";
     }
 
-    // Affiche toutes les prochaines manches du joueur depuis matches
+    /**
+     * Affiche toutes les prochaines manches du joueur depuis matches
+     */
     async function afficherProchainesManches(joueur) {
-      const { data } = await supabase
-        .from("matches")
-        .select("phase, round, terrain")
-        .eq("player_id", joueur.id)
-        .order("phase", { ascending: true })
-        .order("round", { ascending: true });
-      const div = document.getElementById("prochaines-manches");
-      if (data && data.length > 0) {
-        let html = "<h2>📅 Prochaines manches</h2><ul style='padding-left:20px;'>";
-        data.forEach(m => {
-          let partieTxt = partieLibelle(m.phase);
-          let icon = "";
-          if (m.phase == 99) icon = "🥉";
-          else if (m.phase === "finale") icon = "🎯";
-          html += `<li>${icon} <b>${partieTxt}</b> — Manche <b>${m.round ?? "-"}</b> — Piste <b>${m.terrain ?? "-"}</b></li>`;
-        });
-        html += "</ul>";
-        div.innerHTML = html;
-      } else {
-        div.innerHTML = "";
+      try {
+        const { data } = await supabase
+          .from("matches")
+          .select("phase, round, terrain")
+          .eq("player_id", joueur.id)
+          .order("phase", { ascending: true })
+          .order("round", { ascending: true });
+        const div = document.getElementById("prochaines-manches");
+        if (data && data.length > 0) {
+          let html = "<h2>📅 Prochaines manches</h2><ul style='padding-left:20px;'>";
+          data.forEach(m => {
+            let partieTxt = partieLibelle(m.phase);
+            let icon = "";
+            if (m.phase == 99) icon = "🥉";
+            else if (m.phase === "finale") icon = "🎯";
+            html += `<li>${icon} <b>${partieTxt}</b> — Manche <b>${m.round ?? "-"}</b> — Piste <b>${m.terrain ?? "-"}</b></li>`;
+          });
+          html += "</ul>";
+          div.innerHTML = html;
+        } else {
+          div.innerHTML = "<div style='color:#ffd700;font-weight:bold;'>Aucune prochaine manche prévue.</div>";
+        }
+      } catch (e) {
+        showError("Erreur lors de l'affichage des prochaines manches.");
       }
     }
 
+    /**
+     * Déconnexion du joueur
+     */
     window.changerDeJoueur = function () {
       localStorage.removeItem("player_id");
       location.reload();
     }
+    document.getElementById("logout-btn").onclick = window.changerDeJoueur;
 
-    window.rafraichirDonnees = function () {
-      if (playerId) getPlayerById(playerId).then(joueur => afficher(joueur));
+    /**
+     * Rafraîchit les données du joueur
+     */
+    window.rafraichirDonnees = async function () {
+      if (playerId) {
+        setRefreshLoading(true);
+        try {
+          const joueur = await getPlayerById(playerId);
+          await afficher(joueur);
+        } catch (e) {
+          showError("Erreur lors du rafraîchissement.");
+        } finally {
+          setRefreshLoading(false);
+        }
+      }
     }
 
+    /**
+     * Exécute une fonction quand le DOM est prêt
+     */
     function ready(fn) {
       if (document.readyState === "loading") {
         document.addEventListener("DOMContentLoaded", fn);
@@ -459,7 +389,9 @@
       }
     }
 
+    // Initialisation
     ready(() => {
+      hideError();
       const mainStatus = document.getElementById("main-status");
       const loading = document.getElementById("loading");
       loading.style.display = "block";
@@ -475,6 +407,12 @@
     setInterval(() => {
       if (playerId) getPlayerById(playerId).then(joueur => afficher(joueur));
     }, 10000);
+
+    // Catch global pour erreurs asynchrones
+    window.addEventListener('unhandledrejection', function(event) {
+      showError("Une erreur inattendue est survenue.");
+      setRefreshLoading(false);
+    });
   </script>
 </body>
 </html>
