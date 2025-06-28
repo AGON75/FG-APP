@@ -164,7 +164,7 @@
     function getPhaseSelectionnee() {
       const val = document.getElementById("phaseSelect").value;
       if (val === "demi") return 99;
-      if (val === "finale") return "finale";
+      if (val === "finale") return 100;
       return parseInt(val, 10);
     }
 
@@ -245,7 +245,7 @@
 
     function phaseLibelle(phase) {
       if (phase == 99) return "Demi-finale";
-      if (phase === "finale") return "Finale";
+      if (phase == 100) return "Finale";
       return "Partie " + phase;
     }
 
@@ -393,7 +393,7 @@
       const { data, error } = await supabase
         .from("players")
         .select("*")
-        .neq("phase", "finale");
+        .neq("phase", 100);
       if (error) {
         alert("Erreur lors de la récupération des joueurs : " + error.message);
         return;
@@ -411,8 +411,8 @@
       data.sort((a, b) => {
         if (a.total_points === "VAINQUEUR" && b.total_points !== "VAINQUEUR") return -1;
         if (b.total_points === "VAINQUEUR" && a.total_points !== "VAINQUEUR") return 1;
-        if (a.phase === "finale" && b.phase !== "finale") return -1;
-        if (b.phase === "finale" && a.phase !== "finale") return 1;
+        if (a.phase == 100 && b.phase != 100) return -1;
+        if (b.phase == 100 && a.phase != 100) return 1;
         const pa = isNaN(parseInt(a.total_points, 10)) ? -Infinity : parseInt(a.total_points, 10);
         const pb = isNaN(parseInt(b.total_points, 10)) ? -Infinity : parseInt(b.total_points, 10);
         return pb - pa;
@@ -485,7 +485,7 @@
       await supabase.from("players").update({ phase: null, round: null, terrain: null }).neq("id", "");
       for (const joueur of finalistes) {
         await supabase.from("players").update({
-          phase: "finale",
+          phase: 100,
           round: '🏁 Grande Finale',
           terrain: 1,
           total_points: "FINALISTE"
@@ -493,7 +493,7 @@
 
         await supabase.from("matches").insert({
           player_id: joueur.id,
-          phase: "finale",
+          phase: 100,
           round: '🏁 Grande Finale',
           terrain: 1
         });
