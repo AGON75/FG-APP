@@ -332,6 +332,7 @@
       return !!data;
     }
 
+    // Affiche les infos du joueur et la prochaine manche depuis la table matches
     async function afficher(joueur) {
       const mainStatus = document.getElementById("main-status");
       const loading = document.getElementById("loading");
@@ -362,41 +363,65 @@
         emoji = "🥉";
       }
 
+      // Cherche la prochaine manche dans matches
+      const { data: matches } = await supabase
+        .from("matches")
+        .select("partie, manche, terrain")
+        .eq("player_id", joueur.id)
+        .order("partie, manche")
+        .limit(1);
+
       if (statut) {
         mainStatus.innerHTML = `<span style="font-size:2em;">${emoji}</span><br>${joueur.name}<br>${statut}<br>Piste <b>${joueur.terrain ?? "-"}</b>`;
         mainStatus.className = "main-status " + statutClass;
-      } else {
-        const partieNum = (joueur.matches ?? 0) + 1;
-        let info = joueur.manche === "A" ? " (Démarrage dans 3 min)" : joueur.manche === "B" ? " (Démarrage après la manche A)" : "";
-        mainStatus.innerHTML = `<b>${joueur.name}</b><br>Piste <b>${joueur.terrain ?? "non attribuée"}</b> — Partie <b>${partieNum}</b> / Manche <b>${joueur.manche ?? "-"}</b>${info}`;
+      } else if (matches && matches.length > 0) {
+        const m = matches[0];
+        mainStatus.innerHTML = `<b>${joueur.name}</b><br>Piste <b>${m.terrain ?? "non attribuée"}</b> — Partie <b>${m.partie ?? "-"}</b> / Manche <b>${m.manche ?? "-"}</b>`;
         mainStatus.className = "main-status statut-normal";
+        if (m.terrain) afficherTableauTerrain(m.terrain, m.manche);
+        else document.getElementById("terrain-table").style.display = "none";
+      } else {
+        mainStatus.innerHTML = `<b>${joueur.name}</b><br>Aucune manche à venir.`;
+        mainStatus.className = "main-status statut-normal";
+        document.getElementById("terrain-table").style.display = "none";
       }
-
-      if (joueur.terrain) afficherTableauTerrain(joueur.terrain);
-      else document.getElementById("terrain-table").style.display = "none";
 
       afficherProchainesManches(joueur);
     }
 
-    async function afficherTableauTerrain(terrain) {
+    // Affiche les joueurs sur la même piste et manche
+    async function afficherTableauTerrain(terrain, manche) {
       const { data } = await supabase
-        .from("players")
-        .select("name, matches, manche")
-        .eq("terrain", terrain);
+        .from("matches")
+        .select("player_id, terrain, manche")
+        .eq("terrain", terrain)
+        .eq("manche", manche);
+
+      // Récupère les noms des joueurs
+      let joueurs = [];
+      for (const m of data) {
+        const { data: joueur } = await supabase
+          .from("players")
+          .select("name")
+          .eq("id", m.player_id)
+          .single();
+        joueurs.push({ name: joueur ? joueur.name : "-", manche: m.manche });
+      }
 
       const table = document.getElementById("terrain-table");
-      table.innerHTML = `<caption>👥 Joueurs sur la piste ${terrain}</caption><tr><th>Nom</th><th>Matchs joués</th><th>Manche</th></tr>`;
-      for (const p of data) {
-        table.innerHTML += `<tr><td>${p.name}</td><td>${p.matches ?? 0}</td><td>${p.manche ?? "-"}</td></tr>`;
+      table.innerHTML = `<caption>👥 Joueurs sur la piste ${terrain}</caption><tr><th>Nom</th><th>Manche</th></tr>`;
+      for (const p of joueurs) {
+        table.innerHTML += `<tr><td>${p.name}</td><td>${p.manche ?? "-"}</td></tr>`;
       }
       table.style.display = "table";
     }
 
+    // Affiche toutes les prochaines manches du joueur depuis matches
     async function afficherProchainesManches(joueur) {
       const { data } = await supabase
-        .from("players")
+        .from("matches")
         .select("partie, manche, terrain")
-        .eq("name", joueur.name)
+        .eq("player_id", joueur.id)
         .order("partie, manche");
       const div = document.getElementById("prochaines-manches");
       if (data && data.length > 0) {
