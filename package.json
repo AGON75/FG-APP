@@ -1,0 +1,19 @@
+{
+  "name": "finger-game-app",
+  "version": "1.0.0",
+  "description": "Application web de gestion de tournoi Finger Game (joueurs, classement, planning, gestion, arbitre)",
+  "author": "Clément",
+  "license": "MIT",
+  "scripts": {
+    "start": "npx live-server --open=joueur/index.html",
+    "lint": "npx eslint . --ext .js"
+  },
+  "devDependencies": {
+    "live-server": "^1.2.2",
+    "eslint": "^8.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/<ton-utilisateur>/<ton-repo>.git"
+  }
+}
