@@ -147,6 +147,7 @@
     let planningData = [];
     let currentPage = 1;
     const rowsPerPage = 30;
+    let playersMap = {};
 
     function showLoading(show) {
       document.getElementById("loading").style.display = show ? "inline" : "none";
@@ -164,7 +165,14 @@
       return parseInt(document.getElementById("phaseSelect").value, 10);
     }
 
-    // Générer une seule phase à la fois (phase sélectionnée) et stocker dans matches
+    async function loadPlayersMap() {
+      const { data } = await supabase.from("players").select("id, name");
+      playersMap = {};
+      if (data) {
+        data.forEach(j => { playersMap[j.id] = j.name; });
+      }
+    }
+
     async function genererPhase() {
       showLoading(true);
       const { data: joueurs } = await supabase.from("players").select("id");
@@ -175,21 +183,16 @@
       }
       const phase = getPhaseSelectionnee();
 
-      // Supprimer les matches existants pour cette phase
       await supabase.from("matches").delete().eq("phase", phase);
 
       const joueursParSlot = getJoueursParSlot();
       const nbTerrains = getNbTerrains();
       let shuffled = joueurs.slice().sort(() => Math.random() - 0.5);
 
-      // Calcul du nombre de slots nécessaires pour cette phase
       const nbSlots = Math.ceil(shuffled.length / joueursParSlot);
       const nbRounds = Math.ceil(nbSlots / nbTerrains);
+      const roundLabels = Array.from({length: nbRounds}, (_, i) => String.fromCharCode(65 + i));
 
-      // Génère les rounds (A, B, C, D, ...)
-      const roundLabels = Array.from({length: nbRounds}, (_, i) => String.fromCharCode(65 + i)); // ['A','B','C',...]
-
-      // Création des slots (round, terrain)
       let slots = [];
       for (let r = 0; r < nbRounds; r++) {
         for (let t = 1; t <= nbTerrains; t++) {
@@ -197,7 +200,6 @@
         }
       }
 
-      // Répartition des joueurs dans les slots
       let idx = 0;
       for (const joueur of shuffled) {
         while (idx < slots.length && slots[idx].joueurs.length >= joueursParSlot) {
@@ -207,7 +209,6 @@
         slots[idx].joueurs.push(joueur);
       }
 
-      // Insertion en base pour chaque joueur de la phase dans matches
       for (const slot of slots) {
         for (const joueur of slot.joueurs) {
           await supabase.from("matches").insert({
@@ -220,12 +221,12 @@
       }
       showLoading(false);
       afficherPlanning();
-      alert("Phase générée !");
+      alert("Partie générée !");
     }
 
-    // Affichage du planning depuis la table matches
     async function afficherPlanning(page = 1) {
       showLoading(true);
+      await loadPlayersMap();
       const phase = getPhaseSelectionnee();
       const { data } = await supabase
         .from("matches")
@@ -243,15 +244,13 @@
       const tbody = document.getElementById("dispatch");
       if (!tbody) return;
       tbody.innerHTML = "";
-      // Pagination
       const start = (currentPage - 1) * rowsPerPage;
       const end = start + rowsPerPage;
       const pagedData = planningData.slice(start, end);
 
-      // Regroupement par slot
       const grouped = {};
       for (const match of pagedData) {
-        let key = `Phase ${match.phase} – Round ${match.round} – Piste ${match.terrain}`;
+        let key = `Partie ${match.phase} – Manche ${match.round} – Piste ${match.terrain}`;
         if (!grouped[key]) grouped[key] = [];
         grouped[key].push(match.players?.name ?? "");
       }
@@ -289,7 +288,7 @@
       const phase = getPhaseSelectionnee();
       const slots = {};
       for (const match of planningData) {
-        let key = `Round ${match.round} – Piste ${match.terrain}`;
+        let key = `Manche ${match.round} – Piste ${match.terrain}`;
         if (!slots[key]) slots[key] = 0;
         slots[key]++;
       }
@@ -323,7 +322,7 @@
         showLoading(false);
         return;
       }
-      let csv = "Nom,Piste,Phase,Round\n";
+      let csv = "Nom,Piste,Partie,Manche\n";
       data.forEach(j => {
         csv += `"${j.players?.name ?? ""}",${j.terrain ?? ""},${j.phase ?? ""},${j.round ?? ""}\n`;
       });
@@ -341,7 +340,6 @@
 
     // Les autres fonctions restent inchangées (elles utilisent encore la table players)
     async function genererDemiFinale() {
-      // ... inchangé ...
       const { data, error } = await supabase
         .from("players")
         .select("*")
@@ -397,7 +395,6 @@
     }
 
     async function finaleManuelle() {
-      // ... inchangé ...
       const { data: allPlayers } = await supabase.from("players").select("id, name");
       if (!allPlayers || allPlayers.length === 0) {
         alert("Aucun joueur inscrit !");
@@ -443,7 +440,6 @@
     window.finaleManuelle = finaleManuelle;
 
     async function demiFinaleManuelle() {
-      // ... inchangé ...
       const { data: allPlayers } = await supabase.from("players").select("id, name");
       if (!allPlayers || allPlayers.length === 0) {
         alert("Aucun joueur inscrit !");
@@ -497,14 +493,38 @@
     window.demiFinaleManuelle = demiFinaleManuelle;
 
     document.addEventListener("DOMContentLoaded", () => {
+      // Ajout dynamique des manches D à H dans la liste déroulante si elle existe
+      const roundSelect = document.getElementById("round");
+      if (roundSelect) {
+        const rounds = ["D", "E", "F", "G", "H"];
+        rounds.forEach(r => {
+          if (![...roundSelect.options].some(opt => opt.value === r)) {
+            const opt = document.createElement("option");
+            opt.value = r;
+            opt.textContent = "Manche " + r;
+            roundSelect.appendChild(opt);
+          }
+        });
+      }
       document.getElementById("phaseSelect").addEventListener("change", () => afficherPlanning(1));
+      // Remplacement des intitulés dans le select phase
+      const phaseSelect = document.getElementById("phaseSelect");
+      if (phaseSelect) {
+        for (let opt of phaseSelect.options) {
+          opt.textContent = opt.textContent.replace(/Phase/gi, "Partie");
+        }
+        phaseSelect.previousElementSibling.textContent = "Partie :";
+      }
+      // Remplacement du titre principal
+      const h1 = document.querySelector("h1");
+      if (h1) h1.textContent = "📅 Planning des Parties";
     });
   </script>
 </head>
 <body>
   <header>
     <img src="../assets/FingerGame_logo_blanc_tagline.png" alt="Finger Game">
-    <h1>📅 Planning des Phases</h1>
+    <h1>📅 Planning des Parties</h1>
   </header>
 
   <div class="btn-bar">
@@ -512,15 +532,15 @@
     <input id="joueursParSlotInput" type="number" min="2" max="20" value="10">
     <label for="nbTerrainsInput">Nombre de pistes :</label>
     <input id="nbTerrainsInput" type="number" min="1" max="20" value="5">
-    <label for="phaseSelect">Phase :</label>
+    <label for="phaseSelect">Partie :</label>
     <select id="phaseSelect">
-      <option value="1">Phase 1</option>
-      <option value="2">Phase 2</option>
-      <option value="3">Phase 3</option>
-      <option value="4">Phase 4</option>
+      <option value="1">Partie 1</option>
+      <option value="2">Partie 2</option>
+      <option value="3">Partie 3</option>
+      <option value="4">Partie 4</option>
     </select>
     <button onclick="demiFinaleManuelle()">⚙️ Demi-finale manuelle</button>
-    <button onclick="genererPhase()">🚀 Générer la phase</button>
+    <button onclick="genererPhase()">🚀 Générer la partie</button>
     <button onclick="genererDemiFinale()">🏁 Générer la demi-finale</button>
     <button onclick="finaleManuelle()">🏆 Finale manuelle</button>
     <button onclick="resetPlanning()">🗑️ Réinitialiser le planning</button>
