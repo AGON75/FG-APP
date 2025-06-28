@@ -1,4 +1,5 @@
-tml lang="fr">
+<!DOCTYPE html>
+<html lang="fr">
 <head>
   <meta charset="UTF-8" />
   <title>Arbitre – Finger Game</title>
@@ -149,8 +150,7 @@ tml lang="fr">
   <button onclick="validerManche()">✅ Valider la manche</button>
   <div id="elimines"></div>
   <div id="historique"></div>
-</body>
-</html>  <div id="historique"></div>
+
   <script type="module">
     import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
     const supabase = createClient(
@@ -368,7 +368,6 @@ tml lang="fr">
       zone.appendChild(grid);
 
       // Affichage du type de phase et du nombre d'éliminations nécessaires
-      const phaseType = getPhaseType();
       let info = "";
       if (phaseType === "finale" || phaseType === "demi") {
         info = `${eliminatedOrder.length} éliminations / ${players.length * 2} nécessaires (${phaseType === "finale" ? "Finale" : "Demi-finale"})`;
