@@ -52,6 +52,8 @@
       width: 95%;
       max-width: 1200px;
       background: rgba(0,0,0,0.2);
+      overflow-x: auto;
+      display: block;
     }
     th, td {
       border: 1px solid rgba(255,255,255,0.2);
@@ -92,6 +94,48 @@
       margin-right: 4px;
       color: #fff;
     }
+    #loading {
+      display: none;
+      color: #ffd700;
+      font-weight: bold;
+      margin: 10px 0;
+    }
+    @media (max-width: 700px) {
+      table, thead, tbody, th, td, tr {
+        font-size: 14px;
+        padding: 6px;
+      }
+      .btn-bar {
+        flex-direction: column;
+        gap: 10px;
+      }
+    }
+    .pagination {
+      margin: 20px 0;
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+    }
+    .pagination button {
+      padding: 6px 12px;
+      font-size: 16px;
+      border-radius: 6px;
+      border: none;
+      background: #ffd700;
+      color: #222;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .pagination button:disabled {
+      background: #ccc;
+      color: #888;
+      cursor: not-allowed;
+    }
+    #slotCount {
+      margin: 10px 0 0 0;
+      font-weight: bold;
+      color: #ffd700;
+    }
   </style>
   <script type="module">
     import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
@@ -99,6 +143,14 @@
       'https://ckolzmqarfizoxjgolft.supabase.co',
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrb2x6bXFhcmZpem94amdvbGZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk2Nzg3NTYsImV4cCI6MjA2NTI1NDc1Nn0.ZlpERz1uznM0fn--GR9YgM2vjwe_kw-qiPF8KHJvMpI'
     );
+
+    let planningData = [];
+    let currentPage = 1;
+    const rowsPerPage = 30;
+
+    function showLoading(show) {
+      document.getElementById("loading").style.display = show ? "inline" : "none";
+    }
 
     function getJoueursParSlot() {
       const val = parseInt(document.getElementById("joueursParSlotInput").value, 10);
@@ -114,9 +166,11 @@
 
     // Générer une seule phase à la fois (phase sélectionnée) et stocker dans matches
     async function genererPhase() {
+      showLoading(true);
       const { data: joueurs } = await supabase.from("players").select("id");
       if (!joueurs || joueurs.length < 1) {
         alert("Aucun joueur inscrit !");
+        showLoading(false);
         return;
       }
       const phase = getPhaseSelectionnee();
@@ -164,26 +218,43 @@
           });
         }
       }
+      showLoading(false);
       afficherPlanning();
+      alert("Phase générée !");
     }
 
     // Affichage du planning depuis la table matches
-    async function afficherPlanning() {
+    async function afficherPlanning(page = 1) {
+      showLoading(true);
       const phase = getPhaseSelectionnee();
       const { data } = await supabase
         .from("matches")
         .select("player_id, phase, round, terrain, players(name)")
         .eq("phase", phase)
         .order("round, terrain");
+      planningData = data || [];
+      currentPage = page;
+      renderPlanningTable();
+      showLoading(false);
+      afficherNbJoueursParSlot();
+    }
+
+    function renderPlanningTable() {
+      const tbody = document.getElementById("dispatch");
+      if (!tbody) return;
+      tbody.innerHTML = "";
+      // Pagination
+      const start = (currentPage - 1) * rowsPerPage;
+      const end = start + rowsPerPage;
+      const pagedData = planningData.slice(start, end);
+
+      // Regroupement par slot
       const grouped = {};
-      for (const match of data || []) {
+      for (const match of pagedData) {
         let key = `Phase ${match.phase} – Round ${match.round} – Piste ${match.terrain}`;
         if (!grouped[key]) grouped[key] = [];
         grouped[key].push(match.players?.name ?? "");
       }
-      const tbody = document.getElementById("dispatch");
-      if (!tbody) return;
-      tbody.innerHTML = "";
       for (const bloc in grouped) {
         const header = document.createElement("tr");
         header.className = "phase-header";
@@ -195,6 +266,77 @@
           tbody.appendChild(tr);
         }
       }
+      renderPagination();
+    }
+
+    function renderPagination() {
+      let totalRows = planningData.length;
+      let totalPages = Math.ceil(totalRows / rowsPerPage);
+      const pagDiv = document.getElementById("pagination");
+      if (!pagDiv) return;
+      pagDiv.innerHTML = "";
+      if (totalPages <= 1) return;
+      for (let i = 1; i <= totalPages; i++) {
+        const btn = document.createElement("button");
+        btn.textContent = i;
+        btn.disabled = i === currentPage;
+        btn.onclick = () => afficherPlanning(i);
+        pagDiv.appendChild(btn);
+      }
+    }
+
+    function afficherNbJoueursParSlot() {
+      const phase = getPhaseSelectionnee();
+      const slots = {};
+      for (const match of planningData) {
+        let key = `Round ${match.round} – Piste ${match.terrain}`;
+        if (!slots[key]) slots[key] = 0;
+        slots[key]++;
+      }
+      let html = "<b>Joueurs par slot :</b> ";
+      html += Object.entries(slots).map(([k, v]) => `${k}: <span style='color:#ffd700'>${v}</span>`).join(" | ");
+      document.getElementById("slotCount").innerHTML = html;
+    }
+
+    async function resetPlanning() {
+      if (!confirm("Réinitialiser tout le planning ?")) return;
+      showLoading(true);
+      await supabase.from("matches").delete().neq("phase", null);
+      await supabase.from("players").update({ phase: null, round: null, terrain: null });
+      const tbody = document.getElementById("dispatch");
+      if (tbody) tbody.innerHTML = "";
+      showLoading(false);
+      alert("Planning réinitialisé !");
+      afficherNbJoueursParSlot();
+    }
+
+    async function exporterPlanningCSV() {
+      showLoading(true);
+      const phase = getPhaseSelectionnee();
+      const { data, error } = await supabase
+        .from("matches")
+        .select("player_id, phase, round, terrain, players(name)")
+        .eq("phase", phase)
+        .order("round, terrain");
+      if (error || !data) {
+        alert("Erreur lors de l'export.");
+        showLoading(false);
+        return;
+      }
+      let csv = "Nom,Piste,Phase,Round\n";
+      data.forEach(j => {
+        csv += `"${j.players?.name ?? ""}",${j.terrain ?? ""},${j.phase ?? ""},${j.round ?? ""}\n`;
+      });
+      const blob = new Blob([csv], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "planning_finger_game.csv";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showLoading(false);
     }
 
     // Les autres fonctions restent inchangées (elles utilisent encore la table players)
@@ -346,22 +488,16 @@
     }
     window.demiFinaleManuelle = demiFinaleManuelle;
 
-    async function resetPlanning() {
-      await supabase.from("matches").delete().neq("phase", null);
-      await supabase.from("players").update({ phase: null, round: null, terrain: null });
-      const tbody = document.getElementById("dispatch");
-      if (tbody) tbody.innerHTML = "";
-    }
-
     window.genererPhase = genererPhase;
     window.genererDemiFinale = genererDemiFinale;
     window.finaleManuelle = finaleManuelle;
     window.resetPlanning = resetPlanning;
+    window.exporterPlanningCSV = exporterPlanningCSV;
     window.onload = afficherPlanning;
     window.demiFinaleManuelle = demiFinaleManuelle;
 
     document.addEventListener("DOMContentLoaded", () => {
-      document.getElementById("phaseSelect").addEventListener("change", afficherPlanning);
+      document.getElementById("phaseSelect").addEventListener("change", () => afficherPlanning(1));
     });
   </script>
 </head>
@@ -388,11 +524,18 @@
     <button onclick="genererDemiFinale()">🏁 Générer la demi-finale</button>
     <button onclick="finaleManuelle()">🏆 Finale manuelle</button>
     <button onclick="resetPlanning()">🗑️ Réinitialiser le planning</button>
+    <button onclick="afficherPlanning()">🔄 Rafraîchir</button>
+    <button onclick="exporterPlanningCSV()">⬇️ Exporter le planning CSV</button>
+    <span id="loading">Chargement...</span>
   </div>
 
-  <table>
-    <thead><tr><th>Joueur</th><th>Détails</th></tr></thead>
-    <tbody id="dispatch"></tbody>
-  </table>
+  <div id="slotCount"></div>
+  <div style="overflow-x:auto;">
+    <table>
+      <thead><tr><th>Joueur</th><th>Détails</th></tr></thead>
+      <tbody id="dispatch"></tbody>
+    </table>
+  </div>
+  <div class="pagination" id="pagination"></div>
 </body>
 </html>
