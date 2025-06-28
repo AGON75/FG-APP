@@ -222,7 +222,7 @@
   <div id="loading" style="display:none;">Chargement...</div>
 
   <div class="btn-bar">
-    <button onclick="location.reload()" aria-label="Afficher la prochaine manche">📘 Afficher la prochaine manche</button>
+    <button onclick="rafraichirDonnees()" aria-label="Afficher la prochaine manche">📘 Afficher la prochaine manche</button>
     <button onclick="changerDeJoueur()" aria-label="Changer de joueur">🔄 Changer de joueur</button>
   </div>
 
@@ -443,6 +443,10 @@
     window.changerDeJoueur = function () {
       localStorage.removeItem("player_id");
       location.reload();
+    }
+
+    window.rafraichirDonnees = function () {
+      if (playerId) getPlayerById(playerId).then(joueur => afficher(joueur));
     }
 
     function ready(fn) {
