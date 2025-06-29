@@ -164,6 +164,11 @@
     <button id="logout-btn" style="margin-left:20px;display:none;" aria-label="Déconnexion">🚪 Déconnexion</button>
   </nav>
   <div id="main-status" aria-live="polite"></div>
+  <form id="signup-form" style="display:none;max-width:400px;margin:24px auto;">
+    <input type="text" id="name" placeholder="Ton prénom ou pseudo" required style="margin-bottom:10px;width:80%;padding:10px;font-size:1.1em;border-radius:6px;border:1px solid #bbb;">
+    <button type="submit" style="padding:10px 24px;font-size:1.1em;border-radius:6px;background:#FFD700;color:#001B65;font-weight:bold;border:none;cursor:pointer;">S'inscrire</button>
+  </form>
+  <div id="result" style="color:#c00;font-weight:bold;margin-bottom:12px;"></div>
   <div class="btn-bar">
     <button id="refresh-btn" aria-label="Afficher la prochaine manche">📘 Afficher la prochaine manche</button>
     <button id="changer-joueur-btn" aria-label="Changer de joueur">🔄 Changer de joueur</button>
@@ -244,14 +249,6 @@
     </div>
   </dialog>
   <script>
-    document.getElementById('show-charte-btn').onclick = () => {
+    document.getElementById('show-charte-btn').addEventListener('click', function() {
       document.getElementById('charteDialog').showModal();
-    };
-    document.getElementById('charteDialog').addEventListener('click', function(e){
-      if(e.target === this) this.close();
     });
-  </script>
-  <!-- ====== FIN CHARTE GRAPHIQUE MODALE ====== -->
-  <script type="module" src="./main.js" defer></script>
-</body>
-</html>
