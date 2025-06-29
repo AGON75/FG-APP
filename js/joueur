@@ -1,93 +1,170 @@
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
 const SUPABASE_URL = "https://ckolzmqarfizoxjgolft.supabase.co";
-// Expected: VITE_SUPABASE_ANON_KEY should be set in your environment variables (e.g., in a .env file for Vite)
-const SUPABASE_ANON_KEY =
-  (typeof import.meta !== "undefined" && import.meta.env && import.meta.env.VITE_SUPABASE_ANON_KEY);
-
-if (!SUPABASE_ANON_KEY) {
-  throw new Error(
-    "❌ Supabase anon key is missing. Please set VITE_SUPABASE_ANON_KEY in your environment variables (for Vite), or ensure it's available as window.VITE_SUPABASE_ANON_KEY if running outside Vite. Application will not work without this key."
-  );
-}
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrb2x6bXFhcmZpem94amdvbGZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk2Nzg3NTYsImV4cCI6MjA2NTI1NDc1Nn0.ZlpERz1uznM0fn--GR9YgM2vjwe_kw-qiPF8KHJvMpI";
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-document.addEventListener('DOMContentLoaded', () => {
-  const form = document.getElementById('signup-form');
-  const resultElem = document.getElementById('result'); // Make sure an element with id="result" exists in your HTML
-  if (!resultElem) {
-    throw new Error('❌ Required element with id="result" not found in the HTML. Please add <div id="result"></div> to your page.');
+const signupForm = document.getElementById('signup-form');
+const resultElem = document.getElementById('result');
+const mainStatus = document.getElementById('main-status');
+const logoutBtn = document.getElementById('logout-btn');
+const refreshBtn = document.getElementById('refresh-btn');
+const changerJoueurBtn = document.getElementById('changer-joueur-btn');
+const terrainTable = document.getElementById('terrain-table');
+const prochainesManches = document.getElementById('prochaines-manches');
+
+let playerId = localStorage.getItem("player_id");
+let refreshIntervalId = null;
+
+function showInscription() {
+  signupForm.style.display = "";
+  logoutBtn.style.display = "none";
+  mainStatus.textContent = "Inscris-toi pour participer !";
+  terrainTable.style.display = "none";
+  prochainesManches.innerHTML = "";
+}
+
+function showJoueur(joueur) {
+  signupForm.style.display = "none";
+  logoutBtn.style.display = "";
+  mainStatus.textContent = `Bienvenue ${joueur.name} !`;
+  afficherTableauTerrain(joueur.terrain);
+  afficherProchainesManches(joueur.id);
+}
+
+async function inscrireOuConnecter(name) {
+  // Vérifie si le joueur existe déjà
+  const { data: existing, error: selectError } = await supabase
+    .from('players')
+    .select('id, name, terrain')
+    .eq('name', name)
+    .maybeSingle();
+
+  if (selectError && selectError.code !== 'PGRST116') {
+    resultElem.textContent = "❌ " + selectError.message;
+    return;
   }
+  if (existing) {
+    // Connexion
+    playerId = existing.id;
+    localStorage.setItem("player_id", playerId);
+    showJoueur(existing);
+    startRefresh();
+    return;
+  }
+  // Inscription
+  const { data: inserted, error: insertError } = await supabase
+    .from('players')
+    .insert([{ name }])
+    .select()
+    .single();
+  if (insertError) {
+    resultElem.textContent = "❌ " + insertError.message;
+    return;
+  }
+  playerId = inserted.id;
+  localStorage.setItem("player_id", playerId);
+  showJoueur(inserted);
+  startRefresh();
+}
 
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const nameInput = document.getElementById('name');
-    if (!nameInput || !(nameInput instanceof HTMLInputElement)) {
-      resultElem.innerText = "❌ Champ de nom introuvable dans le formulaire.";
-      return;
-    }
-    const name = nameInput.value.trim();
-    if (!name) {
-      resultElem.innerText = "❌ Veuillez entrer un nom.";
-      return;
-    }
-    resultElem.innerText = "⏳ Inscription en cours...";
-    // Check if the player already exists
-    // We check for duplicate names both before (select) and after (insert) to handle race conditions:
-    // If two users try to register the same name at the same time, both selects might pass,
-    // but only one insert will succeed due to the unique constraint in the database.
-    // This ensures we always catch duplicates, even in concurrent scenarios.
-    const { data: existingPlayer, error: selectError } = await supabase
-      .from('players')
-      .select('id')
-      .eq('name', name)
-      .maybeSingle();
+async function getPlayerById(id) {
+  const { data } = await supabase
+    .from("players")
+    .select("*")
+    .eq("id", id)
+    .single();
+  return data;
+}
 
-    // Handle multiple rows found error (PGRST123 = Multiple rows found)
-    if (selectError && selectError.code === 'PGRST123') {
-      resultElem.innerText = "❌ Plusieurs joueurs portent déjà ce nom. Veuillez contacter un administrateur.";
-      return;
-    }
+async function afficherTableauTerrain(terrain) {
+  if (!terrain) {
+    terrainTable.style.display = "none";
+    return;
+  }
+  const { data } = await supabase
+    .from("players")
+    .select("name, matches, round")
+    .eq("terrain", terrain);
+  terrainTable.innerHTML = `<tr><th>Nom</th><th>Matchs joués</th><th>Round</th></tr>`;
+  for (const p of data) {
+    terrainTable.innerHTML += `<tr><td>${p.name}</td><td>${p.matches ?? 0}</td><td>${p.round ?? "-"}</td></tr>`;
+  }
+  terrainTable.style.display = "table";
+}
 
-    // Only show error if it's not just "no rows found" (PGRST116 = No rows found in Supabase/PostgREST)
-    if (selectError && selectError.code !== 'PGRST116') {
-      resultElem.innerText = "❌ " + selectError.message;
-      return;
-    }
+async function afficherProchainesManches(joueurId) {
+  const { data } = await supabase
+    .from("matches")
+    .select("phase, round, terrain")
+    .eq("player_id", joueurId)
+    .order("phase", { ascending: true })
+    .order("round", { ascending: true });
+  let html = "<ul>";
+  if (data && data.length > 0) {
+    data.forEach(m => {
+      html += `<li>${m.phase} - Manche ${m.round} sur piste ${m.terrain}</li>`;
+    });
+    html += "</ul>";
+    prochainesManches.innerHTML = html;
+  } else {
+    prochainesManches.innerHTML = "<div style='color:#ffd700;font-weight:bold;'>Aucune prochaine manche prévue.</div>";
+  }
+}
 
-    if (existingPlayer) {
-      resultElem.innerText = "❌ Ce nom existe déjà !";
-      return;
-    }
+function startRefresh() {
+  if (refreshIntervalId) clearInterval(refreshIntervalId);
+  if (playerId) {
+    refreshIntervalId = setInterval(async () => {
+      const joueur = await getPlayerById(playerId);
+      if (joueur) showJoueur(joueur);
+    }, 10000);
+  }
+}
 
-    const { error: insertError } = await supabase
-      .from('players')
-      .insert([{ name, total_points: 0, matches: 0 }]);
-    if (isDuplicateError(insertError)) {
-      resultElem.innerText = "❌ Ce nom existe déjà !";
-    } else if (insertError) {
-      resultElem.innerText = "❌ " + insertError.message;
-    } else {
-      resultElem.innerText = "✅ Inscription réussie !";
-    }
-  });
+signupForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const nameInput = document.getElementById('name');
+  const name = nameInput.value.trim();
+  if (!name) {
+    resultElem.textContent = "❌ Veuillez entrer un nom.";
+    return;
+  }
+  resultElem.textContent = "⏳ Inscription/connexion en cours...";
+  await inscrireOuConnecter(name);
 });
 
-function isDuplicateError(error) {
-  return error && error.code === POSTGRES_UNIQUE_VIOLATION_CODE;
-}
-// Helper to detect duplicate entry error from Supabase/Postgres
-function isDuplicateError(error) {
-  return error && (error.code === POSTGRES_UNIQUE_VIOLATION_CODE || (error.message && error.message.toLowerCase().includes('duplicate')));
-}
+logoutBtn.addEventListener('click', () => {
+  localStorage.removeItem("player_id");
+  if (refreshIntervalId) clearInterval(refreshIntervalId);
+  location.reload();
+});
 
-// Prefix for the court message display
-const COURT_MESSAGE_PREFIX = "Vous êtes sur le terrain n°";
+changerJoueurBtn.addEventListener('click', () => {
+  localStorage.removeItem("player_id");
+  if (refreshIntervalId) clearInterval(refreshIntervalId);
+  location.reload();
+});
 
-// Displays a message indicating which court the player is on.
-// Usage: Call window.showCourt(courtNumber) to update the "terrainMessage" element with the court info.
-window.showCourt = function(court) {
-  const msg = document.getElementById("terrainMessage");
-  if (msg) msg.textContent = COURT_MESSAGE_PREFIX + court;
-};
+refreshBtn.addEventListener('click', async () => {
+  if (playerId) {
+    const joueur = await getPlayerById(playerId);
+    if (joueur) showJoueur(joueur);
+  }
+});
+
+// Initialisation
+(async function () {
+  if (!playerId) {
+    showInscription();
+  } else {
+    const joueur = await getPlayerById(playerId);
+    if (joueur) {
+      showJoueur(joueur);
+      startRefresh();
+    } else {
+      showInscription();
+    }
+  }
+})();
