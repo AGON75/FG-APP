@@ -3,25 +3,142 @@ const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-document.body.innerHTML += `
-  <form id="signup-form">
-    <input type="text" id="name" placeholder="Ton prénom ou pseudo" required>
-    <button type="submit">S'inscrire</button>
-  </form>
-  <div id="result"></div>
-`;
+// ✅ Fonction principale : gère l'inscription ou la connexion du joueur
+async function handlePlayerLogin() {
+  const pseudoInput = document.getElementById('player-name');
+  const pseudo = pseudoInput.value.trim();
 
+  if (!pseudo) {
+    document.getElementById('main-status').textContent = "Veuillez entrer un nom.";
+    return;
+  }
+
+  // Désactiver le bouton pour éviter les double-clics
+  document.getElementById('submit-button').disabled = true;
+
+  // Vérifier si un joueur existe déjà avec ce pseudo
+  const { data: existingPlayers, error: selectError } = await supabase
+    .from('players')
+    .select('id')
+    .eq('name', pseudo);
+
+  if (selectError) {
+    document.getElementById('main-status').textContent = "Erreur lors de la connexion.";
+    return;
+  }
+
+  let playerId;
+
+  if (existingPlayers.length > 0) {
+    // Le joueur existe déjà : se connecter
+    playerId = existingPlayers[0].id;
+  } else {
+    // Le joueur n'existe pas : inscription
+    const { data: insertData, error: insertError } = await supabase
+      .from('players')
+      .insert({ name: pseudo })
+      .select();
+
+    if (insertError || !insertData || insertData.length === 0) {
+      document.getElementById('main-status').textContent = "Erreur lors de l'inscription.";
+      return;
+    }
+
+    playerId = insertData[0].id;
+  }
+
+  // Stocker l'ID en localStorage pour maintenir la session
+  localStorage.setItem('player_id', playerId);
+
+  // Masquer le formulaire d'inscription
+  document.getElementById('signup-form').style.display = 'none';
+
+  // Charger les données du joueur connecté
+  await loadPlayerData(playerId);
+
+  // Réactiver le bouton d'inscription pour les prochaines fois
+  document.getElementById('submit-button').disabled = false;
+}
+
+// ✅ Charger les données du joueur connecté (terrain, matchs, stats, etc.)
+async function loadPlayerData(playerId) {
+  const statusEl = document.getElementById('main-status');
+  const terrainTable = document.getElementById('terrain-table');
+  const prochainesEl = document.getElementById('prochaines-manches');
+
+  // Récupérer les infos du joueur
+  const { data: playerData, error: playerError } = await supabase
+    .from('players')
+    .select('*')
+    .eq('id', playerId)
+    .single();
+
+  if (playerError || !playerData) {
+    statusEl.textContent = "Erreur : joueur introuvable.";
+    localStorage.removeItem('player_id');
+    location.reload();
+    return;
+  }
+
+  // Afficher le message de bienvenue et infos de terrain
+  statusEl.textContent = `Bienvenue ${playerData.name} – Piste ${playerData.terrain || 'Non affectée'}`;
+
+  // Récupérer les autres joueurs sur le même terrain
+  if (playerData.terrain) {
+    const { data: terrainPlayers } = await supabase
+      .from('players')
+      .select('name, total_points, matches')
+      .eq('terrain', playerData.terrain);
+
+    const tbody = terrainTable.querySelector('tbody');
+    tbody.innerHTML = ''; // Nettoyage
+    terrainPlayers.forEach(p => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${p.name}</td><td>${p.total_points}</td><td>${p.matches}</td>`;
+      tbody.appendChild(tr);
+    });
+
+    terrainTable.style.display = 'table';
+  }
+
+  // Récupérer les prochaines manches (matches à venir)
+  const { data: matches } = await supabase
+    .from('matches')
+    .select('*')
+    .eq('player_id', playerId)
+    .eq('status', 'scheduled');
+
+  prochainesEl.innerHTML = '';
+  if (matches.length === 0) {
+    prochainesEl.innerHTML = '<p>Aucune manche à venir.</p>';
+  } else {
+    matches.forEach(m => {
+      const div = document.createElement('div');
+      div.textContent = `Round ${m.round} – Piste ${m.terrain || '?'} – Phase ${m.phase}`;
+      prochainesEl.appendChild(div);
+    });
+  }
+}
+
+// ✅ Déclencheur à la soumission du formulaire
 document.getElementById('signup-form').addEventListener('submit', async (e) => {
   e.preventDefault();
-  const name = document.getElementById('name').value.trim();
-  if (!name) return;
-  const { error } = await supabase.from('players').insert([{ name, total_points: 0, matches: 0 }]);
-  document.getElementById('result').innerText = error ? "❌ " + error.message : "✅ Inscription réussie !";
+  await handlePlayerLogin();
 });
 
-// Affiche le terrain après inscription
-function afficherTerrain(terrain) {
-  const msg = document.getElementById("terrainMessage");
-  if (msg) msg.textContent = "Tu joues sur la piste : " + terrain;
-}
-window.afficherTerrain = afficherTerrain;
+// ✅ Gestion de session persistante (auto-login si déjà identifié)
+window.addEventListener('DOMContentLoaded', async () => {
+  const savedId = localStorage.getItem('player_id');
+  if (savedId) {
+    document.getElementById('signup-form').style.display = 'none';
+    await loadPlayerData(savedId);
+  } else {
+    document.getElementById('player-name').focus();
+  }
+});
+
+// ✅ Bouton "Afficher la prochaine manche" (refresh manuel)
+document.getElementById('refresh-btn').addEventListener('click', async () => {
+  const savedId = localStorage.getItem('player_id');
+  if (savedId) await loadPlayerData(savedId);
+});
