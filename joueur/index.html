@@ -161,19 +161,28 @@
   <nav aria-label="Navigation principale">
     <a href="../classement/index.html" aria-label="Voir le classement" tabindex="0">📊 Classement</a>
     <a href="../regles/index.html" aria-label="Voir les règles du jeu" tabindex="0">📜 Règles</a>
-    <button id="logout-btn" style="margin-left:20px;display:none;" aria-label="Déconnexion">🚪 Déconnexion</button>
+    <button id="logout-btn" style="margin-left:20px;" aria-label="Déconnexion">🚪 Déconnexion</button>
   </nav>
-  <div id="main-status" aria-live="polite"></div>
-  <form id="signup-form" style="display:none;max-width:400px;margin:24px auto;">
-    <input type="text" id="name" placeholder="Ton prénom ou pseudo" required style="margin-bottom:10px;width:80%;padding:10px;font-size:1.1em;border-radius:6px;border:1px solid #bbb;">
-    <button type="submit" style="padding:10px 24px;font-size:1.1em;border-radius:6px;background:#FFD700;color:#001B65;font-weight:bold;border:none;cursor:pointer;">S'inscrire</button>
+  <div id="main-status" aria-live="polite">Entrez votre nom pour commencer</div>
+  <form id="signup-form" style="max-width:400px;margin:24px auto;">
+    <input type="text" id="player-name" placeholder="Ton prénom ou pseudo" required style="margin-bottom:10px;width:80%;padding:10px;font-size:1.1em;border-radius:6px;border:1px solid #bbb;">
+    <button type="submit" id="submit-button" style="padding:10px 24px;font-size:1.1em;border-radius:6px;background:#FFD700;color:#001B65;font-weight:bold;border:none;cursor:pointer;">S'inscrire</button>
   </form>
-  <div id="result" style="color:#c00;font-weight:bold;margin-bottom:12px;"></div>
   <div class="btn-bar">
     <button id="refresh-btn" aria-label="Afficher la prochaine manche">📘 Afficher la prochaine manche</button>
     <button id="changer-joueur-btn" aria-label="Changer de joueur">🔄 Changer de joueur</button>
   </div>
-  <table id="terrain-table"></table>
+  <table id="terrain-table">
+    <thead>
+      <tr>
+        <th>Joueur</th>
+        <th>Points</th>
+        <th>Matchs</th>
+      </tr>
+    </thead>
+    <tbody>
+    </tbody>
+  </table>
   <div id="prochaines-manches"></div>
   <dialog id="nameDialog">
     <form method="dialog">
@@ -252,3 +261,17 @@
     document.getElementById('show-charte-btn').addEventListener('click', function() {
       document.getElementById('charteDialog').showModal();
     });
+    
+    // Bouton déconnexion
+    document.getElementById('logout-btn').addEventListener('click', function() {
+      localStorage.removeItem('player_id');
+      location.reload();
+    });
+    
+    // Bouton changer de joueur
+    document.getElementById('changer-joueur-btn').addEventListener('click', function() {
+      localStorage.removeItem('player_id');
+      location.reload();
+    });
+  </script>
+  <script type="module" src="../js/joueur"></script>
