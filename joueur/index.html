@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Joueur - Finger Game</title>
-  <link rel="icon" type="image/png" href="/assets/FingerGame_logo_blanc_tagline.png">
+  <link rel="icon" type="image/png" href="../assets/FingerGame_logo_blanc_tagline.png">
   <link href="https://fonts.googleapis.com/css?family=Montserrat:400,500,700&display=swap" rel="stylesheet">
   <style>
     :root {
@@ -195,26 +195,26 @@
   <button id="show-charte-btn" title="Voir la charte graphique">🎨</button>
   <dialog id="charteDialog" style="max-width:900px;width:95vw;border:none;border-radius:18px;box-shadow:0 4px 32px #001B6588;padding:0;overflow:auto;">
     <div style="background:#001B65;padding:32px 0 24px 0;text-align:center;">
-      <img src="../assets/FingerGame_logo_couleur_tagline.png" alt="Logo couleur" style="max-width:220px;width:60vw;margin-bottom:18px;">
+      <img src="../assets/logocouleurtagline.png" alt="Logo couleur" style="max-width:220px;width:60vw;margin-bottom:18px;">
       <h1 style="color:#fff;">Charte Graphique Finger Game</h1>
     </div>
     <div style="background:#fff;padding:32px 24px 24px 24px;">
       <h2>Logos</h2>
       <div style="display:flex;gap:32px;justify-content:center;align-items:center;flex-wrap:wrap;margin-bottom:18px;">
         <div>
-          <img src="../assets/FingerGame_logo_couleur.png" alt="Logo couleur" style="max-width:120px;max-height:80px;">
+          <img src="../assets/logocouleur.png" alt="Logo couleur" style="max-width:120px;max-height:80px;">
           <div style="font-size:0.95em;text-align:center;">Standard</div>
         </div>
         <div>
-          <img src="../assets/FingerGame_logo_couleur_tagline.png" alt="Logo couleur tagline" style="max-width:120px;max-height:80px;">
+          <img src="../assets/logocouleurtagline.png" alt="Logo couleur tagline" style="max-width:120px;max-height:80px;">
           <div style="font-size:0.95em;text-align:center;">Avec tagline</div>
         </div>
         <div>
-          <img src="../assets/FingerGame_logo_black.png" alt="Logo noir" style="max-width:120px;max-height:80px;background:#fff;">
+          <img src="../assets/logo_black.png" alt="Logo noir" style="max-width:120px;max-height:80px;background:#fff;">
           <div style="font-size:0.95em;text-align:center;">Noir</div>
         </div>
         <div>
-          <img src="../assets/FingerGame_logo_black_tagline.png" alt="Logo noir tagline" style="max-width:120px;max-height:80px;background:#fff;">
+          <img src="../assets/logo_blacktagline.png" alt="Logo noir tagline" style="max-width:120px;max-height:80px;background:#fff;">
           <div style="font-size:0.95em;text-align:center;">Noir + tagline</div>
         </div>
       </div>
@@ -223,9 +223,9 @@
         <span style="font-size:0.95em;">La police "Montserrat" est utilisée comme alternative principale, ou Impact si indisponible.</span>
       </div>
       <h2>Palette couleurs</h2>
-      <img src="../assets/FingerGame_palette_couleurs.png" alt="Palette couleurs" style="max-width:600px;width:95vw;display:block;margin:18px auto 24px auto;">
+      <img src="../assets/couleurs.png" alt="Palette couleurs" style="max-width:600px;width:95vw;display:block;margin:18px auto 24px auto;">
       <h2>Typographies</h2>
-      <img src="../assets/FingerGame_typographie_structure.png" alt="Typographie" style="max-width:700px;width:95vw;display:block;margin:18px auto 0 auto;">
+      <img src="../assets/TYPOGRAPHIE.png" alt="Typographie" style="max-width:700px;width:95vw;display:block;margin:18px auto 0 auto;">
       <div style="color:#222;font-size:1.1em;margin:18px auto 0 auto;max-width:600px;">
         <b>Police principale :</b> Sports World (titres impactants)<br>
         <b>Police secondaire :</b> Montserrat (Bold, Medium, Light) pour les contenus.<br>
@@ -234,15 +234,15 @@
       <h2>Titres exemples</h2>
       <div style="display:flex;gap:32px;justify-content:center;align-items:flex-end;flex-wrap:wrap;margin-bottom:18px;">
         <div style="text-align:center;">
-          <img src="../assets/FingerGame_titre_typo_bleue.png" alt="Titre bleu" style="max-width:120px;">
+          <img src="../assets/titrecouleur.png" alt="Titre bleu" style="max-width:120px;">
           <div style="font-size:0.95em;">Bleu sur fond clair</div>
         </div>
         <div style="background:#001B65;padding:8px 16px;border-radius:8px;text-align:center;">
-          <img src="../assets/FingerGame_titre_typo_blanche.png" alt="Titre blanc" style="max-width:120px;">
+          <img src="../assets/titrewhite.png" alt="Titre blanc" style="max-width:120px;">
           <div style="font-size:0.95em;color:#fff;">Blanc sur fond sombre</div>
         </div>
         <div style="text-align:center;">
-          <img src="../assets/FingerGame_titre_typo_noire.png" alt="Titre noir" style="max-width:120px;">
+          <img src="../assets/titre.png" alt="Titre noir" style="max-width:120px;">
           <div style="font-size:0.95em;">Noir sur fond clair</div>
         </div>
       </div>
@@ -274,4 +274,6 @@
       location.reload();
     });
   </script>
-  <script type="module" src="../js/joueur"></script>
+  <!-- Script principal pour la logique du joueur (inscription, affichage, etc.) -->
+  <script type="module" src="../js/joueur.js"></script>
+
