@@ -449,27 +449,12 @@
           etatEl.textContent = `Bienvenue ${playerData.name} — Piste ${playerData.terrain ?? "non attribuée"} — Partie ${partieNum}/${playerData.round ?? "-"}${info}`;
         }
 
+        // Récupérer les prochaines manches (matches à venir)
+        await afficherProchaines(playerId, playerData);
+
         // Récupérer les autres joueurs sur le même terrain
         if (playerData.terrain) {
           await afficherTableauTerrain(playerData.terrain);
-        }
-
-        // Récupérer les prochaines manches (matches à venir)
-        const { data: matches } = await supabase
-          .from('matches')
-          .select('*')
-          .eq('player_id', playerId)
-          .eq('status', 'scheduled');
-
-        prochainesEl.innerHTML = '';
-        if (matches && matches.length === 0) {
-          prochainesEl.innerHTML = '<p>Aucune manche à venir.</p>';
-        } else if (matches) {
-          matches.forEach(m => {
-            const div = document.createElement('div');
-            div.textContent = `Round ${m.round} – Piste ${m.terrain || '?'} – Phase ${m.phase}`;
-            prochainesEl.appendChild(div);
-          });
         }
       } catch (error) {
         etatEl.textContent = "Erreur lors du chargement des données.";
@@ -497,6 +482,116 @@
       return !!data;
     }
 
+    async function afficherProchaines(playerId, playerData) {
+      const prochainesEl = document.getElementById('prochaines-manches');
+      
+      try {
+        // Essayer plusieurs approches pour récupérer les matches
+        let matches = [];
+        
+        // 1. Chercher dans la table matches si elle existe
+        const { data: matchesData, error: matchesError } = await supabase
+          .from('matches')
+          .select('*')
+          .eq('player_id', playerId);
+        
+        if (!matchesError && matchesData) {
+          matches = matchesData;
+        }
+        
+        // 2. Si pas de matches ou table n'existe pas, créer un planning basé sur les données du joueur
+        if (matches.length === 0) {
+          matches = genererPlanningJoueur(playerData);
+        }
+
+        // Affichage des prochaines manches
+        prochainesEl.innerHTML = '<h3>Prochaines manches</h3>';
+        
+        if (matches.length === 0) {
+          prochainesEl.innerHTML += '<p>Aucune manche programmée pour le moment.</p>';
+        } else {
+          const ul = document.createElement('ul');
+          ul.style.cssText = 'list-style: none; padding: 0; margin: 10px 0;';
+          
+          matches.forEach((match, index) => {
+            const li = document.createElement('li');
+            li.style.cssText = 'padding: 8px 16px; margin: 5px 0; background: rgba(255,215,0,0.1); border-left: 4px solid var(--fg-jaune); border-radius: 4px;';
+            
+            let statusText = '';
+            if (match.status === 'completed') {
+              statusText = ' ✅ Terminée';
+            } else if (match.status === 'in_progress') {
+              statusText = ' ⏳ En cours';
+            } else {
+              statusText = ' ⏰ À venir';
+            }
+            
+            li.innerHTML = `
+              <strong>Partie ${index + 1}</strong>${statusText}<br>
+              <small>Piste ${match.terrain || playerData.terrain || '?'} • Round ${match.round || playerData.round || '?'} • Phase ${match.phase || playerData.phase || '?'}</small>
+            `;
+            ul.appendChild(li);
+          });
+          
+          prochainesEl.appendChild(ul);
+        }
+        
+        // Ajouter info sur le statut actuel
+        if (playerData.matches !== undefined) {
+          const infoDiv = document.createElement('div');
+          infoDiv.style.cssText = 'margin-top: 15px; padding: 10px; background: rgba(0,27,101,0.1); border-radius: 8px; font-size: 0.9em;';
+          infoDiv.innerHTML = `
+            <strong>Progression actuelle :</strong><br>
+            Parties jouées : ${playerData.matches || 0}<br>
+            Round actuel : ${playerData.round || 'Non défini'}<br>
+            Phase : ${playerData.phase || 'Non définie'}
+          `;
+          prochainesEl.appendChild(infoDiv);
+        }
+        
+      } catch (error) {
+        console.error('Erreur affichage prochaines manches:', error);
+        prochainesEl.innerHTML = '<h3>Prochaines manches</h3><p>Erreur lors du chargement du planning.</p>';
+      }
+    }
+
+    // Générer un planning basique basé sur les données du joueur
+    function genererPlanningJoueur(playerData) {
+      const matches = [];
+      const matchesJouees = playerData.matches || 0;
+      const totalMatches = 4; // Nombre total de parties par joueur
+      
+      for (let i = 1; i <= totalMatches; i++) {
+        const match = {
+          round: playerData.round || 'A',
+          terrain: playerData.terrain,
+          phase: playerData.phase || 1,
+          status: i <= matchesJouees ? 'completed' : 
+                  i === matchesJouees + 1 ? 'scheduled' : 'pending'
+        };
+        matches.push(match);
+      }
+      
+      return matches;
+    }
+      const { data } = await supabase
+        .from("players")
+        .select("name, matches, round, total_points")
+        .eq("terrain", terrain);
+
+      const table = document.getElementById("terrain-table");
+      table.innerHTML = `
+        <thead>
+          <tr>
+            <th>Joueur</th>
+            <th>Points</th>
+            <th>Matchs</th>
+            <th>Round</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      `;
+      
     async function afficherTableauTerrain(terrain) {
       const { data } = await supabase
         .from("players")
@@ -596,7 +691,5 @@
       location.reload();
     }
   </script>
-</body>
-</html>
 </body>
 </html>
