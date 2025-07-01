@@ -437,24 +437,24 @@
         const isWinner = await estVainqueur(playerData);
         
         if (playerData.phase == 99) {
-          etatEl.textContent = `${playerData.name} — 🏁 Finale — Piste ${playerData.terrain ?? "-"}`;
+          etatEl.textContent = `${playerData.name} — 🏁 Finale — Piste ${playerData.piste ?? "-"}`;
           if (isWinner) {
-            etatEl.innerHTML = `🏆 <strong>GRAND VAINQUEUR :</strong> ${playerData.name} — 🏁 Finale — Piste ${playerData.terrain ?? "-"}`;
+            etatEl.innerHTML = `🏆 <strong>GRAND VAINQUEUR :</strong> ${playerData.name} — 🏁 Finale — Piste ${playerData.piste ?? "-"}`;
             console.log("🏆 GRAND VAINQUEUR :", playerData.name);
           }
         } else {
           const partieNum = (playerData.matches ?? 0) + 1;
           let info = playerData.round === "A" ? " (Démarrage dans 3 min)" : 
                     playerData.round === "B" ? " (Démarrage après le round A)" : "";
-          etatEl.textContent = `Bienvenue ${playerData.name} — Piste ${playerData.terrain ?? "non attribuée"} — Partie ${partieNum}/${playerData.round ?? "-"}${info}`;
+          etatEl.textContent = `Bienvenue ${playerData.name} — Piste ${playerData.piste ?? "non attribuée"} — Partie ${partieNum}/${playerData.round ?? "-"}${info}`;
         }
 
         // Récupérer les prochaines manches (matches à venir)
         await afficherProchaines(playerId, playerData);
 
-        // Récupérer les autres joueurs sur le même terrain
-        if (playerData.terrain) {
-          await afficherTableauTerrain(playerData.terrain);
+        // Récupérer les autres joueurs sur la même piste
+        if (playerData.piste) {
+          await afficherTableauTerrain(playerData.piste);
         }
       } catch (error) {
         etatEl.textContent = "Erreur lors du chargement des données.";
@@ -528,7 +528,7 @@
             
             li.innerHTML = `
               <strong>Partie ${index + 1}</strong>${statusText}<br>
-              <small>Piste ${match.terrain || playerData.terrain || '?'} • Round ${match.round || playerData.round || '?'} • Phase ${match.phase || playerData.phase || '?'}</small>
+              <small>Piste ${match.piste || playerData.piste || '?'} • Round ${match.round || playerData.round || '?'} • Phase ${match.phase || playerData.phase || '?'}</small>
             `;
             ul.appendChild(li);
           });
@@ -564,7 +564,7 @@
       for (let i = 1; i <= totalMatches; i++) {
         const match = {
           round: playerData.round || 'A',
-          terrain: playerData.terrain,
+          piste: playerData.piste,
           phase: playerData.phase || 1,
           status: i <= matchesJouees ? 'completed' : 
                   i === matchesJouees + 1 ? 'scheduled' : 'pending'
@@ -574,29 +574,12 @@
       
       return matches;
     }
-      const { data } = await supabase
-        .from("players")
-        .select("name, matches, round, total_points")
-        .eq("terrain", terrain);
 
-      const table = document.getElementById("terrain-table");
-      table.innerHTML = `
-        <thead>
-          <tr>
-            <th>Joueur</th>
-            <th>Points</th>
-            <th>Matchs</th>
-            <th>Round</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      `;
-      
-    async function afficherTableauTerrain(terrain) {
+    async function afficherTableauTerrain(piste) {
       const { data } = await supabase
         .from("players")
         .select("name, matches, round, total_points")
-        .eq("terrain", terrain);
+        .eq("piste", piste);
 
       const table = document.getElementById("terrain-table");
       table.innerHTML = `
