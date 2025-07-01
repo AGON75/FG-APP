@@ -443,10 +443,11 @@
             console.log("🏆 GRAND VAINQUEUR :", playerData.name);
           }
         } else {
-          const partieNum = (playerData.matches ?? 0) + 1;
+          const partieNum = playerData.phase || 1; // phase = numéro de partie
+          const mancheNum = playerData.round || "A"; // round = manche (A, B, C, etc.)
           let info = playerData.round === "A" ? " (Démarrage dans 3 min)" : 
-                    playerData.round === "B" ? " (Démarrage après le round A)" : "";
-          etatEl.textContent = `Bienvenue ${playerData.name} — Piste ${playerData.piste ?? "non attribuée"} — Partie ${partieNum}/${playerData.round ?? "-"}${info}`;
+                    playerData.round === "B" ? " (Démarrage après la manche A)" : "";
+          etatEl.textContent = `Bienvenue ${playerData.name} — Piste ${playerData.piste ?? "non attribuée"} — Partie ${partieNum}/4 — Manche ${mancheNum}${info}`;
         }
 
         // Récupérer les prochaines manches (matches à venir)
@@ -528,7 +529,7 @@
             
             li.innerHTML = `
               <strong>Partie ${index + 1}</strong>${statusText}<br>
-              <small>Piste ${match.piste || playerData.piste || '?'} • Round ${match.round || playerData.round || '?'} • Phase ${match.phase || playerData.phase || '?'}</small>
+              <small>Piste ${match.piste || playerData.piste || '?'} • Manche ${match.round || playerData.round || '?'} • Partie ${match.phase || playerData.phase || '?'}</small>
             `;
             ul.appendChild(li);
           });
@@ -537,14 +538,14 @@
         }
         
         // Ajouter info sur le statut actuel
-        if (playerData.matches !== undefined) {
+        if (playerData.phase !== undefined || playerData.round !== undefined) {
           const infoDiv = document.createElement('div');
           infoDiv.style.cssText = 'margin-top: 15px; padding: 10px; background: rgba(0,27,101,0.1); border-radius: 8px; font-size: 0.9em;';
           infoDiv.innerHTML = `
             <strong>Progression actuelle :</strong><br>
-            Parties jouées : ${playerData.matches || 0}<br>
-            Round actuel : ${playerData.round || 'Non défini'}<br>
-            Phase : ${playerData.phase || 'Non définie'}
+            Parties jouées : ${playerData.matches || 0}/4<br>
+            Partie actuelle : ${playerData.phase || 'Non définie'}<br>
+            Manche actuelle : ${playerData.round || 'Non définie'}
           `;
           prochainesEl.appendChild(infoDiv);
         }
@@ -563,9 +564,9 @@
       
       for (let i = 1; i <= totalMatches; i++) {
         const match = {
-          round: playerData.round || 'A',
+          round: playerData.round || 'A', // round = manche
           piste: playerData.piste,
-          phase: playerData.phase || 1,
+          phase: i, // phase = numéro de partie (1, 2, 3, 4)
           status: i <= matchesJouees ? 'completed' : 
                   i === matchesJouees + 1 ? 'scheduled' : 'pending'
         };
@@ -587,8 +588,8 @@
           <tr>
             <th>Joueur</th>
             <th>Points</th>
-            <th>Matchs</th>
-            <th>Round</th>
+            <th>Parties</th>
+            <th>Manche</th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -676,3 +677,4 @@
   </script>
 </body>
 </html>
+
