@@ -4,99 +4,337 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Joueur - Finger Game</title>
+  <link rel="icon" type="image/png" href="../assets/FingerGame_logo_blanc_tagline.png">
+  <link href="https://fonts.googleapis.com/css?family=Montserrat:400,500,700&display=swap" rel="stylesheet">
   <style>
+    :root {
+      --fg-bleu-marin: #001B65;
+      --fg-jaune: #FFD700;
+      --fg-bleu-clair: #e3e8f0;
+      --fg-gris: #f7f7f7;
+      --fg-blanc: #fff;
+      --fg-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
     body {
-      font-family: 'Segoe UI', sans-serif;
-      background: linear-gradient(to right, #0d47a1, #b71c1c);
-      color: white;
-      text-align: center;
-      padding: 30px;
+      font-family: 'Montserrat', Arial, sans-serif;
+      background: linear-gradient(135deg, var(--fg-gris), var(--fg-bleu-clair) 80%);
+      color: var(--fg-bleu-marin);
       margin: 0;
+      padding: 0;
+      text-align: center;
+      min-height: 100vh;
+    }
+    nav {
+      margin: 24px 0 18px 0;
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    nav a, nav button {
+      font-size: 1.1em;
+      color: var(--fg-bleu-marin);
+      background: none;
+      border: none;
+      text-decoration: none;
+      font-weight: bold;
+      cursor: pointer;
+      padding: 8px 16px;
+      border-radius: 8px;
+      transition: background 0.2s, color 0.2s;
+    }
+    nav a:hover, nav button:hover {
+      background: var(--fg-jaune);
+      color: var(--fg-bleu-marin);
     }
     img {
-      width: 200px;
-      margin-top: 20px;
-      max-width: 90%;
-    }
-    h1 {
-      margin: 10px 0;
-    }
-    button {
-      margin: 15px;
-      padding: 10px 20px;
-      font-size: 16px;
-      font-weight: bold;
-      border-radius: 6px;
-      border: none;
-      cursor: pointer;
-      background: #444;
-      color: white;
-      transition: background 0.2s;
-    }
-    button:hover {
-      background: #b71c1c;
-    }
-    a {
-      display: inline-block;
-      margin-top: 10px;
-      color: white;
-      text-decoration: underline;
-      font-weight: bold;
+      display: block;
+      margin: 24px auto 0 auto;
+      max-width: 220px;
+      width: 60vw;
     }
     #etat {
-      margin-top: 30px;
-      font-size: 20px;
+      font-size: 1.3em;
+      margin: 24px auto 12px auto;
+      max-width: 600px;
       font-weight: bold;
+      text-align: center;
+      background: var(--fg-blanc);
+      border-radius: 12px;
+      box-shadow: var(--fg-shadow);
+      padding: 16px 0;
+    }
+    .btn-bar {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      flex-wrap: wrap;
+      margin: 18px 0 24px 0;
+    }
+    .btn-bar button {
+      padding: 14px 28px;
+      font-size: 18px;
+      border-radius: 10px;
+      border: none;
+      background: var(--fg-jaune);
+      color: var(--fg-bleu-marin);
+      font-weight: bold;
+      cursor: pointer;
+      transition: box-shadow 0.2s, background 0.2s, color 0.2s;
+      box-shadow: var(--fg-shadow);
+    }
+    .btn-bar button:hover, .btn-bar button:focus {
+      background: var(--fg-bleu-marin);
+      color: #fff;
+      outline: none;
     }
     #terrain-table {
-      margin-top: 30px;
+      margin: 24px auto;
       border-collapse: collapse;
-      width: 100%;
-      max-width: 600px;
-      margin-left: auto;
-      margin-right: auto;
-      background: rgba(255,255,255,0.1);
+      width: 95%;
+      max-width: 700px;
+      background: var(--fg-blanc);
+      font-size: 1.1em;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: var(--fg-shadow);
+      display: none;
     }
     #terrain-table th, #terrain-table td {
-      border: 1px solid white;
-      padding: 8px;
+      border: 1px solid #e3e8f0;
+      padding: 12px;
+      text-align: center;
     }
     #terrain-table th {
-      background-color: #222;
+      background: var(--fg-bleu-clair);
+      color: var(--fg-bleu-marin);
+    }
+    #terrain-table tr:nth-child(even) {
+      background: #f9f9f9;
+    }
+    #prochaines-manches {
+      margin: 24px auto 0 auto;
+      max-width: 700px;
+      font-size: 1.1em;
+      background: var(--fg-blanc);
+      border-radius: 12px;
+      box-shadow: var(--fg-shadow);
+      padding: 16px 0;
+    }
+    #signup-form {
+      max-width: 400px;
+      margin: 24px auto;
+      display: none;
+    }
+    #signup-form input {
+      margin-bottom: 10px;
+      width: 80%;
+      padding: 10px;
+      font-size: 1.1em;
+      border-radius: 6px;
+      border: 1px solid #bbb;
+      background: var(--fg-blanc);
+      color: var(--fg-bleu-marin);
+    }
+    #signup-form button {
+      padding: 10px 24px;
+      font-size: 1.1em;
+      border-radius: 6px;
+      background: var(--fg-jaune);
+      color: var(--fg-bleu-marin);
+      font-weight: bold;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    #signup-form button:hover {
+      background: var(--fg-bleu-marin);
+      color: #fff;
     }
     dialog::backdrop {
-      background: rgba(0, 0, 0, 0.7);
+      background: rgba(0,0,0,0.5);
+    }
+    dialog {
+      border: none;
+      border-radius: 12px;
+      padding: 24px;
+      background: var(--fg-blanc);
+      color: var(--fg-bleu-marin);
+      box-shadow: var(--fg-shadow);
     }
     dialog input {
-      padding: 10px;
-      font-size: 16px;
+      padding: 12px;
+      font-size: 17px;
       width: 100%;
-      background: black;
-      color: white;
+      background: var(--fg-blanc);
+      color: var(--fg-bleu-marin);
+      border: 1px solid #bbb;
+      border-radius: 6px;
+      margin-bottom: 12px;
+    }
+    dialog button {
+      padding: 10px 20px;
+      font-size: 16px;
+      border-radius: 6px;
+      background: var(--fg-jaune);
+      color: var(--fg-bleu-marin);
+      font-weight: bold;
       border: none;
-      border-radius: 4px;
+      cursor: pointer;
+    }
+    #show-charte-btn {
+      position: fixed;
+      bottom: 18px;
+      right: 18px;
+      z-index: 1000;
+      background: var(--fg-jaune);
+      color: var(--fg-bleu-marin);
+      font-weight: 700;
+      border: none;
+      border-radius: 50%;
+      width: 54px;
+      height: 54px;
+      box-shadow: var(--fg-shadow);
+      cursor: pointer;
+      font-size: 1.8em;
+    }
+    @media (max-width: 600px) {
+      #etat, #prochaines-manches, #terrain-table {
+        font-size: 1em;
+        padding: 8px 0;
+      }
+      .btn-bar button {
+        font-size: 1em;
+        padding: 10px 12px;
+      }
+      nav {
+        gap: 12px;
+      }
     }
   </style>
 </head>
 <body>
   <img src="../assets/FingerGame_logo_blanc_tagline.png" alt="Finger Game">
+  
+  <nav aria-label="Navigation principale">
+    <a href="../classement/index.html" aria-label="Voir le classement" tabindex="0">📊 Classement</a>
+    <a href="../regles/index.html" aria-label="Voir les règles du jeu" tabindex="0">📜 Règles</a>
+    <button id="logout-btn" style="margin-left:20px;" aria-label="Déconnexion">� Déconnexion</button>
+  </nav>
 
-  <div id="etat">Chargement...</div>
+  <div id="etat" aria-live="polite">Chargement...</div>
 
-  <button onclick="location.reload()">📘 Afficher la prochaine manche</button>
-  <button onclick="changerDeJoueur()">🔄 Changer de joueur</button><br>
-  <a href="../classement/index.html">📊 Voir le classement</a>
-  <a href="../regles/index.html">📜 Règles du jeu</a>
+  <!-- Formulaire d'inscription/connexion -->
+  <form id="signup-form">
+    <input type="text" id="player-name" placeholder="Ton prénom ou pseudo" required>
+    <button type="submit" id="submit-button">S'inscrire / Se connecter</button>
+  </form>
 
-  <table id="terrain-table" style="display:none"></table>
+  <div class="btn-bar">
+    <button id="refresh-btn" aria-label="Afficher la prochaine manche">� Afficher la prochaine manche</button>
+    <button id="changer-joueur-btn" aria-label="Changer de joueur">� Changer de joueur</button>
+  </div>
+
+  <table id="terrain-table"></table>
+  <div id="prochaines-manches"></div>
 
   <dialog id="nameDialog">
     <form method="dialog">
-      <label>Entrez votre Nom et Prénom</label>
-      <input id="nameInput" required>
-      <button type="submit">OK</button>
+      <label for="nameInput">Entrez votre Nom et Prénom</label>
+      <input id="nameInput" type="text" required>
+      <button type="submit" aria-label="Valider le nom">OK</button>
     </form>
   </dialog>
+
+  <!-- ====== CHARTE GRAPHIQUE MODALE ====== -->
+  <button id="show-charte-btn" title="Voir la charte graphique">🎨</button>
+  <dialog id="charteDialog" style="max-width:900px;width:95vw;border:none;border-radius:18px;box-shadow:0 4px 32px #001B6588;padding:0;overflow:auto;">
+    <div style="background:#001B65;padding:32px 0 24px 0;text-align:center;">
+      <img src="../assets/logocouleurtagline.png" alt="Logo couleur" style="max-width:220px;width:60vw;margin-bottom:18px;">
+      <h1 style="color:#fff;">Charte Graphique Finger Game</h1>
+    </div>
+    <div style="background:#fff;padding:32px 24px 24px 24px;">
+      <h2>Logos</h2>
+      <div style="display:flex;gap:32px;justify-content:center;align-items:center;flex-wrap:wrap;margin-bottom:18px;">
+        <div>
+          <img src="../assets/logocouleur.png" alt="Logo couleur" style="max-width:120px;max-height:80px;">
+          <div style="font-size:0.95em;text-align:center;">Standard</div>
+        </div>
+        <div>
+          <img src="../assets/logocouleurtagline.png" alt="Logo couleur tagline" style="max-width:120px;max-height:80px;">
+          <div style="font-size:0.95em;text-align:center;">Avec tagline</div>
+        </div>
+        <div>
+          <img src="../assets/logo black.png" alt="Logo noir" style="max-width:120px;max-height:80px;background:#fff;">
+          <div style="font-size:0.95em;text-align:center;">Noir</div>
+        </div>
+        <div>
+          <img src="../assets/logo blacktagline.png" alt="Logo noir tagline" style="max-width:120px;max-height:80px;background:#fff;">
+          <div style="font-size:0.95em;text-align:center;">Noir + tagline</div>
+        </div>
+      </div>
+      <div style="margin-top:8px;margin-bottom:8px;">
+        <b>Police secondaire :</b> Montserrat (Bold, Medium, Light) pour les contenus.<br>
+        <span style="font-size:0.95em;">La police "Montserrat" est utilisée comme alternative principale, ou Impact si indisponible.</span>
+      </div>
+      <h2>Palette couleurs</h2>
+      <img src="../assets/couleurs.png" alt="Palette couleurs" style="max-width:600px;width:95vw;display:block;margin:18px auto 24px auto;">
+      <h2>Typographies</h2>
+      <img src="../assets/TYPOGRAPHIE.png" alt="Typographie" style="max-width:700px;width:95vw;display:block;margin:18px auto 0 auto;">
+      <div style="color:#222;font-size:1.1em;margin:18px auto 0 auto;max-width:600px;">
+        <b>Police principale :</b> Sports World (titres impactants)<br>
+        <b>Police secondaire :</b> Montserrat (Bold, Medium, Light) pour les contenus.<br>
+        <span style="font-size:0.95em;">Si indisponibles, utiliser Montserrat ou Impact.</span>
+      </div>
+      <h2>Titres exemples</h2>
+      <div style="display:flex;gap:32px;justify-content:center;align-items:flex-end;flex-wrap:wrap;margin-bottom:18px;">
+        <div style="text-align:center;">
+          <img src="../assets/titrecouleur.png" alt="Titre bleu" style="max-width:120px;">
+          <div style="font-size:0.95em;">Bleu sur fond clair</div>
+        </div>
+        <div style="background:#001B65;padding:8px 16px;border-radius:8px;text-align:center;">
+          <img src="../assets/titrewhite.png" alt="Titre blanc" style="max-width:120px;">
+          <div style="font-size:0.95em;color:#fff;">Blanc sur fond sombre</div>
+        </div>
+        <div style="text-align:center;">
+          <img src="../assets/titre.png" alt="Titre noir" style="max-width:120px;">
+          <div style="font-size:0.95em;">Noir sur fond clair</div>
+        </div>
+      </div>
+      <h2>Règles d'utilisation</h2>
+      <ul style="color:#35373C;font-size:1em;max-width:600px;margin:0 auto 18px auto;">
+        <li>Respecter la zone de sécurité autour du logo (min. 10 mm)</li>
+        <li>Ne jamais déformer les logos</li>
+        <li>Ne pas modifier les couleurs fournies</li>
+        <li>Utiliser les typographies et couleurs officielles</li>
+        <li>Exemples d'utilisation correcte/interdite : <span style="color:#aaa;">(à illustrer si besoin)</span></li>
+      </ul>
+      <button onclick="document.getElementById('charteDialog').close()">Fermer</button>
+    </div>
+  </dialog>
+
+  <script>
+    // Gestion de la charte graphique
+    document.getElementById('show-charte-btn').addEventListener('click', function() {
+      document.getElementById('charteDialog').showModal();
+    });
+    
+    // Boutons de navigation
+    document.getElementById('logout-btn').addEventListener('click', function() {
+      localStorage.removeItem('player_id');
+      location.reload();
+    });
+    
+    document.getElementById('changer-joueur-btn').addEventListener('click', function() {
+      localStorage.removeItem('player_id');
+      location.reload();
+    });
+    
+    document.getElementById('refresh-btn').addEventListener('click', function() {
+      location.reload();
+    });
+  </script>
 
   <script type="module">
     import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
@@ -108,44 +346,135 @@
 
     let playerId = localStorage.getItem("player_id");
 
-    async function inscrireOuConnecter() {
-      const dialog = document.getElementById("nameDialog");
-      const input = document.getElementById("nameInput");
-      dialog.showModal();
-      dialog.addEventListener("close", async () => {
-        const baseName = input.value;
-        if (!baseName) return;
+    // ✅ Fonction principale : gère l'inscription ou la connexion du joueur
+    async function handlePlayerLogin() {
+      const pseudoInput = document.getElementById('player-name');
+      const pseudo = pseudoInput.value.trim();
 
-        try {
-          const { data: existing } = await supabase
-            .from("players")
-            .select("id, name")
-            .ilike("name", `${baseName}%`);
+      if (!pseudo) {
+        document.getElementById('etat').textContent = "Veuillez entrer un nom.";
+        return;
+      }
 
-          if (existing.length > 0) {
-            playerId = existing[0].id;
-            localStorage.setItem("player_id", playerId);
-            afficher(await getPlayerById(playerId));
-          } else {
-            const numero = Math.floor(Math.random() * 120) + 1;
-            const fullName = `${baseName} #${numero}`;
-            const { data: inserted } = await supabase
-              .from("players")
-              .insert({ name: fullName })
-              .select()
-              .single();
-            if (inserted) {
-              playerId = inserted.id;
-              localStorage.setItem("player_id", playerId);
-              afficher(inserted);
-            } else {
-              alert("Erreur lors de l'inscription.");
-            }
-          }
-        } catch (e) {
-          document.getElementById("etat").textContent = "Erreur de connexion. Veuillez vérifier votre réseau.";
+      // Désactiver le bouton pour éviter les double-clics
+      document.getElementById('submit-button').disabled = true;
+      document.getElementById('etat').textContent = "Connexion en cours...";
+
+      try {
+        // Vérifier si un joueur existe déjà avec ce pseudo
+        const { data: existingPlayers, error: selectError } = await supabase
+          .from('players')
+          .select('id')
+          .eq('name', pseudo);
+
+        if (selectError) {
+          document.getElementById('etat').textContent = "Erreur lors de la connexion.";
+          document.getElementById('submit-button').disabled = false;
+          return;
         }
-      }, { once: true });
+
+        let playerIdResult;
+
+        if (existingPlayers.length > 0) {
+          // Le joueur existe déjà : se connecter
+          playerIdResult = existingPlayers[0].id;
+        } else {
+          // Le joueur n'existe pas : inscription
+          const { data: insertData, error: insertError } = await supabase
+            .from('players')
+            .insert({ name: pseudo })
+            .select();
+
+          if (insertError || !insertData || insertData.length === 0) {
+            document.getElementById('etat').textContent = "Erreur lors de l'inscription.";
+            document.getElementById('submit-button').disabled = false;
+            return;
+          }
+
+          playerIdResult = insertData[0].id;
+        }
+
+        // Stocker l'ID en localStorage pour maintenir la session
+        localStorage.setItem('player_id', playerIdResult);
+        playerId = playerIdResult;
+
+        // Masquer le formulaire d'inscription
+        document.getElementById('signup-form').style.display = 'none';
+
+        // Charger les données du joueur connecté
+        await loadPlayerData(playerIdResult);
+
+        // Réactiver le bouton d'inscription pour les prochaines fois
+        document.getElementById('submit-button').disabled = false;
+      } catch (error) {
+        document.getElementById('etat').textContent = "Erreur de connexion. Veuillez vérifier votre réseau.";
+        document.getElementById('submit-button').disabled = false;
+      }
+    }
+
+    // ✅ Charger les données du joueur connecté (terrain, matchs, stats, etc.)
+    async function loadPlayerData(playerId) {
+      const etatEl = document.getElementById('etat');
+      const terrainTable = document.getElementById('terrain-table');
+      const prochainesEl = document.getElementById('prochaines-manches');
+
+      try {
+        // Récupérer les infos du joueur
+        const { data: playerData, error: playerError } = await supabase
+          .from('players')
+          .select('*')
+          .eq('id', playerId)
+          .single();
+
+        if (playerError || !playerData) {
+          etatEl.textContent = "Erreur : joueur introuvable.";
+          localStorage.removeItem('player_id');
+          location.reload();
+          return;
+        }
+
+        // Vérifier si c'est le vainqueur
+        const isWinner = await estVainqueur(playerData);
+        
+        if (playerData.phase == 99) {
+          etatEl.textContent = `${playerData.name} — 🏁 Finale — Piste ${playerData.terrain ?? "-"}`;
+          if (isWinner) {
+            etatEl.innerHTML = `🏆 <strong>GRAND VAINQUEUR :</strong> ${playerData.name} — 🏁 Finale — Piste ${playerData.terrain ?? "-"}`;
+            console.log("🏆 GRAND VAINQUEUR :", playerData.name);
+          }
+        } else {
+          const partieNum = (playerData.matches ?? 0) + 1;
+          let info = playerData.round === "A" ? " (Démarrage dans 3 min)" : 
+                    playerData.round === "B" ? " (Démarrage après le round A)" : "";
+          etatEl.textContent = `Bienvenue ${playerData.name} — Piste ${playerData.terrain ?? "non attribuée"} — Partie ${partieNum}/${playerData.round ?? "-"}${info}`;
+        }
+
+        // Récupérer les autres joueurs sur le même terrain
+        if (playerData.terrain) {
+          await afficherTableauTerrain(playerData.terrain);
+        }
+
+        // Récupérer les prochaines manches (matches à venir)
+        const { data: matches } = await supabase
+          .from('matches')
+          .select('*')
+          .eq('player_id', playerId)
+          .eq('status', 'scheduled');
+
+        prochainesEl.innerHTML = '';
+        if (matches && matches.length === 0) {
+          prochainesEl.innerHTML = '<p>Aucune manche à venir.</p>';
+        } else if (matches) {
+          matches.forEach(m => {
+            const div = document.createElement('div');
+            div.textContent = `Round ${m.round} – Piste ${m.terrain || '?'} – Phase ${m.phase}`;
+            prochainesEl.appendChild(div);
+          });
+        }
+      } catch (error) {
+        etatEl.textContent = "Erreur lors du chargement des données.";
+        console.error('Erreur loadPlayerData:', error);
+      }
     }
 
     async function getPlayerById(id) {
@@ -168,52 +497,106 @@
       return !!data;
     }
 
-    async function afficher(joueur) {
-      const etat = document.getElementById("etat");
-      if (!joueur) {
-        localStorage.removeItem("player_id");
-        etat.textContent = "Aucune donnée trouvée. Veuillez vous réinscrire.";
-        setTimeout(inscrireOuConnecter, 1000);
-        return;
-      }
-      if (joueur.phase == 99) {
-        etat.textContent = `${joueur.name} — 🏁 Finale — Piste ${joueur.terrain ?? "-"}`;
-        if (await estVainqueur(joueur)) {
-          console.log("🏆 GRAND VAINQUEUR :", joueur.name);
-        }
-      } else {
-        const partieNum = (joueur.matches ?? 0) + 1;
-        let info = joueur.round === "A" ? " (Démarrage dans 3 min)" : joueur.round === "B" ? " (Démarrage après le round A)" : "";
-        etat.textContent = `${joueur.name} — Piste ${joueur.terrain ?? "non attribuée"} — Partie ${partieNum}/${joueur.round ?? "-"}${info}`;
-
-        if (joueur.terrain) afficherTableauTerrain(joueur.terrain);
-      }
-    }
-
     async function afficherTableauTerrain(terrain) {
       const { data } = await supabase
         .from("players")
-        .select("name, matches, round")
+        .select("name, matches, round, total_points")
         .eq("terrain", terrain);
 
       const table = document.getElementById("terrain-table");
-      table.innerHTML = `<tr><th>Nom</th><th>Matchs joués</th><th>Round</th></tr>`;
+      table.innerHTML = `
+        <thead>
+          <tr>
+            <th>Joueur</th>
+            <th>Points</th>
+            <th>Matchs</th>
+            <th>Round</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      `;
+      
+      const tbody = table.querySelector('tbody');
       for (const p of data) {
-        table.innerHTML += `<tr><td>${p.name}</td><td>${p.matches ?? 0}</td><td>${p.round ?? "-"}</td></tr>`;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${p.name}</td>
+          <td>${p.total_points || 0}</td>
+          <td>${p.matches ?? 0}</td>
+          <td>${p.round ?? "-"}</td>
+        `;
+        tbody.appendChild(tr);
       }
       table.style.display = "table";
     }
 
+    // Ancienne fonction pour la compatibilité avec la modale
+    async function inscrireOuConnecter() {
+      const dialog = document.getElementById("nameDialog");
+      const input = document.getElementById("nameInput");
+      dialog.showModal();
+      
+      dialog.addEventListener("close", async () => {
+        const baseName = input.value.trim();
+        if (!baseName) return;
+
+        try {
+          const { data: existing } = await supabase
+            .from("players")
+            .select("id, name")
+            .ilike("name", `${baseName}%`);
+
+          if (existing.length > 0) {
+            playerId = existing[0].id;
+            localStorage.setItem("player_id", playerId);
+            await loadPlayerData(playerId);
+          } else {
+            const numero = Math.floor(Math.random() * 120) + 1;
+            const fullName = `${baseName} #${numero}`;
+            const { data: inserted } = await supabase
+              .from("players")
+              .insert({ name: fullName })
+              .select()
+              .single();
+            if (inserted) {
+              playerId = inserted.id;
+              localStorage.setItem("player_id", playerId);
+              await loadPlayerData(playerId);
+            } else {
+              document.getElementById("etat").textContent = "Erreur lors de l'inscription.";
+            }
+          }
+        } catch (e) {
+          document.getElementById("etat").textContent = "Erreur de connexion. Veuillez vérifier votre réseau.";
+        }
+      }, { once: true });
+    }
+
+    // ✅ Déclencheur à la soumission du formulaire
+    document.getElementById('signup-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      await handlePlayerLogin();
+    });
+
+    // ✅ Gestion de session persistante (auto-login si déjà identifié)
+    window.addEventListener('DOMContentLoaded', async () => {
+      if (playerId) {
+        document.getElementById('signup-form').style.display = 'none';
+        await loadPlayerData(playerId);
+      } else {
+        document.getElementById('signup-form').style.display = 'block';
+        document.getElementById('player-name').focus();
+        document.getElementById('etat').textContent = "Entrez votre nom pour commencer";
+      }
+    });
+
+    // Fonctions globales pour la compatibilité
     window.changerDeJoueur = function () {
       localStorage.removeItem("player_id");
       location.reload();
     }
-
-    if (!playerId) {
-      inscrireOuConnecter();
-    } else {
-      getPlayerById(playerId).then(joueur => afficher(joueur));
-    }
   </script>
+</body>
+</html>
 </body>
 </html>
